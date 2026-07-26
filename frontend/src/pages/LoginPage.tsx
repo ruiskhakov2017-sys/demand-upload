@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { api, setCsrfToken } from "../api/client";
+import { t } from "../i18n";
 
 const schema = z.object({
   username: z.string().min(1),
@@ -35,20 +36,20 @@ export function LoginPage() {
       <Paper sx={{ width: "100%", maxWidth: 420, p: 4 }}>
         <Stack spacing={3}>
           <Box>
-            <Typography variant="h4">Вход</Typography>
-            <Typography color="text.secondary">Защищённая панель Demand Gen Uploader</Typography>
+            <Typography variant="h4">{t("ui.07205a06c3")}</Typography>
+            <Typography color="text.secondary">{t("ui.3813dfb6cc")}</Typography>
           </Box>
           {mutation.error && <Alert severity="error">{mutation.error.message}</Alert>}
           <Stack component="form" spacing={2} onSubmit={handleSubmit((values) => mutation.mutate(values))}>
             <TextField
-              label="Логин"
+              label={t("ui.e2d97c93ec")}
               autoComplete="username"
               error={Boolean(errors.username)}
               helperText={errors.username?.message}
               {...register("username")}
             />
             <TextField
-              label="Пароль"
+              label={t("ui.14f7c63cc1")}
               type="password"
               autoComplete="current-password"
               error={Boolean(errors.password)}
@@ -56,8 +57,7 @@ export function LoginPage() {
               {...register("password")}
             />
             <Button type="submit" variant="contained" size="large" startIcon={<LoginIcon />} disabled={mutation.isPending}>
-              Войти
-            </Button>
+              {t("ui.939e95a11d")}</Button>
           </Stack>
         </Stack>
       </Paper>

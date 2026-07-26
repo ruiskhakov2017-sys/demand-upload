@@ -4,17 +4,17 @@ export type ThemeName = "light" | "dark" | "warm" | "ocean" | "forest" | "lavend
 
 export type ThemeChoice = {
   name: ThemeName;
-  label: string;
+  labelKey: string;
   preview: [string, string, string];
 };
 
 export const themeChoices: ThemeChoice[] = [
-  { name: "light", label: "Светлая", preview: ["#f6f8fb", "#ffffff", "#1f6feb"] },
-  { name: "dark", label: "Тёмная", preview: ["#111315", "#1b1e21", "#7db4ff"] },
-  { name: "warm", label: "Тёплая", preview: ["#f4ede2", "#fffaf3", "#8a4f32"] },
-  { name: "ocean", label: "Океан", preview: ["#edf4f7", "#ffffff", "#176b87"] },
-  { name: "forest", label: "Лес", preview: ["#eef2ed", "#fbfdfb", "#2f6b48"] },
-  { name: "lavender", label: "Лаванда", preview: ["#f2f0f5", "#fdfcff", "#685b86"] }
+  { name: "light", labelKey: "ui.8080010c5e", preview: ["#f6f8fb", "#ffffff", "#1f6feb"] },
+  { name: "dark", labelKey: "ui.bd16b23470", preview: ["#111315", "#1b1e21", "#7db4ff"] },
+  { name: "warm", labelKey: "ui.40c9e14f62", preview: ["#f4ede2", "#fffaf3", "#8a4f32"] },
+  { name: "ocean", labelKey: "ui.fa58852bac", preview: ["#edf4f7", "#ffffff", "#176b87"] },
+  { name: "forest", labelKey: "ui.b6cdac5a60", preview: ["#eef2ed", "#fbfdfb", "#2f6b48"] },
+  { name: "lavender", labelKey: "ui.f03361f0b4", preview: ["#f2f0f5", "#fdfcff", "#685b86"] }
 ];
 
 const palettes: Record<ThemeName, ThemeOptions["palette"]> = {

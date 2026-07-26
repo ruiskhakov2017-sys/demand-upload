@@ -1,3 +1,5 @@
+import { t } from "../i18n";
+
 export type User = {
   id: string;
   username: string;
@@ -382,7 +384,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
   const response = await fetch(`/api${path}`, { ...init, headers, credentials: "include" });
   if (!response.ok) {
-    let message = `Ошибка ${response.status}`;
+    let message = t("api.errorStatus", { status: response.status });
     try {
       const data = await response.json();
       message = typeof data.detail === "string" ? data.detail : JSON.stringify(data.detail || data);

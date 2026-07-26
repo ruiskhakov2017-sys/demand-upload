@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { api, setCsrfToken } from "../api/client";
+import { t } from "../i18n";
 
 const schema = z.object({
   username: z.string().min(3),
@@ -42,15 +43,14 @@ export function SetupPage() {
         <Stack spacing={3}>
           <Box>
             <AdminPanelSettingsIcon color="primary" />
-            <Typography variant="h4">Первичная настройка</Typography>
+            <Typography variant="h4">{t("ui.079da89a50")}</Typography>
             <Typography color="text.secondary">
-              Создайте первого администратора панели. После этого setup будет закрыт.
-            </Typography>
+              {t("ui.f60f6f7747")}</Typography>
           </Box>
           {mutation.error && <Alert severity="error">{mutation.error.message}</Alert>}
           <Stack component="form" spacing={2} onSubmit={handleSubmit((values) => mutation.mutate(values))}>
             <TextField
-              label="Логин"
+              label={t("ui.e2d97c93ec")}
               autoComplete="username"
               error={Boolean(errors.username)}
               helperText={errors.username?.message}
@@ -64,14 +64,14 @@ export function SetupPage() {
               {...register("email")}
             />
             <TextField
-              label="Пароль"
+              label={t("ui.14f7c63cc1")}
               type="password"
               autoComplete="new-password"
               error={Boolean(errors.password)}
-              helperText={errors.password?.message || "Минимум 12 символов"}
+              helperText={errors.password?.message || t("ui.e5a1c3460c")}
               {...register("password")}
             />
-            <TextField label="Setup token" type="password" {...register("setup_token")} />
+            <TextField label={t("field.setupToken")} type="password" {...register("setup_token")} />
             <Button
               type="submit"
               variant="contained"
@@ -79,12 +79,10 @@ export function SetupPage() {
               startIcon={<AdminPanelSettingsIcon />}
               disabled={mutation.isPending}
             >
-              Создать администратора
-            </Button>
+              {t("ui.3ac094f23d")}</Button>
           </Stack>
         </Stack>
       </Paper>
     </Box>
   );
 }
-

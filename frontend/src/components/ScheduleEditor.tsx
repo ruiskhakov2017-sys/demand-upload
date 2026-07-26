@@ -29,6 +29,7 @@ import {
   SchedulePreview
 } from "../api/client";
 import { StatusBadge } from "./StatusBadge";
+import { formatNumber, localeTag, t } from "../i18n";
 
 type ManualRun = {
   account_test_bundle_id: string;
@@ -119,7 +120,7 @@ export function ScheduleEditor({
   const set = <K extends keyof ScheduleDraft>(key: K, value: ScheduleDraft[K]) =>
     setDraft((current) => ({ ...current, [key]: value }));
 
-  if (!batch) return <Alert severity="info">Сначала сформируйте Campaign matrix.</Alert>;
+  if (!batch) return <Alert severity="info">{t("ui.259dd04093")}</Alert>;
 
   const toggleSelected = (id: string) =>
     setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -166,7 +167,7 @@ export function ScheduleEditor({
       {scheduleQuery.data && (
         <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap", alignItems: "center" }}>
           <StatusBadge value={scheduleQuery.data.status} />
-          <Typography variant="body2">Версия {scheduleQuery.data.version_number}</Typography>
+          <Typography variant="body2">{t("ui.97c248cbe0")}{" "}{scheduleQuery.data.version_number}</Typography>
         </Stack>
       )}
       <ToggleButtonGroup
@@ -176,17 +177,17 @@ export function ScheduleEditor({
         onChange={(_, value) => value && set("mode", value)}
         sx={{ flexWrap: "wrap" }}
       >
-        <ToggleButton value="IMMEDIATE">Создать сразу</ToggleButton>
-        <ToggleButton value="EVEN">Равномерно</ToggleButton>
-        <ToggleButton value="WAVES">Ступенчато</ToggleButton>
-        <ToggleButton value="MANUAL">Вручную</ToggleButton>
+        <ToggleButton value="IMMEDIATE">{t("ui.b279f707db")}</ToggleButton>
+        <ToggleButton value="EVEN">{t("ui.91bb2ac541")}</ToggleButton>
+        <ToggleButton value="WAVES">{t("ui.1d39173cf8")}</ToggleButton>
+        <ToggleButton value="MANUAL">{t("ui.5ec7b0f52b")}</ToggleButton>
       </ToggleButtonGroup>
 
       <Grid container spacing={2}>
         <Grid item xs={12} sm={6} md={3}>
           <TextField
             fullWidth
-            label="Часовой пояс"
+            label={t("ui.47947a0c46")}
             value={draft.time_zone}
             onChange={(event) => set("time_zone", event.target.value)}
           />
@@ -197,7 +198,7 @@ export function ScheduleEditor({
               <TextField
                 fullWidth
                 type="datetime-local"
-                label="Начало"
+                label={t("ui.cb26bdc6c6")}
                 InputLabelProps={{ shrink: true }}
                 value={draft.start_local}
                 onChange={(event) => set("start_local", event.target.value)}
@@ -207,7 +208,7 @@ export function ScheduleEditor({
               <TextField
                 fullWidth
                 type="datetime-local"
-                label="Окончание"
+                label={t("ui.ec5bfc700b")}
                 InputLabelProps={{ shrink: true }}
                 value={draft.end_local}
                 onChange={(event) => set("end_local", event.target.value)}
@@ -219,7 +220,7 @@ export function ScheduleEditor({
           <TextField
             fullWidth
             type="number"
-            label="Аккаунтов в час"
+            label={t("ui.2c2154e5df")}
             value={draft.max_accounts_per_hour}
             inputProps={{ min: 1 }}
             onChange={(event) => set("max_accounts_per_hour", positive(event.target.value, 1))}
@@ -229,7 +230,7 @@ export function ScheduleEditor({
           <TextField
             fullWidth
             type="number"
-            label="Аккаунтов в сутки"
+            label={t("ui.ed54bc88e3")}
             value={draft.max_accounts_per_day}
             inputProps={{ min: 1 }}
             onChange={(event) => set("max_accounts_per_day", positive(event.target.value, 1))}
@@ -239,7 +240,7 @@ export function ScheduleEditor({
           <TextField
             fullWidth
             type="number"
-            label="Одновременно"
+            label={t("ui.957ad6e34d")}
             value={draft.max_parallel}
             inputProps={{ min: 1, max: 50 }}
             onChange={(event) => set("max_parallel", positive(event.target.value, 1))}
@@ -249,7 +250,7 @@ export function ScheduleEditor({
           <TextField
             fullWidth
             type="number"
-            label="Стоп после ошибок"
+            label={t("ui.83e452e520")}
             value={draft.circuit_breaker_threshold}
             inputProps={{ min: 1 }}
             onChange={(event) => set("circuit_breaker_threshold", positive(event.target.value, 1))}
@@ -259,16 +260,16 @@ export function ScheduleEditor({
 
       {draft.mode === "WAVES" && (
         <Grid container spacing={2}>
-          <Grid item xs={6} md={2}><NumberField label="Первая волна" value={draft.first_wave_size} onChange={(value) => set("first_wave_size", value)} /></Grid>
-          <Grid item xs={6} md={2}><NumberField label="Первая волна, мин." value={draft.first_wave_spread_minutes} onChange={(value) => set("first_wave_spread_minutes", value)} allowZero /></Grid>
-          <Grid item xs={6} md={2}><NumberField label="Наблюдение, мин." value={draft.observation_minutes} onChange={(value) => set("observation_minutes", value)} allowZero /></Grid>
-          <Grid item xs={6} md={2}><NumberField label="Следующие волны" value={draft.next_wave_size} onChange={(value) => set("next_wave_size", value)} /></Grid>
-          <Grid item xs={6} md={2}><NumberField label="Волна, мин." value={draft.next_wave_spread_minutes} onChange={(value) => set("next_wave_spread_minutes", value)} allowZero /></Grid>
-          <Grid item xs={6} md={2}><NumberField label="Между волнами, мин." value={draft.between_waves_minutes} onChange={(value) => set("between_waves_minutes", value)} allowZero /></Grid>
+          <Grid item xs={6} md={2}><NumberField label={t("ui.2404e0c60b")} value={draft.first_wave_size} onChange={(value) => set("first_wave_size", value)} /></Grid>
+          <Grid item xs={6} md={2}><NumberField label={t("ui.78b185537f")} value={draft.first_wave_spread_minutes} onChange={(value) => set("first_wave_spread_minutes", value)} allowZero /></Grid>
+          <Grid item xs={6} md={2}><NumberField label={t("ui.32c0831f0f")} value={draft.observation_minutes} onChange={(value) => set("observation_minutes", value)} allowZero /></Grid>
+          <Grid item xs={6} md={2}><NumberField label={t("ui.acaac67857")} value={draft.next_wave_size} onChange={(value) => set("next_wave_size", value)} /></Grid>
+          <Grid item xs={6} md={2}><NumberField label={t("ui.7975d889e2")} value={draft.next_wave_spread_minutes} onChange={(value) => set("next_wave_spread_minutes", value)} allowZero /></Grid>
+          <Grid item xs={6} md={2}><NumberField label={t("ui.3b57a4df79")} value={draft.between_waves_minutes} onChange={(value) => set("between_waves_minutes", value)} allowZero /></Grid>
           <Grid item xs={12}>
             <FormControlLabel
               control={<Checkbox checked={draft.manual_approval} onChange={(event) => set("manual_approval", event.target.checked)} />}
-              label="Подтверждать следующую волну вручную"
+              label={t("ui.1c6755c2f2")}
             />
           </Grid>
         </Grid>
@@ -280,39 +281,36 @@ export function ScheduleEditor({
             <TextField
               size="small"
               type="datetime-local"
-              label="Время выбранных"
+              label={t("ui.b0c03bea7b")}
               InputLabelProps={{ shrink: true }}
               value={bulkTime}
               onChange={(event) => setBulkTime(event.target.value)}
             />
             <Button variant="outlined" onClick={() => updateManual(selected, (row) => ({ ...row, scheduled_local: bulkTime }))}>
-              Установить
-            </Button>
-            <Button variant="outlined" onClick={evenlyDistributeSelected}>Распределить</Button>
+              {t("ui.ce88d35b18")}</Button>
+            <Button variant="outlined" onClick={evenlyDistributeSelected}>{t("ui.af7b241de2")}</Button>
             <TextField
               size="small"
               type="number"
-              label="Сдвиг, мин."
+              label={t("ui.2d4942c280")}
               value={shiftMinutes}
               onChange={(event) => setShiftMinutes(Number(event.target.value) || 0)}
               sx={{ width: 140 }}
             />
-            <Button variant="outlined" onClick={shiftSelected}>Сдвинуть</Button>
+            <Button variant="outlined" onClick={shiftSelected}>{t("ui.8b4baf0614")}</Button>
             <TextField
               size="small"
               type="number"
-              label="Волна"
+              label={t("ui.cdec369bf5")}
               value={targetWave}
               inputProps={{ min: 1 }}
               onChange={(event) => setTargetWave(positive(event.target.value, 1))}
               sx={{ width: 110 }}
             />
             <Button variant="outlined" onClick={() => updateManual(selected, (row) => ({ ...row, wave_number: targetWave }))}>
-              Перенести
-            </Button>
+              {t("ui.081b1d81c6")}</Button>
             <Button color="inherit" onClick={() => updateManual(selected, (row) => ({ ...row, scheduled_local: null }))}>
-              Очистить
-            </Button>
+              {t("ui.98b2073ed1")}</Button>
           </Stack>
         </Stack>
       )}
@@ -323,11 +321,11 @@ export function ScheduleEditor({
             <TableRow>
               {draft.mode === "MANUAL" && <TableCell padding="checkbox" />}
               <TableCell padding="checkbox" />
-              <TableCell>Аккаунт</TableCell>
+              <TableCell>{t("ui.5b16fcdd97")}</TableCell>
               <TableCell>Customer ID</TableCell>
-              <TableCell>Кампаний</TableCell>
-              {draft.mode === "MANUAL" && <TableCell>Плановое время</TableCell>}
-              {draft.mode === "MANUAL" && <TableCell>Волна</TableCell>}
+              <TableCell>{t("ui.cf645a44e5")}</TableCell>
+              {draft.mode === "MANUAL" && <TableCell>{t("ui.70c8af6237")}</TableCell>}
+              {draft.mode === "MANUAL" && <TableCell>{t("ui.cdec369bf5")}</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -387,16 +385,14 @@ export function ScheduleEditor({
           disabled={previewMutation.isPending}
           onClick={() => previewMutation.mutate()}
         >
-          Рассчитать
-        </Button>
+          {t("ui.e5ba4505fe")}</Button>
         <Button
           variant="contained"
           startIcon={<SaveOutlinedIcon />}
           disabled={!preview?.valid || createMutation.isPending}
           onClick={() => createMutation.mutate()}
         >
-          Зафиксировать расписание
-        </Button>
+          {t("ui.5104e2145b")}</Button>
       </Stack>
 
       {preview && <SchedulePreviewTable preview={preview} />}
@@ -409,12 +405,12 @@ function SchedulePreviewTable({ preview }: { preview: SchedulePreview }) {
     <Stack spacing={2}>
       <Grid container spacing={1.5}>
         {[
-          ["Аккаунтов", preview.summary.accounts],
-          ["Кампаний", preview.summary.campaigns],
-          ["Волн", preview.summary.waves],
-          ["Начало", formatDate(preview.summary.start_at, preview.time_zone)],
-          ["Окончание", formatDate(preview.summary.end_at, preview.time_zone)],
-          ["Одновременно", preview.summary.max_parallel]
+          [t("ui.9b92cdaa6e"), preview.summary.accounts],
+          [t("ui.cf645a44e5"), preview.summary.campaigns],
+          [t("ui.51fbf9617f"), preview.summary.waves],
+          [t("ui.cb26bdc6c6"), formatDate(preview.summary.start_at, preview.time_zone)],
+          [t("ui.ec5bfc700b"), formatDate(preview.summary.end_at, preview.time_zone)],
+          [t("ui.957ad6e34d"), preview.summary.max_parallel]
         ].map(([label, value]) => (
           <Grid item xs={6} md={2} key={String(label)}>
             <Box sx={{ borderTop: 2, borderColor: "primary.main", pt: 1 }}>
@@ -425,17 +421,17 @@ function SchedulePreviewTable({ preview }: { preview: SchedulePreview }) {
         ))}
       </Grid>
       {preview.warnings.map((item) => <Alert key={`${item.code}-${item.message}`} severity="warning">{item.message}</Alert>)}
-      {!preview.valid && <Alert severity="error">Есть аккаунты без назначенного времени.</Alert>}
+      {!preview.valid && <Alert severity="error">{t("ui.9607890316")}</Alert>}
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Волна</TableCell>
-              <TableCell>Плановое время</TableCell>
-              <TableCell>Аккаунт</TableCell>
+              <TableCell>{t("ui.cdec369bf5")}</TableCell>
+              <TableCell>{t("ui.70c8af6237")}</TableCell>
+              <TableCell>{t("ui.5b16fcdd97")}</TableCell>
               <TableCell>Customer ID</TableCell>
-              <TableCell>Кампаний</TableCell>
-              <TableCell>Бюджет</TableCell>
+              <TableCell>{t("ui.cf645a44e5")}</TableCell>
+              <TableCell>{t("ui.0773ed4942")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -446,7 +442,7 @@ function SchedulePreviewTable({ preview }: { preview: SchedulePreview }) {
                 <TableCell>{run.account_name}</TableCell>
                 <TableCell sx={{ fontFamily: "monospace" }}>{run.customer_id}</TableCell>
                 <TableCell>{run.campaigns_count}</TableCell>
-                <TableCell>{(run.budget_micros / 1_000_000).toLocaleString("ru-RU")}</TableCell>
+                <TableCell>{formatNumber(run.budget_micros / 1_000_000)}</TableCell>
               </TableRow>
             ))}
           </TableBody>
@@ -560,7 +556,7 @@ function positive(value: string, minimum: number) {
 
 function formatDate(value: unknown, timeZone: string) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("ru-RU", {
+  return new Intl.DateTimeFormat(localeTag(), {
     dateStyle: "short",
     timeStyle: "medium",
     timeZone

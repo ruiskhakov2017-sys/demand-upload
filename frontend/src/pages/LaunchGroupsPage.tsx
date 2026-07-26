@@ -27,6 +27,7 @@ import { useMemo, useState } from "react";
 import { api, CampaignInstance, LaunchGroup } from "../api/client";
 import type { Navigate } from "../app/App";
 import { StatusBadge } from "../components/StatusBadge";
+import { formatDate, formatNumber, t } from "../i18n";
 
 export function LaunchGroupsPage({ navigate, groupId }: { navigate: Navigate; groupId?: string }) {
   if (groupId) return <LaunchGroupDetail groupId={groupId} navigate={navigate} />;
@@ -53,12 +54,11 @@ function LaunchGroupList({ navigate }: { navigate: Navigate }) {
     <Stack spacing={3}>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
         <Box>
-          <Typography variant="h4">Группы запуска</Typography>
-          <Typography color="text.secondary">Копии сгруппированы по рекламному аккаунту.</Typography>
+          <Typography variant="h4">{t("ui.279f79d8f0")}</Typography>
+          <Typography color="text.secondary">{t("ui.44e2df9658")}</Typography>
         </Box>
         <Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => groups.refetch()}>
-          Обновить
-        </Button>
+          {t("ui.c2f668e54f")}</Button>
       </Box>
       {groups.error && <Alert severity="error">{groups.error.message}</Alert>}
       {grouped.map(([batchId, rows]) => (
@@ -70,21 +70,21 @@ function LaunchGroupList({ navigate }: { navigate: Navigate }) {
             </Box>
             <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>
               <StatusBadge value={rows[0].execution_mode || "SIMULATION"} />
-              <Chip size="small" label={`${rows.length} аккаунтов`} />
-              <Chip size="small" label={`${rows.reduce((sum, item) => sum + item.campaigns_count, 0)} кампаний`} />
+              <Chip size="small" label={t("common.accountCount", { count: rows.length })} />
+              <Chip size="small" label={t("common.campaignCount", { count: rows.reduce((sum, item) => sum + item.campaigns_count, 0) })} />
             </Stack>
           </Box>
           <Box sx={{ overflowX: "auto", borderTop: 1, borderColor: "divider" }}>
             <Table size="small">
               <TableHead>
                 <TableRow>
-                  <TableCell>Аккаунт</TableCell>
+                  <TableCell>{t("ui.5b16fcdd97")}</TableCell>
                   <TableCell>Customer ID</TableCell>
-                  <TableCell>Валюта / TZ</TableCell>
-                  <TableCell>Кампаний</TableCell>
-                  <TableCell>Расход</TableCell>
-                  <TableCell>Конверсии</TableCell>
-                  <TableCell>Статус</TableCell>
+                  <TableCell>{t("ui.8fd7886949")}</TableCell>
+                  <TableCell>{t("ui.cf645a44e5")}</TableCell>
+                  <TableCell>{t("ui.a470ac24e2")}</TableCell>
+                  <TableCell>{t("ui.4150f46b4a")}</TableCell>
+                  <TableCell>{t("ui.f7f293b5c5")}</TableCell>
                   <TableCell />
                 </TableRow>
               </TableHead>
@@ -98,7 +98,7 @@ function LaunchGroupList({ navigate }: { navigate: Navigate }) {
                     <TableCell>{formatMoney(item.total_cost_micros || 0, item.currency_code)}</TableCell>
                     <TableCell>{item.total_conversions || 0}</TableCell>
                     <TableCell><StatusBadge value={item.status} /></TableCell>
-                    <TableCell align="right"><Button size="small" onClick={() => navigate(`/launch-groups/${item.id}`)}>Открыть</Button></TableCell>
+                    <TableCell align="right"><Button size="small" onClick={() => navigate(`/launch-groups/${item.id}`)}>{t("ui.1259571a15")}</Button></TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -108,7 +108,7 @@ function LaunchGroupList({ navigate }: { navigate: Navigate }) {
       ))}
       {!grouped.length && !groups.isLoading && (
         <Paper variant="outlined" sx={{ p: 3 }}>
-          <Typography color="text.secondary">Группы запуска появятся после генерации матрицы кампаний.</Typography>
+          <Typography color="text.secondary">{t("ui.83de09fcf2")}</Typography>
         </Paper>
       )}
     </Stack>
@@ -158,7 +158,7 @@ function LaunchGroupDetail({ groupId, navigate }: { groupId: string; navigate: N
     <Stack spacing={3}>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
         <Box>
-          <Button size="small" onClick={() => navigate("/launch-groups")}>Назад к группам</Button>
+          <Button size="small" onClick={() => navigate("/launch-groups")}>{t("ui.f9e6974ad8")}</Button>
           <Typography variant="h4">{data.account_name}</Typography>
           <Typography color="text.secondary">{data.customer_id} · {data.currency_code} · {data.time_zone}</Typography>
         </Box>
@@ -166,38 +166,37 @@ function LaunchGroupDetail({ groupId, navigate }: { groupId: string; navigate: N
           <StatusBadge value={data.execution_mode || "SIMULATION"} />
           <StatusBadge value={data.status} />
           <Button variant="outlined" startIcon={<RefreshIcon />} disabled={busy} onClick={() => sync.mutate()}>
-            Обновить метрики
-          </Button>
+            {t("ui.d463f269f8")}</Button>
         </Stack>
       </Box>
       {data.execution_mode === "SIMULATION" && (
-        <Alert severity="info">TEST / MOCK: метрики и статусы локальные; Google Ads API не вызывается.</Alert>
+        <Alert severity="info">{t("ui.ed16f61cf2")}</Alert>
       )}
       {statusAction.error && <Alert severity="error">{statusAction.error.message}</Alert>}
       {sync.error && <Alert severity="error">{sync.error.message}</Alert>}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "repeat(2, 1fr)", md: "repeat(5, minmax(0, 1fr))" }, gap: 1, borderBlock: 1, borderColor: "divider", py: 2 }}>
-        <Metric label="Кампаний" value={instances.length} />
-        <Metric label="Расход" value={formatMoney(sum(instances, "cost_micros"), data.currency_code)} />
-        <Metric label="Конверсии" value={sum(instances, "conversions")} />
-        <Metric label="Клики" value={sum(instances, "clicks")} />
-        <Metric label="Показы" value={sum(instances, "impressions")} />
+        <Metric label={t("ui.cf645a44e5")} value={instances.length} />
+        <Metric label={t("ui.a470ac24e2")} value={formatMoney(sum(instances, "cost_micros"), data.currency_code)} />
+        <Metric label={t("ui.4150f46b4a")} value={sum(instances, "conversions")} />
+        <Metric label={t("ui.07e2b83b27")} value={sum(instances, "clicks")} />
+        <Metric label={t("ui.8d112fb582")} value={sum(instances, "impressions")} />
       </Box>
       <Tabs value={tab} onChange={(_, value) => setTab(value)} variant="scrollable">
-        <Tab value="campaigns" label="Кампании" />
-        <Tab value="history" label="История действий" />
+        <Tab value="campaigns" label={t("ui.4ad1aa5f4f")} />
+        <Tab value="history" label={t("ui.469a355947")} />
       </Tabs>
       {tab === "campaigns" && (
         <Stack spacing={2}>
           <Stack direction={{ xs: "column", lg: "row" }} spacing={1}>
-            <Button variant="contained" startIcon={<PlayCircleOutlineIcon />} disabled={busy || !selected.length} onClick={() => statusAction.mutate({ action: "ENABLE", ids: selected })}>Включить выбранные</Button>
-            <Button variant="outlined" startIcon={<PauseCircleOutlineIcon />} disabled={busy || !selected.length} onClick={() => statusAction.mutate({ action: "PAUSE", ids: selected })}>Пауза выбранных</Button>
-            <Button variant="outlined" startIcon={<PlayCircleOutlineIcon />} disabled={busy || !instances.length} onClick={() => statusAction.mutate({ action: "ENABLE", ids: [] })}>Включить все</Button>
-            <Button variant="outlined" color="warning" startIcon={<PauseCircleOutlineIcon />} disabled={busy || !instances.length} onClick={() => statusAction.mutate({ action: "PAUSE", ids: [] })}>Пауза всех</Button>
+            <Button variant="contained" startIcon={<PlayCircleOutlineIcon />} disabled={busy || !selected.length} onClick={() => statusAction.mutate({ action: "ENABLE", ids: selected })}>{t("ui.c0d1fd05fe")}</Button>
+            <Button variant="outlined" startIcon={<PauseCircleOutlineIcon />} disabled={busy || !selected.length} onClick={() => statusAction.mutate({ action: "PAUSE", ids: selected })}>{t("ui.0bc745cc5c")}</Button>
+            <Button variant="outlined" startIcon={<PlayCircleOutlineIcon />} disabled={busy || !instances.length} onClick={() => statusAction.mutate({ action: "ENABLE", ids: [] })}>{t("ui.fbe9e439cb")}</Button>
+            <Button variant="outlined" color="warning" startIcon={<PauseCircleOutlineIcon />} disabled={busy || !instances.length} onClick={() => statusAction.mutate({ action: "PAUSE", ids: [] })}>{t("ui.2bdcc8f626")}</Button>
           </Stack>
           <TextField
             type="password"
             size="small"
-            label="Пароль при превышении лимита включения"
+            label={t("ui.a7c6c9ab84")}
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             sx={{ maxWidth: 420 }}
@@ -218,18 +217,18 @@ function CampaignTable(props: { instances: CampaignInstance[]; currency: string;
         <TableHead>
           <TableRow>
             <TableCell padding="checkbox"><Checkbox checked={allSelected} onChange={(event) => props.setSelected(event.target.checked ? props.instances.map((item) => item.id) : [])} /></TableCell>
-            <TableCell>Campaign</TableCell>
+            <TableCell>{t("table.campaign")}</TableCell>
             <TableCell>Google ID</TableCell>
-            <TableCell>Бюджет</TableCell>
-            <TableCell>Статус</TableCell>
-            <TableCell>Показы</TableCell>
-            <TableCell>Клики</TableCell>
+            <TableCell>{t("ui.0773ed4942")}</TableCell>
+            <TableCell>{t("ui.f7f293b5c5")}</TableCell>
+            <TableCell>{t("ui.8d112fb582")}</TableCell>
+            <TableCell>{t("ui.07e2b83b27")}</TableCell>
             <TableCell>CTR</TableCell>
-            <TableCell>Расход</TableCell>
-            <TableCell>Конверсии</TableCell>
+            <TableCell>{t("ui.a470ac24e2")}</TableCell>
+            <TableCell>{t("ui.4150f46b4a")}</TableCell>
             <TableCell>CPA</TableCell>
             <TableCell>Final URL</TableCell>
-            <TableCell>Policy</TableCell>
+            <TableCell>{t("table.policy")}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -273,12 +272,12 @@ function ActionHistory({ history }: { history?: Record<string, any> }) {
     <Box>
       {actions.map((item: any) => (
         <Box key={item.id} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "minmax(0, 1fr) 130px 190px" }, gap: 2, py: 1.25, borderBottom: 1, borderColor: "divider" }}>
-          <Typography sx={{ overflowWrap: "anywhere" }}>{item.action} · {item.selected_instance_ids.length} кампаний</Typography>
+          <Typography sx={{ overflowWrap: "anywhere" }}>{item.action} · {item.selected_instance_ids.length} {t("ui.d0cba44872")}</Typography>
           <StatusBadge value={item.status} />
-          <Typography color="text.secondary">{new Date(item.created_at).toLocaleString("ru-RU")}</Typography>
+          <Typography color="text.secondary">{formatDate(item.created_at)}</Typography>
         </Box>
       ))}
-      {!actions.length && <Typography color="text.secondary">Ручных действий пока нет.</Typography>}
+      {!actions.length && <Typography color="text.secondary">{t("ui.bcb249c512")}</Typography>}
     </Box>
   );
 }
@@ -292,7 +291,7 @@ function sum(instances: CampaignInstance[], field: string) {
 }
 
 function formatMoney(micros: number, currency: string) {
-  return `${(Number(micros || 0) / 1_000_000).toLocaleString("ru-RU", { maximumFractionDigits: 2 })} ${currency}`;
+  return `${formatNumber(Number(micros || 0) / 1_000_000, { maximumFractionDigits: 2 })} ${currency}`;
 }
 
 function campaignGoogleId(resourceNames: string[]) {

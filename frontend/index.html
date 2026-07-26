@@ -22,6 +22,11 @@
         } catch {}
         document.documentElement.dataset.theme = selected;
         document.documentElement.style.backgroundColor = backgrounds[selected];
+        try {
+          document.documentElement.lang = localStorage.getItem("dgu.locale") === "en" ? "en" : "ru";
+        } catch {
+          document.documentElement.lang = "ru";
+        }
       })();
     </script>
   </head>

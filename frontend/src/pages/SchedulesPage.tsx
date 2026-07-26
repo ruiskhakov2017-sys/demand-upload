@@ -34,6 +34,7 @@ import { useEffect, useState } from "react";
 import { api, DeploymentSchedule, ScheduleRun } from "../api/client";
 import type { Navigate } from "../app/App";
 import { StatusBadge } from "../components/StatusBadge";
+import { localeTag, t } from "../i18n";
 
 export function SchedulesPage({
   scheduleId,
@@ -53,20 +54,20 @@ export function SchedulesPage({
   return (
     <Stack spacing={2.5}>
       <Box>
-        <Typography variant="h4">Расписание</Typography>
-        <Typography color="text.secondary">Отложенные и ступенчатые запуски по дочерним аккаунтам</Typography>
+        <Typography variant="h4">{t("ui.f04bd0a064")}</Typography>
+        <Typography color="text.secondary">{t("ui.9f634db44e")}</Typography>
       </Box>
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", bgcolor: "background.paper" }}>
         <Table size="small">
           <TableHead>
             <TableRow>
-              <TableCell>Статус</TableCell>
-              <TableCell>Режим</TableCell>
-              <TableCell>Версия</TableCell>
-              <TableCell>Прогресс</TableCell>
-              <TableCell>Текущая волна</TableCell>
-              <TableCell>Следующий аккаунт</TableCell>
-              <TableCell>Следующий запуск</TableCell>
+              <TableCell>{t("ui.f7f293b5c5")}</TableCell>
+              <TableCell>{t("ui.ff0fbd56f4")}</TableCell>
+              <TableCell>{t("ui.97c248cbe0")}</TableCell>
+              <TableCell>{t("ui.88d59af4fe")}</TableCell>
+              <TableCell>{t("ui.2e746e5dbe")}</TableCell>
+              <TableCell>{t("ui.2cb6362fab")}</TableCell>
+              <TableCell>{t("ui.6631c04a8e")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -82,14 +83,14 @@ export function SchedulesPage({
                 <TableCell><StatusBadge value={schedule.status} /></TableCell>
                 <TableCell>{modeLabel(schedule.mode)}</TableCell>
                 <TableCell>v{schedule.version_number}</TableCell>
-                <TableCell>{schedule.progress.completed_accounts} из {schedule.progress.total_accounts}</TableCell>
+                <TableCell>{schedule.progress.completed_accounts} {t("ui.beed168817")}{" "}{schedule.progress.total_accounts}</TableCell>
                 <TableCell>{schedule.progress.current_wave || "—"}</TableCell>
                 <TableCell>{schedule.progress.next_account || "—"}</TableCell>
                 <TableCell>{formatDate(schedule.progress.next_run_at, schedule.time_zone)}</TableCell>
               </TableRow>
             ))}
             {!list.data?.length && (
-              <TableRow><TableCell colSpan={7}>Расписаний пока нет.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={7}>{t("ui.e9238dc0cd")}</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
@@ -120,7 +121,7 @@ function ScheduleDetails({ scheduleId, navigate }: { scheduleId: string; navigat
   });
   if (schedule.isLoading) return <CircularProgress />;
   if (schedule.error) return <Alert severity="error">{schedule.error.message}</Alert>;
-  if (!schedule.data) return <Alert severity="error">Расписание не найдено</Alert>;
+  if (!schedule.data) return <Alert severity="error">{t("ui.c338f32ec6")}</Alert>;
   const data = schedule.data;
   const progress = data.progress.total_accounts
     ? data.progress.completed_accounts / data.progress.total_accounts * 100
@@ -142,9 +143,9 @@ function ScheduleDetails({ scheduleId, navigate }: { scheduleId: string; navigat
         spacing={1.5}
         alignItems={{ xs: "flex-start", sm: "center" }}
       >
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/schedules")}>Назад</Button>
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/schedules")}>{t("ui.f6dab074d7")}</Button>
         <Box sx={{ minWidth: 0 }}>
-          <Typography variant="h4">Расписание v{data.version_number}</Typography>
+          <Typography variant="h4">{t("ui.5e8cb4a28a")}{data.version_number}</Typography>
           <Typography variant="body2" color="text.secondary" sx={{ overflowWrap: "anywhere" }}>
             {modeLabel(data.mode)} · {data.time_zone} · {data.fingerprint}
           </Typography>
@@ -169,19 +170,19 @@ function ScheduleDetails({ scheduleId, navigate }: { scheduleId: string; navigat
         }}
       >
         <StatusBadge value={data.status} />
-        <Chip label={`Волна ${data.progress.current_wave || "—"}`} />
-        <Chip label={`${data.progress.completed_accounts} из ${data.progress.total_accounts} аккаунтов`} />
-        <Chip label={`${data.progress.created_campaigns} кампаний создано`} />
+        <Chip label={t("schedule.wave", { number: data.progress.current_wave || "—" })} />
+        <Chip label={t("schedule.accountProgress", { completed: data.progress.completed_accounts, total: data.progress.total_accounts })} />
+        <Chip label={t("schedule.campaignsCreated", { count: data.progress.created_campaigns })} />
       </Box>
       <LinearProgress variant="determinate" value={progress} sx={{ height: 8 }} />
 
       <Grid container spacing={1.5}>
-        <Metric label="Успешно" value={data.progress.successful_accounts} />
-        <Metric label="Ожидают" value={data.progress.waiting_accounts} />
-        <Metric label="С ошибкой" value={data.progress.failed_accounts} />
-        <Metric label="Следующий" value={data.progress.next_account || "—"} />
-        <Metric label="Время запуска" value={formatDate(data.progress.next_run_at, data.time_zone)} />
-        <Metric label="До запуска" value={countdown(data.progress.next_run_at, now)} />
+        <Metric label={t("ui.503d1c9809")} value={data.progress.successful_accounts} />
+        <Metric label={t("ui.9cf1314860")} value={data.progress.waiting_accounts} />
+        <Metric label={t("ui.6193b4177e")} value={data.progress.failed_accounts} />
+        <Metric label={t("ui.e9c094d2a9")} value={data.progress.next_account || "—"} />
+        <Metric label={t("ui.75e96e0158")} value={formatDate(data.progress.next_run_at, data.time_zone)} />
+        <Metric label={t("ui.564f17bf9d")} value={countdown(data.progress.next_run_at, now)} />
       </Grid>
 
       <Box sx={actionGridSx}>
@@ -189,48 +190,43 @@ function ScheduleDetails({ scheduleId, navigate }: { scheduleId: string; navigat
           variant="outlined"
           startIcon={<PauseCircleOutlineIcon />}
           disabled={action.isPending || !canPause}
-          onClick={() => dangerous("Приостановить расписание", { action: "PAUSE" })}
+          onClick={() => dangerous(t("ui.eb3dc583a4"), { action: "PAUSE" })}
         >
-          Приостановить
-        </Button>
+          {t("ui.4205b1307e")}</Button>
         <Button
           variant="outlined"
           startIcon={<PlayCircleOutlineIcon />}
           disabled={action.isPending || !["PAUSED", "PLANNED", "OBSERVATION"].includes(data.status)}
-          onClick={() => dangerous("Продолжить последовательно", { action: "RESUME", recovery_strategy: "SEQUENTIAL" })}
+          onClick={() => dangerous(t("ui.9534d9a281"), { action: "RESUME", recovery_strategy: "SEQUENTIAL" })}
         >
-          Продолжить
-        </Button>
+          {t("ui.3f75368ab9")}</Button>
         <Button
           variant="outlined"
           startIcon={<CheckCircleOutlineIcon />}
           disabled={action.isPending || data.status !== "WAITING_FOR_APPROVAL"}
-          onClick={() => dangerous("Подтвердить следующую волну", { action: "APPROVE_NEXT_WAVE" })}
+          onClick={() => dangerous(t("ui.18072dd8bb"), { action: "APPROVE_NEXT_WAVE" })}
         >
-          Подтвердить волну
-        </Button>
+          {t("ui.7aac9c3a5d")}</Button>
         <Button
           variant="outlined"
           startIcon={<SkipNextOutlinedIcon />}
           disabled={action.isPending || !data.progress.next_account}
-          onClick={() => dangerous("Запустить следующий аккаунт сейчас", { action: "RUN_NEXT_NOW" })}
+          onClick={() => dangerous(t("ui.8f5a1d53e2"), { action: "RUN_NEXT_NOW" })}
         >
-          Запустить следующий
-        </Button>
+          {t("ui.91fa66f584")}</Button>
         <Button
           component="a"
           href={api.scheduleReportUrl(data.id)}
           startIcon={<DownloadOutlinedIcon />}
         >
-          Скачать отчёт
-        </Button>
+          {t("ui.023a6a1033")}</Button>
       </Box>
 
       <Box sx={actionGridSx}>
         <TextField
           size="small"
           type="number"
-          label="Сдвиг оставшихся, мин."
+          label={t("ui.85e6846a21")}
           value={shiftMinutes}
           onChange={(event) => setShiftMinutes(Number(event.target.value) || 0)}
           sx={{ width: "100%" }}
@@ -239,65 +235,60 @@ function ScheduleDetails({ scheduleId, navigate }: { scheduleId: string; navigat
           variant="outlined"
           startIcon={<ScheduleOutlinedIcon />}
           disabled={action.isPending || !shiftMinutes || !futureRuns.length}
-          onClick={() => dangerous("Создать новую версию со сдвигом", {
+          onClick={() => dangerous(t("ui.b2f89abf45"), {
             action: "RESCHEDULE_REMAINING",
             shift_minutes: shiftMinutes
           })}
         >
-          Изменить время
-        </Button>
+          {t("ui.2a139fa8d2")}</Button>
         <TextField
           select
           size="small"
-          label="Целевая волна"
+          label={t("ui.8b4beb01ee")}
           value={targetWave}
           onChange={(event) => setTargetWave(Number(event.target.value))}
           sx={{ width: "100%" }}
         >
-          {data.waves.map((wave) => <MenuItem key={wave.id} value={wave.wave_number}>Волна {wave.wave_number}</MenuItem>)}
+          {data.waves.map((wave) => <MenuItem key={wave.id} value={wave.wave_number}>{t("ui.cdec369bf5")}{" "}{wave.wave_number}</MenuItem>)}
         </TextField>
         <Button
           variant="outlined"
           startIcon={<MoveDownOutlinedIcon />}
           disabled={action.isPending || selectedFutureRuns.length !== 1 || selected.length !== 1}
-          onClick={() => dangerous("Перенести аккаунт в другую волну", {
+          onClick={() => dangerous(t("ui.82fe9be51c"), {
             action: "MOVE_ACCOUNT",
             run_ids: [selected[0]],
             target_wave_number: targetWave
           })}
         >
-          Перенести
-        </Button>
+          {t("ui.081b1d81c6")}</Button>
         <Button
           variant="outlined"
           startIcon={<ReplayOutlinedIcon />}
           disabled={action.isPending || !selectedRuns.some((item) => item.status === "FAILED")}
-          onClick={() => dangerous("Повторить выбранные после исправления", {
+          onClick={() => dangerous(t("ui.f18386eaeb"), {
             action: "RETRY",
             run_ids: selected
           })}
         >
-          Повторить
-        </Button>
+          {t("ui.9e506acb19")}</Button>
         <Button
           color="warning"
           startIcon={<CancelOutlinedIcon />}
           disabled={action.isPending || !selectedFutureRuns.length}
-          onClick={() => dangerous("Отменить выбранные аккаунты", {
+          onClick={() => dangerous(t("ui.3951de787d"), {
             action: "CANCEL_SELECTED",
             run_ids: selected
           })}
         >
-          Отменить выбранные
-        </Button>
+          {t("ui.d0dcc21973")}</Button>
         <Button
           color="error"
           startIcon={<DeleteSweepOutlinedIcon />}
           disabled={action.isPending || !futureRuns.length}
-          onClick={() => dangerous("Отменить все будущие запуски", { action: "CANCEL_FUTURE" })}
+          onClick={() => dangerous(t("ui.3cf038bddd"), { action: "CANCEL_FUTURE" })}
         >
-          Отменить будущие
-        </Button>
+          {t("ui.2a44ef6065")}</Button>
       </Box>
 
       <WaveStrip schedule={data} />
@@ -312,17 +303,17 @@ function ScheduleDetails({ scheduleId, navigate }: { scheduleId: string; navigat
                   onChange={(event) => setSelected(event.target.checked ? data.runs.map((item) => item.id) : [])}
                 />
               </TableCell>
-              <TableCell>Волна</TableCell>
-              <TableCell>Аккаунт</TableCell>
+              <TableCell>{t("ui.cdec369bf5")}</TableCell>
+              <TableCell>{t("ui.5b16fcdd97")}</TableCell>
               <TableCell>Customer ID</TableCell>
-              <TableCell>Кампаний</TableCell>
-              <TableCell>Статус</TableCell>
-              <TableCell>План</TableCell>
-              <TableCell>Фактический старт</TableCell>
-              <TableCell>Завершение</TableCell>
-              <TableCell>Попытки</TableCell>
+              <TableCell>{t("ui.cf645a44e5")}</TableCell>
+              <TableCell>{t("ui.f7f293b5c5")}</TableCell>
+              <TableCell>{t("ui.3146141c93")}</TableCell>
+              <TableCell>{t("ui.dafc83b7cf")}</TableCell>
+              <TableCell>{t("ui.be19888666")}</TableCell>
+              <TableCell>{t("ui.27ff3263db")}</TableCell>
               <TableCell>Request ID</TableCell>
-              <TableCell>Ошибка</TableCell>
+              <TableCell>{t("ui.72aecd9ad8")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -343,7 +334,7 @@ function ScheduleDetails({ scheduleId, navigate }: { scheduleId: string; navigat
 
       {data.events.length > 0 && (
         <Box sx={{ borderTop: 1, borderColor: "divider", pt: 2 }}>
-          <Typography variant="h6" sx={{ mb: 1.5 }}>История расписания</Typography>
+          <Typography variant="h6" sx={{ mb: 1.5 }}>{t("ui.55d4bd77bc")}</Typography>
           <Stack spacing={1}>
             {data.events.slice(0, 30).map((event) => (
               <Box key={String(event.id)} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "180px 1fr" }, gap: 1 }}>
@@ -396,7 +387,13 @@ function WaveStrip({ schedule }: { schedule: DeploymentSchedule }) {
           key={wave.id}
           variant={wave.wave_number === schedule.progress.current_wave ? "filled" : "outlined"}
           color={wave.status === "COMPLETED" ? "success" : wave.status === "WAITING_FOR_APPROVAL" ? "warning" : "default"}
-          label={`Волна ${wave.wave_number} · ${wave.status}${wave.observation_until ? ` · до ${formatDate(wave.observation_until, schedule.time_zone)}` : ""}`}
+          label={t("schedule.waveSummary", {
+            number: wave.wave_number,
+            status: wave.status,
+            until: wave.observation_until
+              ? t("schedule.until", { time: formatDate(wave.observation_until, schedule.time_zone) })
+              : ""
+          })}
         />
       ))}
     </Stack>
@@ -430,12 +427,12 @@ function countdown(value: string | null, now: number) {
   const hours = Math.floor(seconds % 86_400 / 3600);
   const minutes = Math.floor(seconds % 3600 / 60);
   const rest = seconds % 60;
-  return `${days ? `${days} д ` : ""}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
+  return `${days ? t("schedule.daysShort", { count: days }) : ""}${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(rest).padStart(2, "0")}`;
 }
 
 function formatDate(value: unknown, timeZone: string) {
   if (!value) return "—";
-  return new Intl.DateTimeFormat("ru-RU", {
+  return new Intl.DateTimeFormat(localeTag(), {
     dateStyle: "short",
     timeStyle: "medium",
     timeZone
@@ -444,10 +441,10 @@ function formatDate(value: unknown, timeZone: string) {
 
 function modeLabel(mode: DeploymentSchedule["mode"]) {
   return {
-    IMMEDIATE: "Создать сразу",
-    EVEN: "Равномерно",
-    WAVES: "Ступенчато",
-    MANUAL: "Вручную"
+    IMMEDIATE: t("ui.b279f707db"),
+    EVEN: t("ui.91bb2ac541"),
+    WAVES: t("ui.1d39173cf8"),
+    MANUAL: t("ui.5ec7b0f52b")
   }[mode];
 }
 

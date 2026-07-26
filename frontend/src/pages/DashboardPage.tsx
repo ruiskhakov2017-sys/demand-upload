@@ -22,6 +22,7 @@ import { useState } from "react";
 import { api } from "../api/client";
 import type { Navigate } from "../app/App";
 import { StatusBadge } from "../components/StatusBadge";
+import { formatDate, t } from "../i18n";
 
 export function DashboardPage({ navigate }: { navigate: Navigate }) {
   const queryClient = useQueryClient();
@@ -42,7 +43,9 @@ export function DashboardPage({ navigate }: { navigate: Navigate }) {
       queryClient.invalidateQueries({ queryKey: ["accounts"] })
     ]);
     setRefreshing(false);
-    setMessage(`Данные обновлены ${new Date().toLocaleTimeString("ru-RU")}`);
+    setMessage(t("dashboard.refreshedAt", {
+      time: formatDate(new Date(), { timeStyle: "medium" })
+    }));
   };
   const data = summary.data;
 
@@ -50,20 +53,18 @@ export function DashboardPage({ navigate }: { navigate: Navigate }) {
     <Stack spacing={3}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2, flexWrap: "wrap" }}>
         <Box>
-          <Typography variant="h4">Обзор</Typography>
+          <Typography variant="h4">{t("ui.39c6387206")}</Typography>
           {data?.refreshed_at && (
             <Typography variant="body2" color="text.secondary">
-              Состояние на {new Date(data.refreshed_at).toLocaleString("ru-RU")}
+              {t("ui.e0a9c29190")}{" "}{formatDate(data.refreshed_at)}
             </Typography>
           )}
         </Box>
         <Stack direction="row" spacing={1}>
           <Button variant="outlined" startIcon={<RefreshIcon />} disabled={refreshing} onClick={refresh}>
-            Обновить
-          </Button>
+            {t("ui.c2f668e54f")}</Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate("/uploads/new")}>
-            Новая загрузка
-          </Button>
+            {t("ui.7075f72219")}</Button>
         </Stack>
       </Box>
       {(summary.isLoading || refreshing) && <LinearProgress />}
@@ -71,22 +72,22 @@ export function DashboardPage({ navigate }: { navigate: Navigate }) {
       {message && <Alert severity="success">{message}</Alert>}
 
       <Grid container spacing={2}>
-        <Kpi title="Подключения" value={data?.connections?.total || 0} detail={`${data?.connections?.connected || 0} активных`} />
-        <Kpi title="Аккаунты MCC" value={data?.accounts?.total || 0} detail="синхронизировано" />
-        <Kpi title="Загрузки" value={data?.uploads?.total || 0} detail={`${data?.uploads?.draft || 0} черновиков`} />
-        <Kpi title="Активные задания" value={data?.jobs?.active || 0} detail={`${data?.jobs?.failed || 0} с ошибкой`} />
+        <Kpi title={t("ui.c188eb08a1")} value={data?.connections?.total || 0} detail={t("dashboard.activeCount", { count: data?.connections?.connected || 0 })} />
+        <Kpi title={t("ui.b2018fe9b9")} value={data?.accounts?.total || 0} detail={t("ui.59ef0a7e00")} />
+        <Kpi title={t("ui.dbf2a0e234")} value={data?.uploads?.total || 0} detail={t("dashboard.draftCount", { count: data?.uploads?.draft || 0 })} />
+        <Kpi title={t("ui.b4e80d3c38")} value={data?.jobs?.active || 0} detail={t("dashboard.failedCount", { count: data?.jobs?.failed || 0 })} />
       </Grid>
 
       <Card>
         <CardContent>
-          <Typography variant="h6" gutterBottom>Последние загрузки</Typography>
+          <Typography variant="h6" gutterBottom>{t("ui.b5606f56e3")}</Typography>
           <Table size="small">
             <TableHead>
               <TableRow>
-                <TableCell>Название</TableCell>
-                <TableCell>Источник</TableCell>
-                <TableCell>Статус</TableCell>
-                <TableCell>Обновлено</TableCell>
+                <TableCell>{t("ui.3de49828e8")}</TableCell>
+                <TableCell>{t("ui.8290a3dbc0")}</TableCell>
+                <TableCell>{t("ui.f7f293b5c5")}</TableCell>
+                <TableCell>{t("ui.484f3ba9b5")}</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -95,11 +96,11 @@ export function DashboardPage({ navigate }: { navigate: Navigate }) {
                   <TableCell sx={{ fontWeight: 700 }}>{upload.name}</TableCell>
                   <TableCell>{upload.source_type}</TableCell>
                   <TableCell><StatusBadge value={upload.status} /></TableCell>
-                  <TableCell>{new Date(upload.updated_at).toLocaleString("ru-RU")}</TableCell>
+                  <TableCell>{formatDate(upload.updated_at)}</TableCell>
                 </TableRow>
               ))}
               {!uploads.data?.length && (
-                <TableRow><TableCell colSpan={4}><Typography color="text.secondary">Загрузок пока нет.</Typography></TableCell></TableRow>
+                <TableRow><TableCell colSpan={4}><Typography color="text.secondary">{t("ui.13a82fd106")}</Typography></TableCell></TableRow>
               )}
             </TableBody>
           </Table>

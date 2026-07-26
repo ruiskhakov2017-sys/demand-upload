@@ -1,4 +1,5 @@
 import { Chip } from "@mui/material";
+import { t } from "../i18n";
 
 const colorMap: Record<string, "default" | "primary" | "success" | "warning" | "error" | "info"> = {
   CONNECTED: "success",
@@ -15,6 +16,15 @@ const colorMap: Record<string, "default" | "primary" | "success" | "warning" | "
 };
 
 export function StatusBadge({ value }: { value: string | null | undefined }) {
-  const label = value || "UNKNOWN";
-  return <Chip size="small" label={label} color={colorMap[label] || "default"} variant="outlined" />;
+  const status = value || "UNKNOWN";
+  const key = `status.${status}`;
+  const translated = t(key);
+  return (
+    <Chip
+      size="small"
+      label={translated === key ? status : translated}
+      color={colorMap[status] || "default"}
+      variant="outlined"
+    />
+  );
 }

@@ -33,6 +33,7 @@ import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
+import TranslateIcon from "@mui/icons-material/Translate";
 import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
 import ViewListOutlinedIcon from "@mui/icons-material/ViewListOutlined";
 import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
@@ -62,6 +63,7 @@ import { LaunchGroupsPage } from "../pages/LaunchGroupsPage";
 import { NewUploadPage, UploadWizardPage } from "../pages/UploadWizardPage";
 import { useThemePreference } from "./ThemePreference";
 import { themeChoices } from "./theme";
+import { t, useLocale } from "../i18n";
 
 const drawerWidth = 264;
 
@@ -69,45 +71,50 @@ type Navigate = (path: string, replace?: boolean) => void;
 type NavItem = { path: string; label: string; icon: JSX.Element };
 type NavGroup = { label: string; items: NavItem[] };
 
-const navGroups: NavGroup[] = [
+function getNavGroups(): NavGroup[] {
+  return [
   {
-    label: "Работа",
+    label: t("ui.75436e3162"),
     items: [
-      { path: "/", label: "Обзор", icon: <DashboardOutlinedIcon /> },
-      { path: "/uploads/new", label: "Новая загрузка", icon: <AddCircleOutlineIcon /> },
-      { path: "/templates", label: "Шаблоны", icon: <ViewListOutlinedIcon /> },
-      { path: "/media", label: "Медиа", icon: <ImageOutlinedIcon /> },
-      { path: "/plans", label: "Планы", icon: <CampaignOutlinedIcon /> },
-      { path: "/schedules", label: "Расписание", icon: <ScheduleOutlinedIcon /> },
-      { path: "/launch-groups", label: "Группы запуска", icon: <ViewModuleOutlinedIcon /> },
-      { path: "/jobs", label: "Задания", icon: <WorkspacesOutlinedIcon /> }
+      { path: "/", label: t("ui.39c6387206"), icon: <DashboardOutlinedIcon /> },
+      { path: "/uploads/new", label: t("ui.7075f72219"), icon: <AddCircleOutlineIcon /> },
+      { path: "/templates", label: t("ui.67cad9b67b"), icon: <ViewListOutlinedIcon /> },
+      { path: "/media", label: t("ui.198be2a9a8"), icon: <ImageOutlinedIcon /> },
+      { path: "/plans", label: t("ui.50a0e24e0f"), icon: <CampaignOutlinedIcon /> },
+      { path: "/schedules", label: t("ui.f04bd0a064"), icon: <ScheduleOutlinedIcon /> },
+      { path: "/launch-groups", label: t("ui.279f79d8f0"), icon: <ViewModuleOutlinedIcon /> },
+      { path: "/jobs", label: t("ui.a11acfa069"), icon: <WorkspacesOutlinedIcon /> }
     ]
   },
   {
-    label: "Контроль",
+    label: t("ui.3468f380e2"),
     items: [
-      { path: "/moderation", label: "Модерация", icon: <FactCheckOutlinedIcon /> },
-      { path: "/statistics", label: "Статистика", icon: <AssessmentOutlinedIcon /> },
-      { path: "/finance", label: "Финансы", icon: <AccountBalanceWalletOutlinedIcon /> },
-      { path: "/alerts", label: "Уведомления", icon: <NotificationsNoneIcon /> },
-      { path: "/audit", label: "Журнал", icon: <HistoryOutlinedIcon /> }
+      { path: "/moderation", label: t("ui.80ae616e0b"), icon: <FactCheckOutlinedIcon /> },
+      { path: "/statistics", label: t("ui.a77d7f6c0d"), icon: <AssessmentOutlinedIcon /> },
+      { path: "/finance", label: t("ui.61dcf3af42"), icon: <AccountBalanceWalletOutlinedIcon /> },
+      { path: "/alerts", label: t("ui.ee3c35f311"), icon: <NotificationsNoneIcon /> },
+      { path: "/audit", label: t("ui.67ade741ae"), icon: <HistoryOutlinedIcon /> }
     ]
   },
   {
-    label: "Система",
+    label: t("ui.3ac98f278c"),
     items: [
-      { path: "/connections", label: "Подключения Google", icon: <LinkOutlinedIcon /> },
-      { path: "/accounts", label: "Аккаунты MCC", icon: <AccountTreeOutlinedIcon /> },
-      { path: "/settings", label: "Настройки", icon: <SettingsOutlinedIcon /> }
+      { path: "/connections", label: t("ui.451c32c81d"), icon: <LinkOutlinedIcon /> },
+      { path: "/accounts", label: t("ui.b2018fe9b9"), icon: <AccountTreeOutlinedIcon /> },
+      { path: "/settings", label: t("ui.7f17c7c62a"), icon: <SettingsOutlinedIcon /> }
     ]
   }
-];
+  ];
+}
 
 export function App() {
   const [path, navigate] = useBrowserPath();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
+  const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
   const { themeName, setThemeName } = useThemePreference();
+  const { locale, setLocale } = useLocale();
+  const navGroups = getNavGroups();
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const queryClient = useQueryClient();
@@ -131,7 +138,7 @@ export function App() {
     }
   });
 
-  if (setupQuery.isLoading) return <CenteredText text="Загрузка панели..." />;
+  if (setupQuery.isLoading) return <CenteredText text={t("ui.b807935f97")} />;
   if (setupQuery.data?.setup_required) return <SetupPage />;
   if (!meQuery.data) return <LoginPage />;
 
@@ -142,7 +149,7 @@ export function App() {
       <Toolbar sx={{ px: 2.25 }}>
         <Box>
           <Typography fontWeight={800} lineHeight={1.15}>Demand Gen Uploader</Typography>
-          <Typography variant="caption" color="text.secondary">MCC operations</Typography>
+          <Typography variant="caption" color="text.secondary">{t("app.mccOperations")}</Typography>
         </Box>
       </Toolbar>
       <Box sx={{ overflowY: "auto", flex: 1, pb: 2 }}>
@@ -186,7 +193,7 @@ export function App() {
       >
         <Toolbar>
           {!desktop && (
-            <Tooltip title="Открыть меню">
+            <Tooltip title={t("ui.72374bf6be")}>
               <IconButton edge="start" onClick={() => setMobileOpen(true)} sx={{ mr: 1 }}>
                 <MenuIcon />
               </IconButton>
@@ -198,7 +205,7 @@ export function App() {
           <Typography variant="body2" color="text.secondary" sx={{ mr: 1.5, display: { xs: "none", sm: "block" } }}>
             {user.username} · {user.role}
           </Typography>
-          <Tooltip title="Тема оформления">
+          <Tooltip title={t("ui.cde3676894")}>
             <IconButton onClick={(event) => setThemeAnchor(event.currentTarget)}>
               <PaletteOutlinedIcon />
             </IconButton>
@@ -223,12 +230,36 @@ export function App() {
                     <Box key={color} sx={{ flex: 1, bgcolor: color }} />
                   ))}
                 </Box>
-                <ListItemText>{choice.label}</ListItemText>
+                <ListItemText>{t(choice.labelKey)}</ListItemText>
                 {choice.name === themeName && <CheckIcon fontSize="small" />}
               </MenuItem>
             ))}
           </Menu>
-          <Tooltip title="Выйти">
+          <Tooltip title={t("preferences.language")}>
+            <IconButton onClick={(event) => setLocaleAnchor(event.currentTarget)}>
+              <TranslateIcon />
+            </IconButton>
+          </Tooltip>
+          <Menu
+            anchorEl={localeAnchor}
+            open={Boolean(localeAnchor)}
+            onClose={() => setLocaleAnchor(null)}
+          >
+            {(["ru", "en"] as const).map((item) => (
+              <MenuItem
+                key={item}
+                selected={item === locale}
+                onClick={() => {
+                  setLocale(item);
+                  setLocaleAnchor(null);
+                }}
+              >
+                <ListItemText>{t(`locale.${item}`)}</ListItemText>
+                {item === locale && <CheckIcon fontSize="small" />}
+              </MenuItem>
+            ))}
+          </Menu>
+          <Tooltip title={t("ui.026abb1e0a")}>
             <IconButton onClick={() => logout.mutate()} disabled={logout.isPending}>
               <LogoutIcon />
             </IconButton>
@@ -308,10 +339,9 @@ function renderRoute(path: string, navigate: Navigate) {
     default:
       return (
         <Box>
-          <Typography variant="h4">Страница не найдена</Typography>
+          <Typography variant="h4">{t("ui.b8a9604777")}</Typography>
           <ListItemButton onClick={() => navigate("/")} sx={{ mt: 2, width: "fit-content" }}>
-            Вернуться к обзору
-          </ListItemButton>
+            {t("ui.e95c3a8b54")}</ListItemButton>
         </Box>
       );
   }

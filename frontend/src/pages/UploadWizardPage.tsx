@@ -61,29 +61,30 @@ import type { Navigate } from "../app/App";
 import { StatusBadge } from "../components/StatusBadge";
 import { ScheduleEditor } from "../components/ScheduleEditor";
 import { applyCampaignCount, normalizeCampaignCount, QUICK_CAMPAIGN_COUNTS } from "../domain/campaignCounts";
+import { formatDate, formatNumber, localeTag, t } from "../i18n";
 
 const steps = [
-  "Google connection",
-  "MCC",
-  "Аккаунты",
-  "Режим создания",
-  "Шаблон",
-  "Campaign settings",
-  "Ad group settings",
-  "Audience и demographics",
-  "Ads и assets",
-  "Количество кампаний",
-  "Генератор бюджетов",
-  "Распределение креативов",
-  "Account overrides",
-  "Campaign matrix",
-  "Расписание",
-  "Local validation",
-  "Google validate_only",
-  "Financial preview",
-  "Confirmation",
-  "Creation in PAUSED",
-  "Report"
+  "builder.step.connection",
+  "builder.step.mcc",
+  "builder.step.accounts",
+  "builder.step.creationMode",
+  "builder.step.template",
+  "builder.step.campaign",
+  "builder.step.adGroup",
+  "builder.step.audience",
+  "builder.step.ads",
+  "builder.step.count",
+  "builder.step.budget",
+  "builder.step.creatives",
+  "builder.step.overrides",
+  "builder.step.matrix",
+  "builder.step.schedule",
+  "builder.step.localValidation",
+  "builder.step.googleValidation",
+  "builder.step.financial",
+  "builder.step.confirmation",
+  "builder.step.creation",
+  "builder.step.report"
 ];
 
 type ExecutionMode = "SIMULATION" | "LIVE";
@@ -152,15 +153,16 @@ type BuilderForm = {
   password_confirmation: string;
 };
 
-const emptyForm: BuilderForm = {
+function createEmptyForm(): BuilderForm {
+  return {
   execution_mode: "SIMULATION",
   creation_mode: "FROM_TEMPLATE",
   template_id: "",
-  batch_name: `Demand Gen test ${new Date().toLocaleDateString("ru-RU")}`,
+  batch_name: `Demand Gen test ${new Date().toLocaleDateString(localeTag())}`,
   name_pattern: "{account_name}_{template_name}_{date}_{sequence}",
   generation_seed: "dgu-balanced-v1",
   ad_type: "VIDEO",
-  ad_group_name: "Основная группа",
+  ad_group_name: t("ui.5cd09a3025"),
   business_name: "Demo Brand",
   final_url: "https://example.com",
   mobile_final_url: "",
@@ -194,10 +196,10 @@ const emptyForm: BuilderForm = {
     display: true,
     maps: false
   },
-  headlines: "Новый способ достичь цели\nПопробуйте сегодня",
-  long_headline: "Откройте новый способ достичь цели уже сегодня",
-  descriptions: "Узнайте больше о нашем предложении.",
-  carousel_card_headlines: "Вариант 1\nВариант 2",
+  headlines: t("ui.8cfbfe58bd"),
+  long_headline: t("ui.1eb0692330"),
+  descriptions: t("ui.8180b56500"),
+  carousel_card_headlines: t("ui.58ba9ea2dd"),
   call_to_action: "LEARN_MORE",
   youtube_video_id: "dQw4w9WgXcQ",
   media_ids: [],
@@ -212,10 +214,11 @@ const emptyForm: BuilderForm = {
   budget_manual_values: "",
   allow_repeats: true,
   password_confirmation: ""
-};
+  };
+}
 
 export function NewUploadPage({ navigate }: { navigate: Navigate }) {
-  const [name, setName] = useState(`Demand Gen ${new Date().toLocaleDateString("ru-RU")}`);
+  const [name, setName] = useState(`Demand Gen ${new Date().toLocaleDateString(localeTag())}`);
   const [mode, setMode] = useState<ExecutionMode>("SIMULATION");
   const create = useMutation({
     mutationFn: () => api.createUpload({ name, execution_mode: mode }),
@@ -223,19 +226,19 @@ export function NewUploadPage({ navigate }: { navigate: Navigate }) {
   });
   return (
     <Stack spacing={3} sx={{ maxWidth: 760 }}>
-      <Typography variant="h4">Новая загрузка</Typography>
+      <Typography variant="h4">{t("ui.7075f72219")}</Typography>
       {create.error && <Alert severity="error">{create.error.message}</Alert>}
       <Paper variant="outlined" sx={{ p: { xs: 2, sm: 3 } }}>
         <Stack spacing={3}>
-          <TextField label="Название" value={name} onChange={(event) => setName(event.target.value)} fullWidth />
+          <TextField label={t("ui.3de49828e8")} value={name} onChange={(event) => setName(event.target.value)} fullWidth />
           <ToggleButtonGroup exclusive value={mode} onChange={(_, value) => value && setMode(value)} size="small">
             <ToggleButton value="SIMULATION">TEST / MOCK</ToggleButton>
             <ToggleButton value="LIVE">LIVE / Google Ads</ToggleButton>
           </ToggleButtonGroup>
           <Alert severity={mode === "SIMULATION" ? "info" : "warning"}>
             {mode === "SIMULATION"
-              ? "Тестовый режим: Google Ads API не вызывается."
-              : "Реальный режим: кампании создаются в PAUSED после validate_only."}
+              ? t("ui.4bb40a00df")
+              : t("ui.55a2ff7d68")}
           </Alert>
           <Box>
             <Button
@@ -244,8 +247,7 @@ export function NewUploadPage({ navigate }: { navigate: Navigate }) {
               disabled={name.trim().length < 2 || create.isPending}
               onClick={() => create.mutate()}
             >
-              Открыть Campaign Builder
-            </Button>
+              {t("ui.e75d2f26e8")}</Button>
           </Box>
         </Stack>
       </Paper>
@@ -267,7 +269,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     queryFn: () => api.getDomainValidation(uploadId),
     refetchInterval: (query) => query.state.data?.status === "PENDING" ? 1500 : false
   });
-  const [form, setForm] = useState<BuilderForm>(emptyForm);
+  const [form, setForm] = useState<BuilderForm>(() => createEmptyForm());
   const [selectedAccounts, setSelectedAccounts] = useState<BuilderAccount[]>([]);
   const [connectionId, setConnectionId] = useState("");
   const [uploadName, setUploadName] = useState("");
@@ -339,7 +341,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     }),
     onSuccess: (upload) => {
       queryClient.setQueryData(["upload", uploadId], upload);
-      setNotice("Черновик сохранён");
+      setNotice(t("ui.64ab0b5dce"));
     }
   });
   const generate = useMutation({
@@ -356,7 +358,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
       queryClient.invalidateQueries({ queryKey: ["launch-batches"] });
       setSelectedRows([]);
       setMatrixEdits({});
-      setNotice(`Сформировано Campaign Instance: ${result.campaigns_count}`);
+      setNotice(t("upload.instancesGenerated", { count: result.campaigns_count }));
     }
   });
   const buildPlan = useMutation({
@@ -365,7 +367,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
       setPlanId(plan.id);
       queryClient.setQueryData(["plan", plan.id], plan);
       queryClient.invalidateQueries({ queryKey: ["launch-batch", batchId] });
-      setNotice(plan.local_validation.valid ? "Local validation пройдена" : "Local validation нашла ошибки");
+      setNotice(plan.local_validation.valid ? t("ui.e841f3fa00") : t("ui.31ffe8311b"));
     }
   });
   const validatePlan = useMutation({
@@ -373,7 +375,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     onSuccess: (result) => {
       queryClient.setQueryData(["plan", result.plan.id], result.plan);
       queryClient.invalidateQueries({ queryKey: ["launch-batch", batchId] });
-      setNotice(result.ok ? "validate_only пройден" : "validate_only завершён с ошибками");
+      setNotice(result.ok ? t("ui.2b60f8a282") : t("ui.c67a1047bc"));
     }
   });
   const confirmPlan = useMutation({
@@ -381,7 +383,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     onSuccess: (result) => {
       queryClient.setQueryData(["plan", result.plan.id], result.plan);
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
-      setNotice(result.reused ? "Использовано существующее задание" : "Расписание подтверждено");
+      setNotice(result.reused ? t("ui.77c2dc4228") : t("ui.b26405fdc7"));
       planQuery.refetch();
     }
   });
@@ -389,7 +391,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     mutationFn: ({ id, payload }: { id: string; payload: Record<string, any> }) => api.patchCampaignInstance(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["launch-batch", batchId] });
-      setNotice("Campaign Instance обновлена");
+      setNotice(t("ui.0c82ce4869"));
     }
   });
   const importFile = useMutation({
@@ -397,7 +399,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     onSuccess: (result) => {
       queryClient.setQueryData(["upload", uploadId], result.upload);
       queryClient.invalidateQueries({ queryKey: ["domain-validation", uploadId] });
-      setNotice(`Импортировано строк: ${result.row_count}`);
+      setNotice(t("upload.rowsImported", { count: result.row_count }));
     }
   });
   const retryDomainValidation = useMutation({
@@ -405,7 +407,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     onSuccess: (report) => {
       queryClient.setQueryData(["domain-validation", uploadId], report);
       queryClient.invalidateQueries({ queryKey: ["upload", uploadId] });
-      setNotice("Проверка доменов завершена");
+      setNotice(t("ui.02bf56b131"));
     }
   });
   const uploadMedia = useMutation({
@@ -458,14 +460,13 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
             <Chip
               size="small"
               color={form.execution_mode === "LIVE" ? "warning" : "info"}
-              label={form.execution_mode === "LIVE" ? "LIVE · Google Ads" : "TEST / MOCK · Google не вызывается"}
+              label={form.execution_mode === "LIVE" ? "LIVE · Google Ads" : t("ui.d29f8d1482")}
             />
             {batch && <StatusBadge value={batch.status} />}
           </Stack>
         </Box>
         <Button variant="outlined" startIcon={<SaveOutlinedIcon />} disabled={busy} onClick={() => save.mutate(step)}>
-          Сохранить
-        </Button>
+          {t("ui.4864057d62")}</Button>
       </Box>
       {mutationError && <Alert severity="error">{mutationError.message}</Alert>}
       {notice && <Alert severity="success" onClose={() => setNotice(null)}>{notice}</Alert>}
@@ -479,9 +480,9 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
       <Paper variant="outlined" sx={{ overflow: "hidden", minWidth: 0 }}>
         <Box sx={{ overflowX: "auto", px: 2, pt: 2 }}>
           <Stepper nonLinear activeStep={step} sx={{ minWidth: 2500 }}>
-            {steps.map((label, index) => (
-              <Step key={label} completed={index < step}>
-                <StepButton onClick={() => move(index)}>{index + 1}. {label}</StepButton>
+            {steps.map((labelKey, index) => (
+              <Step key={labelKey} completed={index < step}>
+                <StepButton onClick={() => move(index)}>{index + 1}. {t(labelKey)}</StepButton>
               </Step>
             ))}
           </Stepper>
@@ -537,7 +538,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
               setScheduleId(schedule.id);
               queryClient.setQueryData(["schedule", schedule.id], schedule);
               queryClient.invalidateQueries({ queryKey: ["upload", uploadId] });
-              setNotice("Расписание зафиксировано");
+              setNotice(t("ui.9492b28ded"));
             }}
             navigate={navigate}
           />
@@ -545,12 +546,10 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
         <Divider />
         <Box sx={{ p: 2, display: "flex", justifyContent: "space-between", gap: 2 }}>
           <Button startIcon={<ArrowBackIcon />} disabled={step === 0 || busy} onClick={() => move(step - 1)}>
-            Назад
-          </Button>
+            {t("ui.f6dab074d7")}</Button>
           {step < steps.length - 1 && (
             <Button variant="contained" endIcon={<ArrowForwardIcon />} disabled={busy} onClick={() => move(step + 1)}>
-              Сохранить и продолжить
-            </Button>
+              {t("ui.9c24f10191")}</Button>
           )}
         </Box>
       </Paper>
@@ -607,41 +606,41 @@ type BuilderStepProps = {
 function BuilderStep(props: BuilderStepProps) {
   const { step, form, set } = props;
   if (step === 0) return (
-    <StepSection title="Google connection">
+    <StepSection title={t("builder.step.connection")}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}><TextField fullWidth label="Название загрузки" value={props.uploadName} onChange={(e) => props.setUploadName(e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("ui.7924c4c015")} value={props.uploadName} onChange={(e) => props.setUploadName(e.target.value)} /></Grid>
         <Grid item xs={12} md={6}>
           <ToggleButtonGroup exclusive size="small" value={form.execution_mode} onChange={(_, value) => value && set("execution_mode", value)}>
             <ToggleButton value="SIMULATION">TEST / MOCK</ToggleButton><ToggleButton value="LIVE">LIVE</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
         <Grid item xs={12} md={6}>
-          <FormControl fullWidth><InputLabel>Подключение</InputLabel><Select label="Подключение" value={props.connectionId} onChange={(e) => props.setConnectionId(e.target.value)}><MenuItem value="">Без подключения</MenuItem>{props.connections.map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {item.status}</MenuItem>)}</Select></FormControl>
+          <FormControl fullWidth><InputLabel>{t("ui.79e350f743")}</InputLabel><Select label={t("ui.79e350f743")} value={props.connectionId} onChange={(e) => props.setConnectionId(e.target.value)}><MenuItem value="">{t("ui.fad95c5cb0")}</MenuItem>{props.connections.map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {item.status}</MenuItem>)}</Select></FormControl>
         </Grid>
       </Grid>
-      <Alert severity={form.execution_mode === "LIVE" ? "warning" : "info"}>{form.execution_mode === "LIVE" ? "LIVE использует официальный Google Ads API." : "TEST / MOCK не обращается к Google и не создаёт реальные ресурсы."}</Alert>
+      <Alert severity={form.execution_mode === "LIVE" ? "warning" : "info"}>{form.execution_mode === "LIVE" ? t("ui.b813efe348") : t("ui.7bc63ba1ff")}</Alert>
     </StepSection>
   );
   if (step === 1) {
     const selected = props.connections.find((item) => item.id === props.connectionId);
-    return <StepSection title="MCC"><InfoTable rows={[["Connection", selected?.name || "Не выбран"], ["Login customer ID", selected?.login_customer_id || "—"], ["Статус", selected?.status || "SIMULATION"]]} /></StepSection>;
+    return <StepSection title={t("builder.step.mcc")}><InfoTable rows={[[t("ui.79e350f743"), selected?.name || t("ui.92250813ce")], [t("field.loginCustomerId"), selected?.login_customer_id || "—"], [t("ui.f7f293b5c5"), selected?.status || "SIMULATION"]]} /></StepSection>;
   }
   if (step === 2) return <AccountsStep {...props} />;
   if (step === 3) return (
-    <StepSection title="Режим создания">
+    <StepSection title={t("ui.80273e4838")}>
       <ToggleButtonGroup exclusive value={form.creation_mode} onChange={(_, value) => value && set("creation_mode", value)} sx={{ flexWrap: "wrap" }}>
-        <ToggleButton value="FROM_TEMPLATE">Из шаблона</ToggleButton><ToggleButton value="FULL_SETUP">Полная настройка</ToggleButton><ToggleButton value="FROM_EXISTING">Существующая кампания</ToggleButton><ToggleButton value="FILE">CSV / XLSX</ToggleButton>
+        <ToggleButton value="FROM_TEMPLATE">{t("ui.0f525e514f")}</ToggleButton><ToggleButton value="FULL_SETUP">{t("ui.c1d422cb61")}</ToggleButton><ToggleButton value="FROM_EXISTING">{t("ui.7a7e9452a3")}</ToggleButton><ToggleButton value="FILE">CSV / XLSX</ToggleButton>
       </ToggleButtonGroup>
-      {form.creation_mode === "FILE" && <Button component="label" variant="outlined" startIcon={<CloudUploadOutlinedIcon />}>Выбрать CSV или XLSX<input hidden type="file" accept=".csv,.xlsx,.xlsm" onChange={(e) => e.target.files?.[0] && props.onImport(e.target.files[0])} /></Button>}
-      {form.creation_mode === "FROM_EXISTING" && <Alert severity="info">Шаблон из существующей кампании создаётся на странице «Шаблоны» через подключённый customer_id.</Alert>}
+      {form.creation_mode === "FILE" && <Button component="label" variant="outlined" startIcon={<CloudUploadOutlinedIcon />}>{t("ui.eee147777a")}<input hidden type="file" accept=".csv,.xlsx,.xlsm" onChange={(e) => e.target.files?.[0] && props.onImport(e.target.files[0])} /></Button>}
+      {form.creation_mode === "FROM_EXISTING" && <Alert severity="info">{t("ui.8eb86afb6a")}</Alert>}
     </StepSection>
   );
   if (step === 4) return (
-    <StepSection title="Шаблон или полная настройка">
-      <FormControl fullWidth sx={{ maxWidth: 620 }}><InputLabel>Шаблон</InputLabel><Select label="Шаблон" value={form.template_id} onChange={(e) => set("template_id", e.target.value)}><MenuItem value="">Настройки этого мастера</MenuItem>{props.templates.map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · v{item.current_version}</MenuItem>)}</Select></FormControl>
-      <TextField fullWidth label="Название Launch Batch" value={form.batch_name} onChange={(e) => set("batch_name", e.target.value)} />
-      <TextField fullWidth label="Шаблон названия кампаний" value={form.name_pattern} onChange={(e) => set("name_pattern", e.target.value)} helperText="{account_name} {customer_id} {template_name} {batch_name} {date} {time} {sequence} {budget} {creative_set} {random_suffix}" />
-      <TextField label="Generation seed" value={form.generation_seed} onChange={(e) => set("generation_seed", e.target.value)} sx={{ maxWidth: 420 }} />
+    <StepSection title={t("ui.14b700a309")}>
+      <FormControl fullWidth sx={{ maxWidth: 620 }}><InputLabel>{t("ui.7bd54e8998")}</InputLabel><Select label={t("ui.7bd54e8998")} value={form.template_id} onChange={(e) => set("template_id", e.target.value)}><MenuItem value="">{t("ui.1786536fe3")}</MenuItem>{props.templates.map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · v{item.current_version}</MenuItem>)}</Select></FormControl>
+      <TextField fullWidth label={t("ui.9d6646ca4e")} value={form.batch_name} onChange={(e) => set("batch_name", e.target.value)} />
+      <TextField fullWidth label={t("ui.01201ebdfc")} value={form.name_pattern} onChange={(e) => set("name_pattern", e.target.value)} helperText="{account_name} {customer_id} {template_name} {batch_name} {date} {time} {sequence} {budget} {creative_set} {random_suffix}" />
+      <TextField label={t("field.generationSeed")} value={form.generation_seed} onChange={(e) => set("generation_seed", e.target.value)} sx={{ maxWidth: 420 }} />
     </StepSection>
   );
   if (step === 5) return <CampaignSettingsStep {...props} />;
@@ -654,7 +653,7 @@ function BuilderStep(props: BuilderStepProps) {
   if (step === 12) return <AccountOverridesStep {...props} />;
   if (step === 13) return <CampaignMatrixStep {...props} />;
   if (step === 14) return (
-    <StepSection title="Расписание">
+    <StepSection title={t("ui.f04bd0a064")}>
       <ScheduleEditor batch={props.batch} scheduleId={props.scheduleId} onCreated={props.onScheduleCreated} />
     </StepSection>
   );
@@ -662,11 +661,11 @@ function BuilderStep(props: BuilderStepProps) {
   if (step === 16) return <GoogleValidationStep {...props} />;
   if (step === 17) return <FinancialStep {...props} />;
   if (step === 18) return (
-    <StepSection title="Подтверждение">
+    <StepSection title={t("ui.846aff7071")}>
       <FinancialSummary batch={props.batch} />
       <DomainValidationPanel report={props.domainValidation} compact />
-      <FormControlLabel control={<Checkbox checked={props.confirmed} onChange={(e) => props.setConfirmed(e.target.checked)} />} label="Я проверил immutable plan и подтверждаю создание кампаний в PAUSED" />
-      <TextField type="password" label="Пароль администратора при превышении лимитов" value={form.password_confirmation} onChange={(e) => set("password_confirmation", e.target.value)} sx={{ maxWidth: 440 }} />
+      <FormControlLabel control={<Checkbox checked={props.confirmed} onChange={(e) => props.setConfirmed(e.target.checked)} />} label={t("ui.c2917d9e32")} />
+      <TextField type="password" label={t("ui.d78097f97a")} value={form.password_confirmation} onChange={(e) => set("password_confirmation", e.target.value)} sx={{ maxWidth: 440 }} />
     </StepSection>
   );
   if (step === 19) return <CreationStep {...props} />;
@@ -688,13 +687,13 @@ function AccountsStep(props: BuilderStepProps) {
     overrides: {}
   })));
   return (
-    <StepSection title="Аккаунты">
-      {props.form.execution_mode === "SIMULATION" && <Button variant="outlined" startIcon={<ScienceOutlinedIcon />} onClick={addTestAccounts}>Добавить 20 тестовых аккаунтов</Button>}
-      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}><Chip label={`Выбрано: ${props.selectedAccounts.length}`} /><Chip label={`Валюты: ${[...new Set(props.selectedAccounts.map((item) => item.currency_code))].join(", ") || "—"}`} /></Stack>
+    <StepSection title={t("ui.e9af21d100")}>
+      {props.form.execution_mode === "SIMULATION" && <Button variant="outlined" startIcon={<ScienceOutlinedIcon />} onClick={addTestAccounts}>{t("ui.c0e7c09f72")}</Button>}
+      <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}><Chip label={t("upload.selectedCount", { count: props.selectedAccounts.length })} /><Chip label={t("upload.currencies", { currencies: [...new Set(props.selectedAccounts.map((item) => item.currency_code))].join(", ") || "—" })} /></Stack>
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}>
-        <Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>Аккаунт</TableCell><TableCell>Customer ID</TableCell><TableCell>Валюта</TableCell><TableCell>Часовой пояс</TableCell></TableRow></TableHead><TableBody>
-          {props.accounts.map((item) => <TableRow key={item.id} hover><TableCell padding="checkbox"><Checkbox checked={selectedIds.has(item.customer_id)} onChange={() => toggle(item)} /></TableCell><TableCell>{item.descriptive_name || "Без названия"}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell>{item.currency_code || "—"}</TableCell><TableCell>{item.time_zone || "—"}</TableCell></TableRow>)}
-          {!props.accounts.length && !props.selectedAccounts.length && <TableRow><TableCell colSpan={5}>Нет синхронизированных аккаунтов.</TableCell></TableRow>}
+        <Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>{t("ui.5b16fcdd97")}</TableCell><TableCell>Customer ID</TableCell><TableCell>{t("ui.18be059f5f")}</TableCell><TableCell>{t("ui.47947a0c46")}</TableCell></TableRow></TableHead><TableBody>
+          {props.accounts.map((item) => <TableRow key={item.id} hover><TableCell padding="checkbox"><Checkbox checked={selectedIds.has(item.customer_id)} onChange={() => toggle(item)} /></TableCell><TableCell>{item.descriptive_name || t("ui.32b74a3c47")}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell>{item.currency_code || "—"}</TableCell><TableCell>{item.time_zone || "—"}</TableCell></TableRow>)}
+          {!props.accounts.length && !props.selectedAccounts.length && <TableRow><TableCell colSpan={5}>{t("ui.9de2e07fbf")}</TableCell></TableRow>}
           {props.selectedAccounts.filter((item) => !props.accounts.some((account) => account.customer_id === item.customer_id)).map((item) => <TableRow key={item.customer_id}><TableCell padding="checkbox"><Checkbox checked onChange={() => props.setSelectedAccounts(props.selectedAccounts.filter((row) => row.customer_id !== item.customer_id))} /></TableCell><TableCell>{item.account_name}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell>{item.currency_code}</TableCell><TableCell>{item.time_zone}</TableCell></TableRow>)}
         </TableBody></Table>
       </Box>
@@ -704,23 +703,23 @@ function AccountsStep(props: BuilderStepProps) {
 
 function CampaignSettingsStep({ form, set, capabilities }: BuilderStepProps) {
   return (
-    <StepSection title="Campaign settings">
+    <StepSection title={t("builder.step.campaign")}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={4}><FormControl fullWidth><InputLabel>Стратегия ставок</InputLabel><Select label="Стратегия ставок" value={form.bidding_strategy} onChange={(e) => set("bidding_strategy", e.target.value as BuilderForm["bidding_strategy"])}><MenuItem value="TARGET_CPA">Target CPA</MenuItem><MenuItem value="MAXIMIZE_CONVERSIONS">Maximize Conversions</MenuItem><MenuItem value="TARGET_ROAS">Target ROAS</MenuItem><MenuItem value="MAXIMIZE_CLICKS">Maximize Clicks</MenuItem><MenuItem disabled value="MAXIMIZE_CONVERSION_VALUE">Maximize Conversion Value · недоступно</MenuItem></Select></FormControl></Grid>
-        <Grid item xs={6} md={2}><TextField fullWidth type="number" label="Target CPA" value={form.target_cpa} onChange={(e) => set("target_cpa", e.target.value)} /></Grid>
-        <Grid item xs={6} md={2}><TextField fullWidth type="number" label="Target ROAS, %" value={form.target_roas} onChange={(e) => set("target_roas", e.target.value)} /></Grid>
-        <Grid item xs={12} md={4}><TextField fullWidth label="Conversion action resource names" value={form.conversion_actions} onChange={(e) => set("conversion_actions", e.target.value)} /></Grid>
-        <Grid item xs={12} md={3}><TextField fullWidth type="datetime-local" label="Начало" InputLabelProps={{ shrink: true }} value={form.start_date_time} onChange={(e) => set("start_date_time", e.target.value)} /></Grid>
-        <Grid item xs={12} md={3}><TextField fullWidth type="datetime-local" label="Окончание" InputLabelProps={{ shrink: true }} value={form.end_date_time} onChange={(e) => set("end_date_time", e.target.value)} /></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth label="Tracking template" value={form.tracking_template} onChange={(e) => set("tracking_template", e.target.value)} /></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth label="Final URL suffix" value={form.final_url_suffix} onChange={(e) => set("final_url_suffix", e.target.value)} /></Grid>
+        <Grid item xs={12} md={4}><FormControl fullWidth><InputLabel>{t("ui.24cf56a313")}</InputLabel><Select label={t("ui.24cf56a313")} value={form.bidding_strategy} onChange={(e) => set("bidding_strategy", e.target.value as BuilderForm["bidding_strategy"])}><MenuItem value="TARGET_CPA">{t("field.targetCpa")}</MenuItem><MenuItem value="MAXIMIZE_CONVERSIONS">{t("option.maximizeConversions")}</MenuItem><MenuItem value="TARGET_ROAS">{t("field.targetRoas")}</MenuItem><MenuItem value="MAXIMIZE_CLICKS">{t("option.maximizeClicks")}</MenuItem><MenuItem disabled value="MAXIMIZE_CONVERSION_VALUE">{t("ui.81699af962")}</MenuItem></Select></FormControl></Grid>
+        <Grid item xs={6} md={2}><TextField fullWidth type="number" label={t("field.targetCpa")} value={form.target_cpa} onChange={(e) => set("target_cpa", e.target.value)} /></Grid>
+        <Grid item xs={6} md={2}><TextField fullWidth type="number" label={t("field.targetRoas")} value={form.target_roas} onChange={(e) => set("target_roas", e.target.value)} /></Grid>
+        <Grid item xs={12} md={4}><TextField fullWidth label={t("field.conversionActions")} value={form.conversion_actions} onChange={(e) => set("conversion_actions", e.target.value)} /></Grid>
+        <Grid item xs={12} md={3}><TextField fullWidth type="datetime-local" label={t("ui.cb26bdc6c6")} InputLabelProps={{ shrink: true }} value={form.start_date_time} onChange={(e) => set("start_date_time", e.target.value)} /></Grid>
+        <Grid item xs={12} md={3}><TextField fullWidth type="datetime-local" label={t("ui.ec5bfc700b")} InputLabelProps={{ shrink: true }} value={form.end_date_time} onChange={(e) => set("end_date_time", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("field.trackingTemplate")} value={form.tracking_template} onChange={(e) => set("tracking_template", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("field.finalUrlSuffix")} value={form.final_url_suffix} onChange={(e) => set("final_url_suffix", e.target.value)} /></Grid>
       </Grid>
       <FormControlLabel
         control={<Checkbox checked={form.append_instance_parameter} onChange={(e) => set("append_instance_parameter", e.target.checked)} />}
-        label="Добавить dgu_instance с внутренним ID копии"
+        label={t("ui.1db8937e85")}
       />
-      <Typography variant="caption" color="text.secondary">ValueTrack-параметры, включая {"{campaignid}"}, сохраняются без изменений. Внутренний параметр добавляется только при включённой опции.</Typography>
-      <Alert severity="info">Статус создания зафиксирован как PAUSED.</Alert>
+      <Typography variant="caption" color="text.secondary">{t("ui.d843b0fcc8")}{" "}{"{campaignid}"}{t("ui.549df07677")}</Typography>
+      <Alert severity="info">{t("ui.3e7da9d996")}</Alert>
       <CapabilityStrip capabilities={capabilities} prefix="campaign." />
     </StepSection>
   );
@@ -728,15 +727,15 @@ function CampaignSettingsStep({ form, set, capabilities }: BuilderStepProps) {
 
 function AdGroupStep({ form, set, capabilities }: BuilderStepProps) {
   return (
-    <StepSection title="Ad group settings">
+    <StepSection title={t("builder.step.adGroup")}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={6}><TextField fullWidth label="Название группы" value={form.ad_group_name} onChange={(e) => set("ad_group_name", e.target.value)} /></Grid>
-        <Grid item xs={12} md={3}><TextField fullWidth label="Geo IDs" value={form.location_ids} onChange={(e) => set("location_ids", e.target.value)} /></Grid>
-        <Grid item xs={12} md={3}><TextField fullWidth label="Исключённые Geo IDs" value={form.excluded_location_ids} onChange={(e) => set("excluded_location_ids", e.target.value)} /></Grid>
-        <Grid item xs={12} md={4}><TextField fullWidth label="Language IDs" value={form.language_ids} onChange={(e) => set("language_ids", e.target.value)} /></Grid>
-        <Grid item xs={12} md={8}><FormControl fullWidth><InputLabel>Channel controls</InputLabel><Select label="Channel controls" value={form.channel_mode} onChange={(e) => set("channel_mode", e.target.value as BuilderForm["channel_mode"])}><MenuItem value="ALL_CHANNELS">Все каналы</MenuItem><MenuItem value="GOOGLE_OWNED">Все собственные каналы Google</MenuItem><MenuItem value="MANUAL">Ручной выбор</MenuItem></Select></FormControl></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("ui.22d67742ad")} value={form.ad_group_name} onChange={(e) => set("ad_group_name", e.target.value)} /></Grid>
+        <Grid item xs={12} md={3}><TextField fullWidth label={t("field.geoIds")} value={form.location_ids} onChange={(e) => set("location_ids", e.target.value)} /></Grid>
+        <Grid item xs={12} md={3}><TextField fullWidth label={t("ui.4239db2d5f")} value={form.excluded_location_ids} onChange={(e) => set("excluded_location_ids", e.target.value)} /></Grid>
+        <Grid item xs={12} md={4}><TextField fullWidth label={t("field.languageIds")} value={form.language_ids} onChange={(e) => set("language_ids", e.target.value)} /></Grid>
+        <Grid item xs={12} md={8}><FormControl fullWidth><InputLabel>{t("field.channelControls")}</InputLabel><Select label={t("field.channelControls")} value={form.channel_mode} onChange={(e) => set("channel_mode", e.target.value as BuilderForm["channel_mode"])}><MenuItem value="ALL_CHANNELS">{t("ui.a745f4e319")}</MenuItem><MenuItem value="GOOGLE_OWNED">{t("ui.425453d2ea")}</MenuItem><MenuItem value="MANUAL">{t("ui.3711716b26")}</MenuItem></Select></FormControl></Grid>
       </Grid>
-      {form.channel_mode === "MANUAL" && <Stack direction="row" useFlexGap sx={{ flexWrap: "wrap" }}>{channelLabels.map(([key, label]) => <FormControlLabel key={key} control={<Checkbox checked={Boolean(form.channels[key])} disabled={key === "maps"} onChange={(e) => set("channels", { ...form.channels, [key]: e.target.checked })} />} label={key === "maps" ? `${label} · API client недоступно` : label} />)}</Stack>}
+      {form.channel_mode === "MANUAL" && <Stack direction="row" useFlexGap sx={{ flexWrap: "wrap" }}>{channelLabels.map(([key, label]) => <FormControlLabel key={key} control={<Checkbox checked={Boolean(form.channels[key])} disabled={key === "maps"} onChange={(e) => set("channels", { ...form.channels, [key]: e.target.checked })} />} label={key === "maps" ? t("capability.unavailable", { label }) : label} />)}</Stack>}
       <CapabilityStrip capabilities={capabilities} prefix="channels." />
     </StepSection>
   );
@@ -744,16 +743,16 @@ function AdGroupStep({ form, set, capabilities }: BuilderStepProps) {
 
 function AudienceStep({ form, set }: BuilderStepProps) {
   return (
-    <StepSection title="Audience и demographics">
+    <StepSection title={t("ui.c8092d2f64")}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label="Audience resource names" value={form.audience_resource_names} onChange={(e) => set("audience_resource_names", e.target.value)} /></Grid>
-        <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label="User list / Customer Match" value={form.user_list_resource_names} onChange={(e) => set("user_list_resource_names", e.target.value)} /></Grid>
-        <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label="Custom audience resource names" value={form.custom_audience_resource_names} onChange={(e) => set("custom_audience_resource_names", e.target.value)} /></Grid>
+        <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label={t("field.audienceResources")} value={form.audience_resource_names} onChange={(e) => set("audience_resource_names", e.target.value)} /></Grid>
+        <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label={t("field.userList")} value={form.user_list_resource_names} onChange={(e) => set("user_list_resource_names", e.target.value)} /></Grid>
+        <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label={t("field.customAudienceResources")} value={form.custom_audience_resource_names} onChange={(e) => set("custom_audience_resource_names", e.target.value)} /></Grid>
       </Grid>
-      <ChoiceChecks label="Возраст" values={ageOptions} selected={form.age_ranges} onChange={(value) => set("age_ranges", value)} />
-      <ChoiceChecks label="Пол" values={genderOptions} selected={form.genders} onChange={(value) => set("genders", value)} />
-      <FormControlLabel control={<Checkbox checked={form.optimized_targeting} onChange={(e) => set("optimized_targeting", e.target.checked)} />} label="Оптимизированный таргетинг" />
-      <Alert severity="info">Аккаунтозависимые resource names проверяются по customer_id до создания.</Alert>
+      <ChoiceChecks label={t("ui.f73f17a2bf")} values={ageOptions} selected={form.age_ranges} onChange={(value) => set("age_ranges", value)} />
+      <ChoiceChecks label={t("ui.31c8bce4fe")} values={genderOptions} selected={form.genders} onChange={(value) => set("genders", value)} />
+      <FormControlLabel control={<Checkbox checked={form.optimized_targeting} onChange={(e) => set("optimized_targeting", e.target.checked)} />} label={t("ui.9456363417")} />
+      <Alert severity="info">{t("ui.743bb69eb0")}</Alert>
     </StepSection>
   );
 }
@@ -762,42 +761,42 @@ function AdsAssetsStep(props: BuilderStepProps) {
   const { form, set } = props;
   const toggleMedia = (item: MediaAsset) => set("media_ids", form.media_ids.includes(item.id) ? form.media_ids.filter((id) => id !== item.id) : [...form.media_ids, item.id]);
   return (
-    <StepSection title="Ads и assets">
+    <StepSection title={t("ui.9edf62a387")}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={3}><FormControl fullWidth><InputLabel>Формат</InputLabel><Select label="Формат" value={form.ad_type} onChange={(e) => set("ad_type", e.target.value as BuilderForm["ad_type"])}><MenuItem value="VIDEO">Video responsive</MenuItem><MenuItem value="IMAGE">Multi-asset</MenuItem><MenuItem value="CAROUSEL">Carousel</MenuItem></Select></FormControl></Grid>
-        <Grid item xs={12} md={3}><TextField fullWidth label="Business name" value={form.business_name} inputProps={{ maxLength: 25 }} onChange={(e) => set("business_name", e.target.value)} /></Grid>
+        <Grid item xs={12} md={3}><FormControl fullWidth><InputLabel>{t("ui.b9563c38ab")}</InputLabel><Select label={t("ui.b9563c38ab")} value={form.ad_type} onChange={(e) => set("ad_type", e.target.value as BuilderForm["ad_type"])}><MenuItem value="VIDEO">{t("option.videoResponsive")}</MenuItem><MenuItem value="IMAGE">{t("option.multiAsset")}</MenuItem><MenuItem value="CAROUSEL">{t("option.carousel")}</MenuItem></Select></FormControl></Grid>
+        <Grid item xs={12} md={3}><TextField fullWidth label={t("field.businessName")} value={form.business_name} inputProps={{ maxLength: 25 }} onChange={(e) => set("business_name", e.target.value)} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label="Final URL" value={form.final_url} onChange={(e) => set("final_url", e.target.value)} /></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label="Headlines, по одному на строку" value={form.headlines} onChange={(e) => set("headlines", e.target.value)} /></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label="Descriptions, по одному на строку" value={form.descriptions} onChange={(e) => set("descriptions", e.target.value)} /></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth label="Long headline" value={form.long_headline} onChange={(e) => set("long_headline", e.target.value)} /></Grid>
-        <Grid item xs={12} md={3}><TextField fullWidth label="YouTube video ID" value={form.youtube_video_id} onChange={(e) => set("youtube_video_id", e.target.value)} /></Grid>
-        <Grid item xs={12} md={3}><FormControl fullWidth><InputLabel>CTA</InputLabel><Select label="CTA" value={form.call_to_action} onChange={(e) => set("call_to_action", e.target.value)}>{["LEARN_MORE", "SHOP_NOW", "SIGN_UP", "APPLY_NOW", "GET_QUOTE"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label={t("ui.e3917b6fa1")} value={form.headlines} onChange={(e) => set("headlines", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label={t("ui.eabed68dff")} value={form.descriptions} onChange={(e) => set("descriptions", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("field.longHeadline")} value={form.long_headline} onChange={(e) => set("long_headline", e.target.value)} /></Grid>
+        <Grid item xs={12} md={3}><TextField fullWidth label={t("field.youtubeVideoId")} value={form.youtube_video_id} onChange={(e) => set("youtube_video_id", e.target.value)} /></Grid>
+        <Grid item xs={12} md={3}><FormControl fullWidth><InputLabel>{t("field.callToAction")}</InputLabel><Select label={t("field.callToAction")} value={form.call_to_action} onChange={(e) => set("call_to_action", e.target.value)}>{["LEARN_MORE", "SHOP_NOW", "SIGN_UP", "APPLY_NOW", "GET_QUOTE"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
       </Grid>
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-        <TextField label="YouTube ID или URL" value={props.youtubeInput} onChange={(e) => props.setYoutubeInput(e.target.value)} sx={{ flex: 1 }} />
-        <Button variant="outlined" startIcon={<YouTubeIcon />} disabled={!props.youtubeInput || props.busy} onClick={props.onRegisterYoutube}>Добавить</Button>
-        <Button component="label" variant="outlined" startIcon={<CloudUploadOutlinedIcon />} disabled={props.busy}>Загрузить медиа<input hidden type="file" accept="image/png,image/jpeg,video/mp4,video/quicktime,video/webm" onChange={(e) => e.target.files?.[0] && props.onUploadMedia(e.target.files[0])} /></Button>
+        <TextField label={t("ui.94ade8a20a")} value={props.youtubeInput} onChange={(e) => props.setYoutubeInput(e.target.value)} sx={{ flex: 1 }} />
+        <Button variant="outlined" startIcon={<YouTubeIcon />} disabled={!props.youtubeInput || props.busy} onClick={props.onRegisterYoutube}>{t("ui.559a87f7cc")}</Button>
+        <Button component="label" variant="outlined" startIcon={<CloudUploadOutlinedIcon />} disabled={props.busy}>{t("ui.d381669265")}<input hidden type="file" accept="image/png,image/jpeg,video/mp4,video/quicktime,video/webm" onChange={(e) => e.target.files?.[0] && props.onUploadMedia(e.target.files[0])} /></Button>
       </Stack>
-      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>Asset</TableCell><TableCell>Тип</TableCell><TableCell>Размер</TableCell><TableCell>Статус</TableCell></TableRow></TableHead><TableBody>{props.media.map((item) => <TableRow key={item.id}><TableCell padding="checkbox"><Checkbox checked={form.media_ids.includes(item.id)} onChange={() => toggleMedia(item)} /></TableCell><TableCell>{item.name}</TableCell><TableCell>{item.kind}</TableCell><TableCell>{item.width && item.height ? `${item.width} × ${item.height}` : item.duration_seconds ? `${item.duration_seconds.toFixed(1)} с` : "—"}</TableCell><TableCell><StatusBadge value={item.status} /></TableCell></TableRow>)}</TableBody></Table></Box>
-      <Button disabled variant="outlined">Предпросмотр Google · недоступно через API</Button>
+      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>{t("common.asset")}</TableCell><TableCell>{t("ui.d25691ca40")}</TableCell><TableCell>{t("ui.98713e8814")}</TableCell><TableCell>{t("ui.f7f293b5c5")}</TableCell></TableRow></TableHead><TableBody>{props.media.map((item) => <TableRow key={item.id}><TableCell padding="checkbox"><Checkbox checked={form.media_ids.includes(item.id)} onChange={() => toggleMedia(item)} /></TableCell><TableCell>{item.name}</TableCell><TableCell>{item.kind}</TableCell><TableCell>{item.width && item.height ? `${item.width} × ${item.height}` : item.duration_seconds ? t("media.durationSeconds", { count: formatNumber(item.duration_seconds, { maximumFractionDigits: 1 }) }) : "—"}</TableCell><TableCell><StatusBadge value={item.status} /></TableCell></TableRow>)}</TableBody></Table></Box>
+      <Button disabled variant="outlined">{t("ui.386e7981fc")}</Button>
     </StepSection>
   );
 }
 
 function BudgetGeneratorStep({ form, set }: BuilderStepProps) {
   return (
-    <StepSection title="Генератор бюджетов">
+    <StepSection title={t("ui.4b6192d1c8")}>
       <Grid container spacing={2}>
-        <Grid item xs={12} md={4}><FormControl fullWidth><InputLabel>Режим</InputLabel><Select label="Режим" value={form.budget_mode} onChange={(e) => set("budget_mode", e.target.value as BuilderForm["budget_mode"])}>{["FIXED", "RANGE", "MANUAL_LIST", "PER_ACCOUNT_OVERRIDE", "PER_CAMPAIGN_OVERRIDE"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
-        <Grid item xs={12} md={4}><FormControl fullWidth><InputLabel>Распределение</InputLabel><Select label="Распределение" value={form.budget_distribution} onChange={(e) => set("budget_distribution", e.target.value as BuilderForm["budget_distribution"])}>{["BALANCED_RANDOM", "RANDOM", "SEQUENTIAL", "MANUAL_AFTER_GENERATION"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
-        <Grid item xs={6} md={2}><TextField fullWidth type="number" label="Fixed" value={form.budget_fixed} onChange={(e) => set("budget_fixed", e.target.value)} /></Grid>
-        <Grid item xs={6} md={2}><TextField fullWidth type="number" label="Шаг" value={form.budget_step} onChange={(e) => set("budget_step", e.target.value)} /></Grid>
-        <Grid item xs={6} md={3}><TextField fullWidth type="number" label="Минимум" value={form.budget_minimum} onChange={(e) => set("budget_minimum", e.target.value)} /></Grid>
-        <Grid item xs={6} md={3}><TextField fullWidth type="number" label="Максимум" value={form.budget_maximum} onChange={(e) => set("budget_maximum", e.target.value)} /></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth label="Ручные значения через запятую" value={form.budget_manual_values} onChange={(e) => set("budget_manual_values", e.target.value)} /></Grid>
+        <Grid item xs={12} md={4}><FormControl fullWidth><InputLabel>{t("ui.ff0fbd56f4")}</InputLabel><Select label={t("ui.ff0fbd56f4")} value={form.budget_mode} onChange={(e) => set("budget_mode", e.target.value as BuilderForm["budget_mode"])}>{["FIXED", "RANGE", "MANUAL_LIST", "PER_ACCOUNT_OVERRIDE", "PER_CAMPAIGN_OVERRIDE"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
+        <Grid item xs={12} md={4}><FormControl fullWidth><InputLabel>{t("ui.1aff9ed9b2")}</InputLabel><Select label={t("ui.1aff9ed9b2")} value={form.budget_distribution} onChange={(e) => set("budget_distribution", e.target.value as BuilderForm["budget_distribution"])}>{["BALANCED_RANDOM", "RANDOM", "SEQUENTIAL", "MANUAL_AFTER_GENERATION"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
+        <Grid item xs={6} md={2}><TextField fullWidth type="number" label={t("field.fixed")} value={form.budget_fixed} onChange={(e) => set("budget_fixed", e.target.value)} /></Grid>
+        <Grid item xs={6} md={2}><TextField fullWidth type="number" label={t("ui.ee899dd5cc")} value={form.budget_step} onChange={(e) => set("budget_step", e.target.value)} /></Grid>
+        <Grid item xs={6} md={3}><TextField fullWidth type="number" label={t("ui.54ddf3d43e")} value={form.budget_minimum} onChange={(e) => set("budget_minimum", e.target.value)} /></Grid>
+        <Grid item xs={6} md={3}><TextField fullWidth type="number" label={t("ui.c6ba85417d")} value={form.budget_maximum} onChange={(e) => set("budget_maximum", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("ui.4287a7976f")} value={form.budget_manual_values} onChange={(e) => set("budget_manual_values", e.target.value)} /></Grid>
       </Grid>
-      <FormControlLabel control={<Checkbox checked={form.allow_repeats} onChange={(e) => set("allow_repeats", e.target.checked)} />} label="Разрешить повторы значений" />
-      <Alert severity="info">Seed и назначенные значения сохраняются в Launch Batch; reload и retry их не меняют.</Alert>
+      <FormControlLabel control={<Checkbox checked={form.allow_repeats} onChange={(e) => set("allow_repeats", e.target.checked)} />} label={t("ui.3c476800b6")} />
+      <Alert severity="info">{t("ui.df97077380")}</Alert>
     </StepSection>
   );
 }
@@ -817,45 +816,45 @@ function CampaignCountStep(props: BuilderStepProps) {
   );
   const allSelected = props.selectedAccounts.length > 0 && props.selectedAccounts.every((item) => selectedIds.includes(item.customer_id));
   return (
-    <StepSection title="Количество копий">
+    <StepSection title={t("ui.230537b9a2")}>
       <FormControl sx={{ minWidth: 360 }}>
-        <InputLabel>Режим копирования</InputLabel>
-        <Select label="Режим копирования" value={props.form.copy_mode} onChange={(event) => props.set("copy_mode", event.target.value)}>
-          {copyModes.map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}
+        <InputLabel>{t("ui.ca498ad7f0")}</InputLabel>
+        <Select label={t("ui.ca498ad7f0")} value={props.form.copy_mode} onChange={(event) => props.set("copy_mode", event.target.value)}>
+          {copyModes.map(([value, labelKey]) => <MenuItem key={value} value={value}>{t(labelKey)}</MenuItem>)}
         </Select>
       </FormControl>
       <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ md: "center" }}>
         <TextField
           type="number"
           size="small"
-          label="Общее количество для всех"
+          label={t("ui.ac996ae319")}
           value={props.form.campaigns_per_account}
           inputProps={{ min: 1, max: 500 }}
           onChange={(event) => props.set("campaigns_per_account", normalizeCampaignCount(Number(event.target.value)))}
           sx={{ width: 230 }}
         />
-        <Button variant="outlined" onClick={() => updateAccounts(null, props.form.campaigns_per_account)}>Применить ко всем</Button>
-        <ToggleButtonGroup exclusive size="small" aria-label="Быстрое количество для всех">
+        <Button variant="outlined" onClick={() => updateAccounts(null, props.form.campaigns_per_account)}>{t("ui.679bd2d438")}</Button>
+        <ToggleButtonGroup exclusive size="small" aria-label={t("ui.d567f69de6")}>
           {quickCounts.map((count) => <ToggleButton key={count} value={count} onClick={() => updateAccounts(null, count)}>{count}</ToggleButton>)}
         </ToggleButtonGroup>
       </Stack>
       <Stack direction={{ xs: "column", md: "row" }} spacing={1} alignItems={{ md: "center" }}>
-        <TextField type="number" size="small" label="Для выделенных" value={bulkCount} inputProps={{ min: 1, max: 500 }} onChange={(event) => setBulkCount(event.target.value)} sx={{ width: 190 }} />
-        <Button variant="contained" disabled={!selectedIds.length} onClick={() => updateAccounts(selectedIds, Number(bulkCount))}>Применить к выделенным</Button>
-        <ToggleButtonGroup exclusive size="small" aria-label="Быстрое количество для выделенных">
+        <TextField type="number" size="small" label={t("ui.c4c7b44944")} value={bulkCount} inputProps={{ min: 1, max: 500 }} onChange={(event) => setBulkCount(event.target.value)} sx={{ width: 190 }} />
+        <Button variant="contained" disabled={!selectedIds.length} onClick={() => updateAccounts(selectedIds, Number(bulkCount))}>{t("ui.33ecf3ea24")}</Button>
+        <ToggleButtonGroup exclusive size="small" aria-label={t("ui.a13cb6b088")}>
           {quickCounts.map((count) => <ToggleButton key={count} value={count} disabled={!selectedIds.length} onClick={() => updateAccounts(selectedIds, count)}>{count}</ToggleButton>)}
         </ToggleButtonGroup>
       </Stack>
-      <InfoTable rows={[["Выбрано аккаунтов", props.selectedAccounts.length], ["Будущих кампаний", total]]} />
+      <InfoTable rows={[[t("ui.8bc2e747ff"), props.selectedAccounts.length], [t("ui.813654a42f"), total]]} />
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}>
         <Table size="small" sx={{ minWidth: 940 }}>
           <TableHead>
             <TableRow>
               <TableCell padding="checkbox"><Checkbox checked={allSelected} onChange={(event) => setSelectedIds(event.target.checked ? props.selectedAccounts.map((item) => item.customer_id) : [])} /></TableCell>
-              <TableCell>Аккаунт</TableCell>
+              <TableCell>{t("ui.5b16fcdd97")}</TableCell>
               <TableCell>Customer ID</TableCell>
-              <TableCell>Быстрый выбор</TableCell>
-              <TableCell>Произвольное количество</TableCell>
+              <TableCell>{t("ui.65739df6c0")}</TableCell>
+              <TableCell>{t("ui.74d2c71605")}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -880,9 +879,9 @@ function CampaignCountStep(props: BuilderStepProps) {
 
 function CreativeDistributionStep({ form, set, media }: BuilderStepProps) {
   return (
-    <StepSection title="Распределение креативов">
-      <FormControl sx={{ minWidth: 380 }}><InputLabel>Copy mode</InputLabel><Select label="Copy mode" value={form.copy_mode} onChange={(e) => set("copy_mode", e.target.value)}>{copyModes.map(([value, label]) => <MenuItem key={value} value={value}>{label}</MenuItem>)}</Select></FormControl>
-      <InfoTable rows={[["Выбрано assets", form.media_ids.length], ["Доступно READY", media.filter((item) => item.status === "READY").length], ["Переиспользование", "Внутри customer_id по SHA-256"]]} />
+    <StepSection title={t("ui.21a8b879e3")}>
+      <FormControl sx={{ minWidth: 380 }}><InputLabel>{t("field.copyMode")}</InputLabel><Select label={t("field.copyMode")} value={form.copy_mode} onChange={(e) => set("copy_mode", e.target.value)}>{copyModes.map(([value, labelKey]) => <MenuItem key={value} value={value}>{t(labelKey)}</MenuItem>)}</Select></FormControl>
+      <InfoTable rows={[[t("ui.0212ec2cf4"), form.media_ids.length], [t("ui.abd0ba2902"), media.filter((item) => item.status === "READY").length], [t("ui.633e83237b"), t("ui.7ef952fa2c")]]} />
     </StepSection>
   );
 }
@@ -890,8 +889,8 @@ function CreativeDistributionStep({ form, set, media }: BuilderStepProps) {
 function AccountOverridesStep(props: BuilderStepProps) {
   const update = (index: number, patch: Partial<BuilderAccount>) => props.setSelectedAccounts(props.selectedAccounts.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
   return (
-    <StepSection title="Account overrides">
-      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell>Аккаунт</TableCell><TableCell>Customer ID</TableCell><TableCell>Кампаний</TableCell><TableCell>Валюта</TableCell><TableCell>Часовой пояс</TableCell></TableRow></TableHead><TableBody>{props.selectedAccounts.map((item, index) => <TableRow key={item.customer_id}><TableCell>{item.account_name}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell><TextField size="small" type="number" value={item.campaigns_count || props.form.campaigns_per_account} inputProps={{ min: 1, max: 500 }} onChange={(e) => update(index, { campaigns_count: Number(e.target.value) })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.currency_code} disabled={props.form.execution_mode === "LIVE"} onChange={(e) => update(index, { currency_code: e.target.value.toUpperCase() })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.time_zone} disabled={props.form.execution_mode === "LIVE"} onChange={(e) => update(index, { time_zone: e.target.value })} sx={{ width: 190 }} /></TableCell></TableRow>)}</TableBody></Table></Box>
+    <StepSection title={t("builder.step.overrides")}>
+      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell>{t("ui.5b16fcdd97")}</TableCell><TableCell>Customer ID</TableCell><TableCell>{t("ui.cf645a44e5")}</TableCell><TableCell>{t("ui.18be059f5f")}</TableCell><TableCell>{t("ui.47947a0c46")}</TableCell></TableRow></TableHead><TableBody>{props.selectedAccounts.map((item, index) => <TableRow key={item.customer_id}><TableCell>{item.account_name}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell><TextField size="small" type="number" value={item.campaigns_count || props.form.campaigns_per_account} inputProps={{ min: 1, max: 500 }} onChange={(e) => update(index, { campaigns_count: Number(e.target.value) })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.currency_code} disabled={props.form.execution_mode === "LIVE"} onChange={(e) => update(index, { currency_code: e.target.value.toUpperCase() })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.time_zone} disabled={props.form.execution_mode === "LIVE"} onChange={(e) => update(index, { time_zone: e.target.value })} sx={{ width: 190 }} /></TableCell></TableRow>)}</TableBody></Table></Box>
     </StepSection>
   );
 }
@@ -905,22 +904,22 @@ function CampaignMatrixStep(props: BuilderStepProps) {
   };
   const applyBulk = () => props.selectedRows.forEach((id) => props.onPatch(id, { budget: Number(props.bulkBudget) }));
   return (
-    <StepSection title="Campaign matrix">
+    <StepSection title={t("builder.step.matrix")}>
       <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }}>
-        <Button variant="contained" startIcon={<RefreshIcon />} disabled={!props.selectedAccounts.length || props.busy || locked} onClick={props.onGenerate}>{props.batch ? "Создать новую версию матрицы" : "Сгенерировать матрицу"}</Button>
+        <Button variant="contained" startIcon={<RefreshIcon />} disabled={!props.selectedAccounts.length || props.busy || locked} onClick={props.onGenerate}>{props.batch ? t("ui.5ce3895b0e") : t("ui.ab4c43c32f")}</Button>
         {props.batch && <><Button component="a" href={api.launchBatchExportUrl(props.batch.id, "xlsx")} startIcon={<DownloadOutlinedIcon />}>XLSX</Button><Button component="a" href={api.launchBatchExportUrl(props.batch.id, "csv")} startIcon={<DownloadOutlinedIcon />}>CSV</Button></>}
-        <TextField size="small" label="Фильтр" value={props.matrixFilter} onChange={(e) => props.setMatrixFilter(e.target.value)} sx={{ minWidth: 260 }} />
+        <TextField size="small" label={t("ui.3a4e343cd0")} value={props.matrixFilter} onChange={(e) => props.setMatrixFilter(e.target.value)} sx={{ minWidth: 260 }} />
       </Stack>
-      {locked && <Alert severity="info">Матрица входит в immutable plan. Для изменений создайте новую версию Launch Batch.</Alert>}
-      {props.batch && <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}><StatusBadge value={props.batch.status} /><Chip label={`${props.batch.bundles_count} групп запуска`} /><Chip label={`${props.batch.campaigns_count} кампаний`} /><Chip label={`seed: ${props.batch.generation_seed}`} /></Stack>}
-      {props.selectedRows.length > 0 && !locked && <Stack direction="row" spacing={1}><TextField size="small" type="number" label="Массовый бюджет" value={props.bulkBudget} onChange={(e) => props.setBulkBudget(e.target.value)} /><Button variant="outlined" disabled={!props.bulkBudget || props.busy} onClick={applyBulk}>Применить к выбранным</Button></Stack>}
+      {locked && <Alert severity="info">{t("ui.b21bfde008")}</Alert>}
+      {props.batch && <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}><StatusBadge value={props.batch.status} /><Chip label={t("common.launchGroupCount", { count: props.batch.bundles_count })} /><Chip label={t("common.campaignCount", { count: props.batch.campaigns_count })} /><Chip label={`${t("field.generationSeed")}: ${props.batch.generation_seed}`} /></Stack>}
+      {props.selectedRows.length > 0 && !locked && <Stack direction="row" spacing={1}><TextField size="small" type="number" label={t("ui.1e40c95ea2")} value={props.bulkBudget} onChange={(e) => props.setBulkBudget(e.target.value)} /><Button variant="outlined" disabled={!props.bulkBudget || props.busy} onClick={applyBulk}>{t("ui.524b49df7e")}</Button></Stack>}
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", maxHeight: 620 }}>
-        <Table size="small" stickyHeader sx={{ minWidth: 1900 }}><TableHead><TableRow><TableCell padding="checkbox"><Checkbox checked={props.filteredInstances.length > 0 && props.filteredInstances.every((item) => props.selectedRows.includes(item.id))} onChange={(e) => props.setSelectedRows(e.target.checked ? props.filteredInstances.map((item) => item.id) : [])} /></TableCell><TableCell>Launch Batch</TableCell><TableCell>Группа запуска</TableCell><TableCell>Customer ID</TableCell><TableCell>Currency / TZ</TableCell><TableCell>Sequence</TableCell><TableCell>Campaign name</TableCell><TableCell>Budget</TableCell><TableCell>Bidding</TableCell><TableCell>Geo / Language</TableCell><TableCell>Channels</TableCell><TableCell>Final URL</TableCell><TableCell>Creative set</TableCell><TableCell>Validation</TableCell><TableCell /></TableRow></TableHead><TableBody>
+        <Table size="small" stickyHeader sx={{ minWidth: 1900 }}><TableHead><TableRow><TableCell padding="checkbox"><Checkbox checked={props.filteredInstances.length > 0 && props.filteredInstances.every((item) => props.selectedRows.includes(item.id))} onChange={(e) => props.setSelectedRows(e.target.checked ? props.filteredInstances.map((item) => item.id) : [])} /></TableCell><TableCell>{t("common.launchBatch")}</TableCell><TableCell>{t("ui.a4adc0974e")}</TableCell><TableCell>Customer ID</TableCell><TableCell>{t("table.currencyTimeZone")}</TableCell><TableCell>{t("table.sequence")}</TableCell><TableCell>{t("table.campaignName")}</TableCell><TableCell>{t("ui.b9f1d1e1e4")}</TableCell><TableCell>{t("table.bidding")}</TableCell><TableCell>{t("table.geoLanguage")}</TableCell><TableCell>{t("table.channels")}</TableCell><TableCell>Final URL</TableCell><TableCell>{t("table.creativeSet")}</TableCell><TableCell>{t("table.validation")}</TableCell><TableCell /></TableRow></TableHead><TableBody>
           {props.filteredInstances.map((item) => {
             const edit = props.matrixEdits[item.id] || { name: item.campaign_name, budget: String(item.budget) };
-            return <TableRow key={item.id} hover><TableCell padding="checkbox"><Checkbox checked={props.selectedRows.includes(item.id)} onChange={(e) => props.setSelectedRows(e.target.checked ? [...props.selectedRows, item.id] : props.selectedRows.filter((id) => id !== item.id))} /></TableCell><TableCell>{props.batch?.name}</TableCell><TableCell>{item.account_name}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell>{item.currency_code}<Typography variant="caption" display="block">{item.time_zone}</Typography></TableCell><TableCell>{item.campaign_sequence}</TableCell><TableCell><TextField size="small" value={edit.name} disabled={locked} onChange={(e) => props.setMatrixEdits({ ...props.matrixEdits, [item.id]: { ...edit, name: e.target.value } })} sx={{ width: 260 }} /></TableCell><TableCell><TextField size="small" type="number" value={edit.budget} disabled={locked} onChange={(e) => props.setMatrixEdits({ ...props.matrixEdits, [item.id]: { ...edit, budget: e.target.value } })} sx={{ width: 110 }} /></TableCell><TableCell>{item.bidding.strategy || "—"}</TableCell><TableCell>{(item.targeting.location_ids || []).join(", ")} / {(item.targeting.language_ids || []).join(", ")}</TableCell><TableCell>{item.targeting.channel_controls?.mode || "ALL_CHANNELS"}</TableCell><TableCell sx={{ maxWidth: 220, overflowWrap: "anywhere" }}>{item.url_settings.final_url}</TableCell><TableCell>{item.creative_assignment.set_key || "default"} · {(item.creative_assignment.media_ids || []).length}</TableCell><TableCell><StatusBadge value={item.local_validation.valid ? "VALID" : item.status} /></TableCell><TableCell><Tooltip title="Сохранить строку"><span><IconButton size="small" disabled={locked || !props.matrixEdits[item.id]} onClick={() => saveRow(item)}><SaveOutlinedIcon fontSize="small" /></IconButton></span></Tooltip></TableCell></TableRow>;
+            return <TableRow key={item.id} hover><TableCell padding="checkbox"><Checkbox checked={props.selectedRows.includes(item.id)} onChange={(e) => props.setSelectedRows(e.target.checked ? [...props.selectedRows, item.id] : props.selectedRows.filter((id) => id !== item.id))} /></TableCell><TableCell>{props.batch?.name}</TableCell><TableCell>{item.account_name}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell>{item.currency_code}<Typography variant="caption" display="block">{item.time_zone}</Typography></TableCell><TableCell>{item.campaign_sequence}</TableCell><TableCell><TextField size="small" value={edit.name} disabled={locked} onChange={(e) => props.setMatrixEdits({ ...props.matrixEdits, [item.id]: { ...edit, name: e.target.value } })} sx={{ width: 260 }} /></TableCell><TableCell><TextField size="small" type="number" value={edit.budget} disabled={locked} onChange={(e) => props.setMatrixEdits({ ...props.matrixEdits, [item.id]: { ...edit, budget: e.target.value } })} sx={{ width: 110 }} /></TableCell><TableCell>{item.bidding.strategy || "—"}</TableCell><TableCell>{(item.targeting.location_ids || []).join(", ")} / {(item.targeting.language_ids || []).join(", ")}</TableCell><TableCell>{item.targeting.channel_controls?.mode || "ALL_CHANNELS"}</TableCell><TableCell sx={{ maxWidth: 220, overflowWrap: "anywhere" }}>{item.url_settings.final_url}</TableCell><TableCell>{item.creative_assignment.set_key || "default"} · {(item.creative_assignment.media_ids || []).length}</TableCell><TableCell><StatusBadge value={item.local_validation.valid ? "VALID" : item.status} /></TableCell><TableCell><Tooltip title={t("ui.29d4c3cca8")}><span><IconButton size="small" disabled={locked || !props.matrixEdits[item.id]} onClick={() => saveRow(item)}><SaveOutlinedIcon fontSize="small" /></IconButton></span></Tooltip></TableCell></TableRow>;
           })}
-          {!props.filteredInstances.length && <TableRow><TableCell colSpan={15}>Матрица ещё не сформирована.</TableCell></TableRow>}
+          {!props.filteredInstances.length && <TableRow><TableCell colSpan={15}>{t("ui.cf90a64d52")}</TableCell></TableRow>}
         </TableBody></Table>
       </Box>
     </StepSection>
@@ -930,10 +929,10 @@ function CampaignMatrixStep(props: BuilderStepProps) {
 function LocalValidationStep(props: BuilderStepProps) {
   const validation = props.plan?.local_validation;
   return (
-    <StepSection title="Local validation">
-      {!props.scheduleId && <Alert severity="warning">Сначала зафиксируйте расписание.</Alert>}
-      <Button variant="contained" startIcon={<LockOutlinedIcon />} disabled={!props.batch || !props.scheduleId || props.busy || Boolean(props.plan)} onClick={props.onBuildPlan}>Зафиксировать immutable plan</Button>
-      {props.plan && <><InfoTable rows={[["Fingerprint", props.plan.fingerprint], ["Кампаний", validation?.campaign_count || 0], ["Аккаунтов", validation?.account_count || 0]]} /><IssueList severity="error" title="Ошибки" items={validation?.errors || []} /><IssueList severity="warning" title="Предупреждения" items={validation?.warnings || []} />{validation?.valid && <Alert severity="success">Local validation пройдена.</Alert>}</>}
+    <StepSection title={t("builder.step.localValidation")}>
+      {!props.scheduleId && <Alert severity="warning">{t("ui.fc4d362b49")}</Alert>}
+      <Button variant="contained" startIcon={<LockOutlinedIcon />} disabled={!props.batch || !props.scheduleId || props.busy || Boolean(props.plan)} onClick={props.onBuildPlan}>{t("ui.4da285d19c")}</Button>
+      {props.plan && <><InfoTable rows={[[t("common.fingerprint"), props.plan.fingerprint], [t("ui.cf645a44e5"), validation?.campaign_count || 0], [t("ui.9b92cdaa6e"), validation?.account_count || 0]]} /><IssueList severity="error" title={t("ui.681b5ae3d2")} items={validation?.errors || []} /><IssueList severity="warning" title={t("ui.4cbde65e99")} items={validation?.warnings || []} />{validation?.valid && <Alert severity="success">{t("ui.556cb09d07")}</Alert>}</>}
     </StepSection>
   );
 }
@@ -941,35 +940,35 @@ function LocalValidationStep(props: BuilderStepProps) {
 function GoogleValidationStep(props: BuilderStepProps) {
   const result = props.plan?.google_validation;
   return (
-    <StepSection title="Google validate_only">
-      <Alert severity={props.form.execution_mode === "SIMULATION" ? "info" : "warning"}>{props.form.execution_mode === "SIMULATION" ? "TEST / MOCK: Google не вызывается, request ID отсутствует." : "LIVE: официальный mutate с validate_only=true выполняется отдельно для каждой Campaign Instance."}</Alert>
-      <Button variant="contained" startIcon={<FactCheckOutlinedIcon />} disabled={!props.plan?.local_validation.valid || props.busy} onClick={props.onValidate}>Выполнить validate_only</Button>
-      {props.plan?.validated_at && <><Alert severity={result?.ok ? "success" : "error"}>{result?.ok ? "Проверка пройдена" : "Проверка завершилась ошибками"}</Alert><IssueList severity="error" title="Ошибки" items={result?.errors || []} /><Typography variant="body2">Request IDs: {props.plan.request_ids.length ? props.plan.request_ids.join(", ") : "отсутствуют"}</Typography></>}
+    <StepSection title={t("builder.step.googleValidation")}>
+      <Alert severity={props.form.execution_mode === "SIMULATION" ? "info" : "warning"}>{props.form.execution_mode === "SIMULATION" ? t("ui.a8558225b1") : t("ui.80ed29a7d6")}</Alert>
+      <Button variant="contained" startIcon={<FactCheckOutlinedIcon />} disabled={!props.plan?.local_validation.valid || props.busy} onClick={props.onValidate}>{t("ui.34f3cdcfdb")}</Button>
+      {props.plan?.validated_at && <><Alert severity={result?.ok ? "success" : "error"}>{result?.ok ? t("ui.cfff2f91e4") : t("ui.fa25f1de8e")}</Alert><IssueList severity="error" title={t("ui.681b5ae3d2")} items={result?.errors || []} /><Typography variant="body2">{t("common.requestIds")} {props.plan.request_ids.length ? props.plan.request_ids.join(", ") : t("ui.0d691505ba")}</Typography></>}
     </StepSection>
   );
 }
 
 function FinancialStep({ batch }: BuilderStepProps) {
-  return <StepSection title="Financial preview"><FinancialSummary batch={batch} /></StepSection>;
+  return <StepSection title={t("builder.step.financial")}><FinancialSummary batch={batch} /></StepSection>;
 }
 
 function CreationStep(props: BuilderStepProps) {
   const plan = props.plan;
   return (
-    <StepSection title="Creation in PAUSED">
-      <Alert severity={props.form.execution_mode === "LIVE" ? "warning" : "info"}>{props.form.execution_mode === "LIVE" ? "Расписание будет подтверждено; каждая Launch Group создаётся в PAUSED в своё время." : "Расписание будет выполнено в SIMULATION; Google не вызывается."}</Alert>
-      <Button variant="contained" color="warning" startIcon={<PlayArrowIcon />} disabled={!props.confirmed || plan?.status !== "VALIDATED" || props.busy} onClick={props.onConfirm}>Подтвердить расписание</Button>
-      {plan && <Stack direction="row" spacing={1}><StatusBadge value={plan.status} /><Chip label={`${plan.resource_names.length} resources`} /></Stack>}
+    <StepSection title={t("builder.step.creation")}>
+      <Alert severity={props.form.execution_mode === "LIVE" ? "warning" : "info"}>{props.form.execution_mode === "LIVE" ? t("ui.07050a689c") : t("ui.9c49d94bbc")}</Alert>
+      <Button variant="contained" color="warning" startIcon={<PlayArrowIcon />} disabled={!props.confirmed || plan?.status !== "VALIDATED" || props.busy} onClick={props.onConfirm}>{t("ui.318f6d31be")}</Button>
+      {plan && <Stack direction="row" spacing={1}><StatusBadge value={plan.status} /><Chip label={t("common.resourceCount", { count: plan.resource_names.length })} /></Stack>}
     </StepSection>
   );
 }
 
 function ReportStep(props: BuilderStepProps) {
   return (
-    <StepSection title="Report">
-      <InfoTable rows={[["Launch Batch", props.batch?.name || "—"], ["Группы запуска", props.batch?.bundles_count || 0], ["Campaign Instance", props.batch?.campaigns_count || 0], ["Plan", props.plan?.fingerprint || "—"], ["Статус", props.plan?.status || props.batch?.status || "DRAFT"], ["Режим", props.form.execution_mode]]} />
-      {props.plan?.status === "SUCCEEDED" && <Alert severity="success">Все созданные кампании находятся в PAUSED. Включение выполняется вручную на странице группы запуска.</Alert>}
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1}><Button variant="contained" onClick={() => props.navigate(props.scheduleId ? `/schedules/${props.scheduleId}` : "/schedules")}>Открыть расписание</Button><Button variant="outlined" onClick={() => props.navigate("/launch-groups")}>Открыть группы запуска</Button><Button variant="outlined" onClick={() => props.navigate("/audit")}>Открыть журнал</Button></Stack>
+    <StepSection title={t("builder.step.report")}>
+      <InfoTable rows={[[t("common.launchBatch"), props.batch?.name || "—"], [t("ui.279f79d8f0"), props.batch?.bundles_count || 0], [t("common.campaignInstance"), props.batch?.campaigns_count || 0], [t("common.plan"), props.plan?.fingerprint || "—"], [t("ui.f7f293b5c5"), props.plan?.status || props.batch?.status || "DRAFT"], [t("ui.ff0fbd56f4"), props.form.execution_mode]]} />
+      {props.plan?.status === "SUCCEEDED" && <Alert severity="success">{t("ui.530843faac")}</Alert>}
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1}><Button variant="contained" onClick={() => props.navigate(props.scheduleId ? `/schedules/${props.scheduleId}` : "/schedules")}>{t("ui.dcaee1d5cc")}</Button><Button variant="outlined" onClick={() => props.navigate("/launch-groups")}>{t("ui.81569b2f4f")}</Button><Button variant="outlined" onClick={() => props.navigate("/audit")}>{t("ui.f28b0859f1")}</Button></Stack>
     </StepSection>
   );
 }
@@ -977,8 +976,8 @@ function ReportStep(props: BuilderStepProps) {
 function FinancialSummary({ batch }: { batch?: LaunchBatch }) {
   const financial = batch?.financial_preview || {};
   const currencies = (financial.by_currency || []) as Array<Record<string, any>>;
-  if (!batch) return <Alert severity="info">Сначала сформируйте Campaign matrix.</Alert>;
-  return <Stack spacing={2}><InfoTable rows={[["Аккаунтов", financial.accounts || batch.bundles_count], ["Групп запуска", financial.launch_groups || batch.bundles_count], ["Кампаний", financial.campaigns || batch.campaigns_count], ["Создаётся в PAUSED", financial.campaigns || batch.campaigns_count], ["Включается при создании", 0]]} /><Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell>Валюта</TableCell><TableCell>Кампаний</TableCell><TableCell>Минимум</TableCell><TableCell>Максимум</TableCell><TableCell>Назначено</TableCell></TableRow></TableHead><TableBody>{currencies.map((item) => <TableRow key={item.currency_code}><TableCell>{item.currency_code}</TableCell><TableCell>{item.campaigns}</TableCell><TableCell>{item.minimum}</TableCell><TableCell>{item.maximum}</TableCell><TableCell sx={{ fontWeight: 700 }}>{item.assigned}</TableCell></TableRow>)}</TableBody></Table></Box></Stack>;
+  if (!batch) return <Alert severity="info">{t("ui.259dd04093")}</Alert>;
+  return <Stack spacing={2}><InfoTable rows={[[t("ui.9b92cdaa6e"), financial.accounts || batch.bundles_count], [t("ui.72fbe98b2f"), financial.launch_groups || batch.bundles_count], [t("ui.cf645a44e5"), financial.campaigns || batch.campaigns_count], [t("ui.8f286b40b5"), financial.campaigns || batch.campaigns_count], [t("ui.2099d83eb5"), 0]]} /><Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell>{t("ui.18be059f5f")}</TableCell><TableCell>{t("ui.cf645a44e5")}</TableCell><TableCell>{t("ui.54ddf3d43e")}</TableCell><TableCell>{t("ui.c6ba85417d")}</TableCell><TableCell>{t("ui.b9f1d1e1e4")}</TableCell></TableRow></TableHead><TableBody>{currencies.map((item) => <TableRow key={item.currency_code}><TableCell>{item.currency_code}</TableCell><TableCell>{item.campaigns}</TableCell><TableCell>{item.minimum}</TableCell><TableCell>{item.maximum}</TableCell><TableCell sx={{ fontWeight: 700 }}>{item.assigned}</TableCell></TableRow>)}</TableBody></Table></Box></Stack>;
 }
 
 function StepSection({ title, children }: { title: string; children: React.ReactNode }) {
@@ -1004,16 +1003,20 @@ function DomainValidationPanel({
     <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
       <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
         <Box sx={{ flex: 1, minWidth: 180 }}>
-          <Typography fontWeight={700}>Проверка доменов</Typography>
+          <Typography fontWeight={700}>{t("ui.a54933578c")}</Typography>
           <Typography variant="caption" color="text.secondary">
             {report
-              ? `${report.summary.domains} доменов · ${report.summary.urls} URL · режим ${report.enforcement}`
-              : "Ожидает проверки"}
+              ? t("domain.summary", {
+                domains: report.summary.domains,
+                urls: report.summary.urls,
+                mode: report.enforcement
+              })
+              : t("ui.fe7d04e399")}
           </Typography>
         </Box>
         <DomainStatusChip status={status} />
         {onRetry && (
-          <Tooltip title="Повторить проверку доступности и репутации">
+          <Tooltip title={t("ui.e2ae3f5568")}>
             <span>
               <IconButton size="small" disabled={loading} onClick={onRetry}>
                 {loading ? <CircularProgress size={18} /> : <RefreshIcon fontSize="small" />}
@@ -1027,7 +1030,7 @@ function DomainValidationPanel({
         <Accordion key={group.domain} disableGutters elevation={0} square>
           <AccordionSummary expandIcon={<ExpandMoreIcon />}>
             <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, width: "100%" }}>
-              <Typography sx={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{group.domain || "Некорректный URL"}</Typography>
+              <Typography sx={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{group.domain || t("ui.25d2877d6a")}</Typography>
               <DomainStatusChip status={group.status} />
             </Stack>
           </AccordionSummary>
@@ -1042,8 +1045,12 @@ function DomainValidationPanel({
         <Box sx={{ px: 2, pb: 1.5 }}>
           <Typography variant="body2" color={report?.summary.blocked ? "error.main" : "text.secondary"}>
             {report
-              ? `Работает: ${report.summary.working}; заблокировано: ${report.summary.blocked}; предупреждений: ${report.summary.warnings}`
-              : "Результат проверки ещё не получен"}
+              ? t("domain.compactSummary", {
+                working: report.summary.working,
+                blocked: report.summary.blocked,
+                warnings: report.summary.warnings
+              })
+              : t("ui.f2a6a1924d")}
           </Typography>
         </Box>
       )}
@@ -1058,15 +1065,15 @@ function DomainResultDetails({ item }: { item: DomainValidationResult }) {
       <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>{item.checked_url}</Typography>
       <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1, flexWrap: "wrap" }}>
         <Chip size="small" label={`HTTP: ${item.availability.http_status ?? "—"}`} />
-        <Chip size="small" label={`Ответ: ${item.availability.response_ms ?? "—"} мс`} />
-        <Chip size="small" label={`Попыток: ${item.availability.attempts ?? "—"}`} />
-        {item.cached && <Chip size="small" variant="outlined" label="Кэш" />}
+        <Chip size="small" label={t("domain.responseMs", { value: item.availability.response_ms ?? "—" })} />
+        <Chip size="small" label={t("domain.attempts", { count: item.availability.attempts ?? "—" })} />
+        {item.cached && <Chip size="small" variant="outlined" label={t("ui.7563df248a")} />}
       </Stack>
       <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1, overflowWrap: "anywhere" }}>
-        Конечный URL: {item.availability.final_url || "—"}
+        {t("ui.9187b5b24b")}{" "}{item.availability.final_url || "—"}
       </Typography>
       <Typography variant="caption" color="text.secondary" display="block">
-        Проверено: {item.checked_at ? new Date(item.checked_at).toLocaleString("ru-RU") : "—"}
+        {t("ui.c4d1c15d4b")}{" "}{formatDate(item.checked_at)}
       </Typography>
       {item.code !== "OK" && (
         <Alert severity={item.blocking ? "error" : "warning"} sx={{ mt: 1 }}>
@@ -1078,7 +1085,10 @@ function DomainResultDetails({ item }: { item: DomainValidationResult }) {
           {providers.map((provider) => (
             <Tooltip
               key={provider.provider}
-              title={`${provider.categories.join(", ") || "Категории угроз не найдены"} · попыток ${provider.attempts}`}
+              title={t("domain.providerAttempts", {
+                categories: provider.categories.join(", ") || t("ui.ce5733adc2"),
+                count: provider.attempts
+              })}
             >
               <Chip
                 size="small"
@@ -1127,42 +1137,42 @@ function groupDomainResults(items: DomainValidationResult[]) {
 
 function domainStatusLabel(status: string) {
   return ({
-    COMPLETED: "Проверено",
-    PENDING: "Ожидает проверки",
-    CHECKING: "Проверяется",
-    RECHECK_REQUIRED: "Требуется повторная проверка",
-    WORKING_CLEAN: "Работает · Чистый",
-    UNAVAILABLE: "Не работает",
-    THREAT: "Найден в базе угроз",
-    LOW_REPUTATION: "Новая/низкая репутация",
-    CHECK_UNAVAILABLE: "Проверка временно недоступна",
-    REPUTATION_NOT_CONFIGURED: "Проверка репутации не настроена"
+    COMPLETED: t("ui.7b3bb04ef1"),
+    PENDING: t("ui.fe7d04e399"),
+    CHECKING: t("ui.9568c47fde"),
+    RECHECK_REQUIRED: t("ui.60b2eb0058"),
+    WORKING_CLEAN: t("ui.ec796bd25b"),
+    UNAVAILABLE: t("ui.37cc8757db"),
+    THREAT: t("ui.1a6d3c8caf"),
+    LOW_REPUTATION: t("ui.e3f03d1873"),
+    CHECK_UNAVAILABLE: t("ui.583c537187"),
+    REPUTATION_NOT_CONFIGURED: t("ui.90838de802")
   } as Record<string, string>)[status] || status;
 }
 
 function domainReason(item: DomainValidationResult) {
   const reason = ({
-    DNS_ERROR: "Ошибка DNS",
-    TIMEOUT: "Превышено время ожидания",
-    TLS_ERROR: "Ошибка TLS/SSL",
-    CONNECTION_ERROR: "Не удалось подключиться",
-    HTTP_4XX: `Сайт вернул HTTP ${item.availability.http_status ?? "4xx"}`,
-    HTTP_5XX: `Сайт вернул HTTP ${item.availability.http_status ?? "5xx"}`,
-    REDIRECT_LOOP: "Обнаружен цикл перенаправлений",
-    TOO_MANY_REDIRECTS: "Слишком много перенаправлений",
-    INVALID_REDIRECT: "Некорректное перенаправление",
-    SSRF_BLOCKED: "Адрес заблокирован защитой SSRF",
-    INVALID_URL: "Некорректный URL",
-    EMPTY_URL: "URL не указан",
-    UNSUPPORTED_SCHEME: "Поддерживаются только HTTP и HTTPS",
-    CREDENTIALS_IN_URL: "URL не должен содержать логин и пароль",
-    DOMAIN_REPUTATION_THREAT: `Обнаружена угроза: ${(item.reputation.categories || []).join(", ")}`,
-    DOMAIN_LOW_REPUTATION: "У домена новая или недостаточная история",
-    DOMAIN_REPUTATION_UNAVAILABLE: "Один или несколько провайдеров временно недоступны",
-    DOMAIN_REPUTATION_NOT_CONFIGURED: "Ключи провайдеров репутации не настроены"
+    DNS_ERROR: t("ui.9c8b3103ee"),
+    TIMEOUT: t("ui.e2d71d2bdd"),
+    TLS_ERROR: t("ui.d4a497522e"),
+    CONNECTION_ERROR: t("ui.6bd21210b3"),
+    HTTP_4XX: t("domain.httpStatus", { status: item.availability.http_status ?? "4xx" }),
+    HTTP_5XX: t("domain.httpStatus", { status: item.availability.http_status ?? "5xx" }),
+    REDIRECT_LOOP: t("ui.5edf463e06"),
+    TOO_MANY_REDIRECTS: t("ui.9c3cdcb38f"),
+    INVALID_REDIRECT: t("ui.c7fa739414"),
+    SSRF_BLOCKED: t("ui.c2535a2e37"),
+    INVALID_URL: t("ui.25d2877d6a"),
+    EMPTY_URL: t("ui.1b35f4bb76"),
+    UNSUPPORTED_SCHEME: t("ui.3d80baa72c"),
+    CREDENTIALS_IN_URL: t("ui.5cb71ba081"),
+    DOMAIN_REPUTATION_THREAT: t("domain.threatFound", { categories: (item.reputation.categories || []).join(", ") }),
+    DOMAIN_LOW_REPUTATION: t("ui.53421299c2"),
+    DOMAIN_REPUTATION_UNAVAILABLE: t("ui.b6765fef6c"),
+    DOMAIN_REPUTATION_NOT_CONFIGURED: t("ui.4a4c26e6b5")
   } as Record<string, string>)[item.code] || item.code;
   return item.blocking
-    ? `Домен ${item.domain || "—"} не работает: ${reason}. Публикация связанных кампаний остановлена.`
+    ? t("domain.blockedMessage", { domain: item.domain || "—", reason })
     : reason;
 }
 
@@ -1173,11 +1183,11 @@ function InfoTable({ rows }: { rows: Array<[string, React.ReactNode]> }) {
 function CapabilityStrip({ capabilities, prefix }: { capabilities: Array<Record<string, any>>; prefix: string }) {
   const unavailable = capabilities.filter((item) => String(item.key).startsWith(prefix) && !item.supports_create);
   if (!unavailable.length) return null;
-  return <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>{unavailable.map((item) => <Tooltip key={item.key} title={item.reason || "Недоступно через API"}><Chip size="small" variant="outlined" color="default" label={`${item.label} · недоступно`} /></Tooltip>)}</Stack>;
+  return <Stack direction="row" spacing={1} useFlexGap sx={{ flexWrap: "wrap" }}>{unavailable.map((item) => <Tooltip key={item.key} title={item.reason || t("ui.18d68a6c33")}><Chip size="small" variant="outlined" color="default" label={t("capability.unavailable", { label: item.label })} /></Tooltip>)}</Stack>;
 }
 
 function ChoiceChecks({ label, values, selected, onChange }: { label: string; values: Array<[string, string]>; selected: string[]; onChange: (value: string[]) => void }) {
-  return <Box><Typography variant="body2" fontWeight={700}>{label}</Typography><Stack direction="row" useFlexGap sx={{ flexWrap: "wrap" }}>{values.map(([value, text]) => <FormControlLabel key={value} control={<Checkbox checked={selected.includes(value)} onChange={(e) => onChange(e.target.checked ? [...selected, value] : selected.filter((item) => item !== value))} />} label={text} />)}</Stack></Box>;
+  return <Box><Typography variant="body2" fontWeight={700}>{label}</Typography><Stack direction="row" useFlexGap sx={{ flexWrap: "wrap" }}>{values.map(([value, text]) => <FormControlLabel key={value} control={<Checkbox checked={selected.includes(value)} onChange={(e) => onChange(e.target.checked ? [...selected, value] : selected.filter((item) => item !== value))} />} label={text.startsWith("ui.") ? t(text) : text} />)}</Stack></Box>;
 }
 
 function IssueList({ title, severity, items }: { title: string; severity: "error" | "warning"; items: Array<{ message: string; path?: string }> }) {
@@ -1259,6 +1269,7 @@ function buildBatchPayload(form: BuilderForm, accounts: BuilderAccount[]) {
 }
 
 function hydrateBuilderForm(mode: string, builder: Record<string, any>): BuilderForm {
+  const emptyForm = createEmptyForm();
   const defaults = builder.template_defaults || {};
   const campaign = defaults.campaign || {};
   const bidding = defaults.bidding || {};
@@ -1335,17 +1346,17 @@ function normalizeBuilderAccount(value: any): BuilderAccount {
 }
 
 const copyModes = [
-  ["EXACT_COPY", "Точные копии"],
-  ["SAME_SETTINGS_RANDOM_BUDGET", "Одинаковые настройки, разные бюджеты"],
-  ["RANDOM_CREATIVE_SUBSET", "Случайное подмножество креативов"],
-  ["ROTATE_CREATIVE_SETS", "Ротация creative sets"],
-  ["BIDDING_VARIATIONS", "Варианты ставок"],
-  ["AUDIENCE_VARIATIONS", "Варианты аудиторий"],
-  ["CUSTOM_MATRIX", "Пользовательская матрица"]
+  ["EXACT_COPY", "ui.a19e93d695"],
+  ["SAME_SETTINGS_RANDOM_BUDGET", "ui.dea24ffe0e"],
+  ["RANDOM_CREATIVE_SUBSET", "ui.882667abb8"],
+  ["ROTATE_CREATIVE_SETS", "ui.3026613f2a"],
+  ["BIDDING_VARIATIONS", "ui.91e969dc0f"],
+  ["AUDIENCE_VARIATIONS", "ui.38d4983ef4"],
+  ["CUSTOM_MATRIX", "ui.4beb9f5339"]
 ];
 const channelLabels = [["youtube_in_stream", "YouTube In-stream"], ["youtube_in_feed", "YouTube In-feed"], ["youtube_shorts", "YouTube Shorts"], ["discover", "Discover"], ["gmail", "Gmail"], ["display", "Display"], ["maps", "Maps"]];
 const ageOptions: Array<[string, string]> = [["AGE_RANGE_18_24", "18–24"], ["AGE_RANGE_25_34", "25–34"], ["AGE_RANGE_35_44", "35–44"], ["AGE_RANGE_45_54", "45–54"], ["AGE_RANGE_55_64", "55–64"], ["AGE_RANGE_65_UP", "65+"]];
-const genderOptions: Array<[string, string]> = [["MALE", "Мужчины"], ["FEMALE", "Женщины"], ["UNDETERMINED", "Не определено"]];
+const genderOptions: Array<[string, string]> = [["MALE", "ui.e19b9f8774"], ["FEMALE", "ui.e94aa18bcf"], ["UNDETERMINED", "ui.1962b53a94"]];
 
 function splitLines(value: string) { return value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean); }
 function splitValues(value: string) { return value.split(/[\n,;|]/).map((item) => item.trim()).filter(Boolean); }
