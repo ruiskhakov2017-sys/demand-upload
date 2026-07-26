@@ -208,7 +208,8 @@ def schedule_fingerprint(snapshot: dict) -> str:
 
 
 def snapshot_fingerprint(snapshot: dict) -> str:
-    canonical = json.dumps(snapshot, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
+    material = {key: value for key, value in snapshot.items() if key != "domain_validation"}
+    canonical = json.dumps(material, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
 
 

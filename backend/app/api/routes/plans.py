@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from copy import deepcopy
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -38,6 +39,8 @@ from app.db.models import (
 from app.domain.audit import record_audit
 from app.domain.planner import build_batch_plan_snapshot, build_plan_snapshot, validate_plan_snapshot
 from app.domain.scheduling import snapshot_fingerprint
+from app.domain_validation.persistence import validate_snapshot
+from app.domain_validation.service import filter_blocked_campaigns, merge_domain_skips
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
 
@@ -95,6 +98,15 @@ def build_plan(
         )
     else:
         snapshot, fingerprint = build_plan_snapshot(upload, media, payload.execution_mode)
+    domain_report = validate_snapshot(
+        snapshot,
+        cached_report=(upload.draft or {}).get("domain_validation") or {},
+        force=False,
+    )
+    snapshot["domain_validation"] = domain_report
+    upload_draft = deepcopy(upload.draft or {})
+    upload_draft["domain_validation"] = domain_report
+    upload.draft = upload_draft
     if schedule:
         from app.api.routes.schedules import schedule_plan_snapshot
 
@@ -108,7 +120,7 @@ def build_plan(
                 select(ScheduledAccountRun).where(ScheduledAccountRun.schedule_id == schedule.id)
             ).all():
                 run.deployment_plan_id = existing.id
-            db.commit()
+        db.commit()
         return existing
     validation = validate_plan_snapshot(snapshot)
     plan = DeploymentPlan(
@@ -177,6 +189,10 @@ def validate_plan(
     plan = _get_plan(db, plan_id)
     local = validate_plan_snapshot(plan.snapshot)
     plan.local_validation = local
+    validation_snapshot, domain_skipped = filter_blocked_campaigns(
+        plan.snapshot,
+        plan.snapshot.get("domain_validation") or {},
+    )
     if not local["valid"]:
         result = {
             "ok": False,
@@ -188,13 +204,23 @@ def validate_plan(
             "details": {"validate_only": False, "google_contacted": False},
         }
     elif plan.execution_mode == "SIMULATION":
-        execution = MockGoogleAdsAdapter().validate_plan(plan.snapshot)
+        execution = MockGoogleAdsAdapter().validate_plan(validation_snapshot)
+        execution = merge_domain_skips(
+            execution,
+            domain_skipped,
+            plan.snapshot.get("domain_validation") or {},
+        )
         result = execution.__dict__
     else:
         connection = db.get(GoogleConnection, plan.connection_id) if plan.connection_id else None
         if not is_google_connection_active(connection):
             raise HTTPException(status_code=409, detail="Подключение Google недоступно")
-        execution = build_google_ads_adapter(db, connection).validate_plan(plan.snapshot)
+        execution = build_google_ads_adapter(db, connection).validate_plan(validation_snapshot)
+        execution = merge_domain_skips(
+            execution,
+            domain_skipped,
+            plan.snapshot.get("domain_validation") or {},
+        )
         result = execution.__dict__
 
     plan.google_validation = result

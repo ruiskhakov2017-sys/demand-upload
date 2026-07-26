@@ -1,4 +1,7 @@
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -33,6 +36,7 @@ import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import FactCheckOutlinedIcon from "@mui/icons-material/FactCheckOutlined";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
@@ -48,6 +52,8 @@ import {
   CampaignInstance,
   CustomerAccount,
   DeploymentPlan,
+  DomainValidationReport,
+  DomainValidationResult,
   LaunchBatch,
   MediaAsset
 } from "../api/client";
@@ -256,6 +262,11 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
   const media = useQuery({ queryKey: ["media"], queryFn: api.listMedia });
   const plans = useQuery({ queryKey: ["plans"], queryFn: api.listPlans });
   const capabilities = useQuery({ queryKey: ["capabilities"], queryFn: api.getCapabilities });
+  const domainValidation = useQuery({
+    queryKey: ["domain-validation", uploadId],
+    queryFn: () => api.getDomainValidation(uploadId),
+    refetchInterval: (query) => query.state.data?.status === "PENDING" ? 1500 : false
+  });
   const [form, setForm] = useState<BuilderForm>(emptyForm);
   const [selectedAccounts, setSelectedAccounts] = useState<BuilderAccount[]>([]);
   const [connectionId, setConnectionId] = useState("");
@@ -385,7 +396,16 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     mutationFn: (file: File) => api.importUpload(uploadId, file),
     onSuccess: (result) => {
       queryClient.setQueryData(["upload", uploadId], result.upload);
+      queryClient.invalidateQueries({ queryKey: ["domain-validation", uploadId] });
       setNotice(`Импортировано строк: ${result.row_count}`);
+    }
+  });
+  const retryDomainValidation = useMutation({
+    mutationFn: () => api.retryDomainValidation(uploadId),
+    onSuccess: (report) => {
+      queryClient.setQueryData(["domain-validation", uploadId], report);
+      queryClient.invalidateQueries({ queryKey: ["upload", uploadId] });
+      setNotice("Проверка доменов завершена");
     }
   });
   const uploadMedia = useMutation({
@@ -449,6 +469,12 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
       </Box>
       {mutationError && <Alert severity="error">{mutationError.message}</Alert>}
       {notice && <Alert severity="success" onClose={() => setNotice(null)}>{notice}</Alert>}
+      <DomainValidationPanel
+        report={domainValidation.data}
+        loading={domainValidation.isLoading || retryDomainValidation.isPending}
+        error={domainValidation.error?.message || retryDomainValidation.error?.message}
+        onRetry={() => retryDomainValidation.mutate()}
+      />
 
       <Paper variant="outlined" sx={{ overflow: "hidden", minWidth: 0 }}>
         <Box sx={{ overflowX: "auto", px: 2, pt: 2 }}>
@@ -479,6 +505,10 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
             capabilities={capabilities.data?.fields || []}
             batch={batch}
             plan={activePlan}
+            domainValidation={
+              (activePlan?.snapshot.domain_validation as DomainValidationReport | undefined)
+              || domainValidation.data
+            }
             allInstances={allInstances}
             filteredInstances={filteredInstances}
             matrixFilter={matrixFilter}
@@ -545,6 +575,7 @@ type BuilderStepProps = {
   capabilities: Array<Record<string, any>>;
   batch?: LaunchBatch;
   plan?: DeploymentPlan;
+  domainValidation?: DomainValidationReport;
   allInstances: CampaignInstance[];
   filteredInstances: CampaignInstance[];
   matrixFilter: string;
@@ -633,6 +664,7 @@ function BuilderStep(props: BuilderStepProps) {
   if (step === 18) return (
     <StepSection title="Подтверждение">
       <FinancialSummary batch={props.batch} />
+      <DomainValidationPanel report={props.domainValidation} compact />
       <FormControlLabel control={<Checkbox checked={props.confirmed} onChange={(e) => props.setConfirmed(e.target.checked)} />} label="Я проверил immutable plan и подтверждаю создание кампаний в PAUSED" />
       <TextField type="password" label="Пароль администратора при превышении лимитов" value={form.password_confirmation} onChange={(e) => set("password_confirmation", e.target.value)} sx={{ maxWidth: 440 }} />
     </StepSection>
@@ -951,6 +983,187 @@ function FinancialSummary({ batch }: { batch?: LaunchBatch }) {
 
 function StepSection({ title, children }: { title: string; children: React.ReactNode }) {
   return <Stack spacing={2.5}><Typography variant="h6">{title}</Typography>{children}</Stack>;
+}
+
+function DomainValidationPanel({
+  report,
+  loading = false,
+  error,
+  onRetry,
+  compact = false
+}: {
+  report?: DomainValidationReport;
+  loading?: boolean;
+  error?: string;
+  onRetry?: () => void;
+  compact?: boolean;
+}) {
+  const groups = groupDomainResults(report?.results || []);
+  const status = groups[0]?.status || report?.status || "PENDING";
+  return (
+    <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, overflow: "hidden" }}>
+      <Box sx={{ px: 2, py: 1.5, display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+        <Box sx={{ flex: 1, minWidth: 180 }}>
+          <Typography fontWeight={700}>Проверка доменов</Typography>
+          <Typography variant="caption" color="text.secondary">
+            {report
+              ? `${report.summary.domains} доменов · ${report.summary.urls} URL · режим ${report.enforcement}`
+              : "Ожидает проверки"}
+          </Typography>
+        </Box>
+        <DomainStatusChip status={status} />
+        {onRetry && (
+          <Tooltip title="Повторить проверку доступности и репутации">
+            <span>
+              <IconButton size="small" disabled={loading} onClick={onRetry}>
+                {loading ? <CircularProgress size={18} /> : <RefreshIcon fontSize="small" />}
+              </IconButton>
+            </span>
+          </Tooltip>
+        )}
+      </Box>
+      {error && <Alert severity="error" sx={{ borderRadius: 0 }}>{error}</Alert>}
+      {!compact && groups.map((group) => (
+        <Accordion key={group.domain} disableGutters elevation={0} square>
+          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0, width: "100%" }}>
+              <Typography sx={{ flex: 1, minWidth: 0, overflowWrap: "anywhere" }}>{group.domain || "Некорректный URL"}</Typography>
+              <DomainStatusChip status={group.status} />
+            </Stack>
+          </AccordionSummary>
+          <AccordionDetails sx={{ pt: 0 }}>
+            <Stack spacing={1.5}>
+              {group.items.map((item) => <DomainResultDetails key={item.url_hash} item={item} />)}
+            </Stack>
+          </AccordionDetails>
+        </Accordion>
+      ))}
+      {compact && (
+        <Box sx={{ px: 2, pb: 1.5 }}>
+          <Typography variant="body2" color={report?.summary.blocked ? "error.main" : "text.secondary"}>
+            {report
+              ? `Работает: ${report.summary.working}; заблокировано: ${report.summary.blocked}; предупреждений: ${report.summary.warnings}`
+              : "Результат проверки ещё не получен"}
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+}
+
+function DomainResultDetails({ item }: { item: DomainValidationResult }) {
+  const providers = item.reputation.providers || [];
+  return (
+    <Box sx={{ borderTop: 1, borderColor: "divider", pt: 1.5 }}>
+      <Typography variant="body2" sx={{ overflowWrap: "anywhere" }}>{item.checked_url}</Typography>
+      <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1, flexWrap: "wrap" }}>
+        <Chip size="small" label={`HTTP: ${item.availability.http_status ?? "—"}`} />
+        <Chip size="small" label={`Ответ: ${item.availability.response_ms ?? "—"} мс`} />
+        <Chip size="small" label={`Попыток: ${item.availability.attempts ?? "—"}`} />
+        {item.cached && <Chip size="small" variant="outlined" label="Кэш" />}
+      </Stack>
+      <Typography variant="caption" color="text.secondary" display="block" sx={{ mt: 1, overflowWrap: "anywhere" }}>
+        Конечный URL: {item.availability.final_url || "—"}
+      </Typography>
+      <Typography variant="caption" color="text.secondary" display="block">
+        Проверено: {item.checked_at ? new Date(item.checked_at).toLocaleString("ru-RU") : "—"}
+      </Typography>
+      {item.code !== "OK" && (
+        <Alert severity={item.blocking ? "error" : "warning"} sx={{ mt: 1 }}>
+          {domainReason(item)}
+        </Alert>
+      )}
+      {!!providers.length && (
+        <Stack direction="row" spacing={1} useFlexGap sx={{ mt: 1, flexWrap: "wrap" }}>
+          {providers.map((provider) => (
+            <Tooltip
+              key={provider.provider}
+              title={`${provider.categories.join(", ") || "Категории угроз не найдены"} · попыток ${provider.attempts}`}
+            >
+              <Chip
+                size="small"
+                variant="outlined"
+                color={provider.verdict === "THREAT" ? "error" : provider.verdict === "CLEAN" ? "success" : "warning"}
+                label={`${provider.provider}: ${provider.verdict}`}
+              />
+            </Tooltip>
+          ))}
+        </Stack>
+      )}
+    </Box>
+  );
+}
+
+function DomainStatusChip({ status }: { status: string }) {
+  const normalized = status.toUpperCase();
+  const label = domainStatusLabel(normalized);
+  const color = normalized === "THREAT" || normalized === "UNAVAILABLE"
+    ? "error"
+    : normalized === "WORKING_CLEAN" || normalized === "COMPLETED"
+      ? "success"
+      : "warning";
+  return <Chip size="small" color={color} variant={normalized === "PENDING" ? "outlined" : "filled"} label={label} />;
+}
+
+function groupDomainResults(items: DomainValidationResult[]) {
+  const rank: Record<string, number> = {
+    THREAT: 6,
+    UNAVAILABLE: 5,
+    CHECK_UNAVAILABLE: 4,
+    RECHECK_REQUIRED: 3,
+    PENDING: 2,
+    REPUTATION_NOT_CONFIGURED: 2,
+    LOW_REPUTATION: 1,
+    WORKING_CLEAN: 0
+  };
+  const groups = new Map<string, DomainValidationResult[]>();
+  items.forEach((item) => groups.set(item.domain, [...(groups.get(item.domain) || []), item]));
+  return [...groups.entries()].map(([domain, values]) => ({
+    domain,
+    items: values,
+    status: [...values].sort((a, b) => (rank[b.status] || 0) - (rank[a.status] || 0))[0]?.status || "PENDING"
+  }));
+}
+
+function domainStatusLabel(status: string) {
+  return ({
+    COMPLETED: "Проверено",
+    PENDING: "Ожидает проверки",
+    CHECKING: "Проверяется",
+    RECHECK_REQUIRED: "Требуется повторная проверка",
+    WORKING_CLEAN: "Работает · Чистый",
+    UNAVAILABLE: "Не работает",
+    THREAT: "Найден в базе угроз",
+    LOW_REPUTATION: "Новая/низкая репутация",
+    CHECK_UNAVAILABLE: "Проверка временно недоступна",
+    REPUTATION_NOT_CONFIGURED: "Проверка репутации не настроена"
+  } as Record<string, string>)[status] || status;
+}
+
+function domainReason(item: DomainValidationResult) {
+  const reason = ({
+    DNS_ERROR: "Ошибка DNS",
+    TIMEOUT: "Превышено время ожидания",
+    TLS_ERROR: "Ошибка TLS/SSL",
+    CONNECTION_ERROR: "Не удалось подключиться",
+    HTTP_4XX: `Сайт вернул HTTP ${item.availability.http_status ?? "4xx"}`,
+    HTTP_5XX: `Сайт вернул HTTP ${item.availability.http_status ?? "5xx"}`,
+    REDIRECT_LOOP: "Обнаружен цикл перенаправлений",
+    TOO_MANY_REDIRECTS: "Слишком много перенаправлений",
+    INVALID_REDIRECT: "Некорректное перенаправление",
+    SSRF_BLOCKED: "Адрес заблокирован защитой SSRF",
+    INVALID_URL: "Некорректный URL",
+    EMPTY_URL: "URL не указан",
+    UNSUPPORTED_SCHEME: "Поддерживаются только HTTP и HTTPS",
+    CREDENTIALS_IN_URL: "URL не должен содержать логин и пароль",
+    DOMAIN_REPUTATION_THREAT: `Обнаружена угроза: ${(item.reputation.categories || []).join(", ")}`,
+    DOMAIN_LOW_REPUTATION: "У домена новая или недостаточная история",
+    DOMAIN_REPUTATION_UNAVAILABLE: "Один или несколько провайдеров временно недоступны",
+    DOMAIN_REPUTATION_NOT_CONFIGURED: "Ключи провайдеров репутации не настроены"
+  } as Record<string, string>)[item.code] || item.code;
+  return item.blocking
+    ? `Домен ${item.domain || "—"} не работает: ${reason}. Публикация связанных кампаний остановлена.`
+    : reason;
 }
 
 function InfoTable({ rows }: { rows: Array<[string, React.ReactNode]> }) {

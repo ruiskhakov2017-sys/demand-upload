@@ -12,6 +12,11 @@ from app.core.database import get_db
 from app.db.models import CampaignUpload, UploadStatus, User
 from app.domain.audit import record_audit
 from app.domain.tabular import parse_tabular
+from app.domain_validation.persistence import (
+    enqueue_upload_validation,
+    mark_upload_validation_pending,
+    validate_upload,
+)
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 MAX_IMPORT_BYTES = 20 * 1024 * 1024
@@ -78,6 +83,9 @@ def update_upload(
     if material_changed:
         upload.status = UploadStatus.DRAFT.value
         upload.last_error = None
+    should_validate = material_changed and "draft" in changed
+    if should_validate:
+        mark_upload_validation_pending(db, upload)
     record_audit(
         db,
         request,
@@ -89,6 +97,8 @@ def update_upload(
     )
     db.commit()
     db.refresh(upload)
+    if should_validate:
+        enqueue_upload_validation(upload.id)
     return upload
 
 
@@ -112,6 +122,7 @@ async def import_upload_file(
     upload.source_name = file.filename
     upload.source_rows = rows
     upload.status = UploadStatus.DRAFT.value
+    mark_upload_validation_pending(db, upload)
     columns = sorted({key for row in rows for key in row})
     record_audit(
         db,
@@ -124,6 +135,7 @@ async def import_upload_file(
     )
     db.commit()
     db.refresh(upload)
+    enqueue_upload_validation(upload.id)
     return ImportOut(upload=UploadOut.model_validate(upload), row_count=len(rows), columns=columns, preview=rows[:10])
 
 
@@ -140,6 +152,7 @@ def set_manual_rows(
     upload.source_name = None
     upload.source_rows = payload.rows
     upload.status = UploadStatus.DRAFT.value
+    mark_upload_validation_pending(db, upload)
     record_audit(
         db,
         request,
@@ -151,7 +164,50 @@ def set_manual_rows(
     )
     db.commit()
     db.refresh(upload)
+    enqueue_upload_validation(upload.id)
     return upload
+
+
+@router.get("/{upload_id}/domain-validation")
+def get_domain_validation(
+    upload_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    upload = _get_upload(db, upload_id)
+    report = (upload.draft or {}).get("domain_validation")
+    if report:
+        return report
+    report = mark_upload_validation_pending(db, upload)
+    db.commit()
+    enqueue_upload_validation(upload.id)
+    return report
+
+
+@router.post("/{upload_id}/domain-validation/retry")
+def retry_domain_validation(
+    upload_id: UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_csrf),
+) -> dict:
+    upload = _get_upload(db, upload_id)
+    report = validate_upload(db, upload, force=True)
+    record_audit(
+        db,
+        request,
+        user,
+        "upload.domain_validation.retry",
+        "campaign_upload",
+        str(upload.id),
+        {
+            "urls": report["summary"]["urls"],
+            "blocked": report["summary"]["blocked"],
+            "enforcement": report["enforcement"],
+        },
+    )
+    db.commit()
+    return report
 
 
 def _get_upload(db: Session, upload_id: UUID) -> CampaignUpload:

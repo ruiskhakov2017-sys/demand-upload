@@ -23,6 +23,17 @@ class Settings(BaseSettings):
     app_encryption_key: str = Field(alias="APP_ENCRYPTION_KEY")
     google_ads_api_version: str = Field(default="v24.2", alias="GOOGLE_ADS_API_VERSION")
     storage_root: Path = Field(default=Path("/var/lib/dgu/storage"), alias="STORAGE_ROOT")
+    domain_validation_timeout_seconds: float = Field(default=8.0, ge=1.0, le=30.0)
+    domain_validation_max_redirects: int = Field(default=5, ge=1, le=10)
+    domain_validation_max_parallel: int = Field(default=6, ge=1, le=20)
+    domain_validation_cache_minutes: int = Field(default=360, ge=1, le=1440)
+    web_risk_enabled: bool = Field(default=False, alias="WEB_RISK_ENABLED")
+    web_risk_api_key: str | None = Field(default=None, alias="WEB_RISK_API_KEY")
+    spamhaus_dqs_enabled: bool = Field(default=False, alias="SPAMHAUS_DQS_ENABLED")
+    spamhaus_dqs_key: str | None = Field(default=None, alias="SPAMHAUS_DQS_KEY")
+    ipqs_enabled: bool = Field(default=False, alias="IPQS_ENABLED")
+    ipqs_api_key: str | None = Field(default=None, alias="IPQS_API_KEY")
+    domain_reputation_enforcement: str = Field(default="monitor", alias="DOMAIN_REPUTATION_ENFORCEMENT")
 
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -37,6 +48,14 @@ class Settings(BaseSettings):
         if isinstance(value, str) and not value.strip().startswith("["):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value
+
+    @field_validator("domain_reputation_enforcement")
+    @classmethod
+    def validate_reputation_enforcement(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"monitor", "block"}:
+            raise ValueError("DOMAIN_REPUTATION_ENFORCEMENT must be monitor or block")
+        return normalized
 
     @property
     def is_production(self) -> bool:

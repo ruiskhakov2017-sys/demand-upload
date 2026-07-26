@@ -33,6 +33,12 @@ from app.db.models import (
     PlanStatus,
     UploadStatus,
 )
+from app.domain_validation.persistence import validate_snapshot, validate_upload
+from app.domain_validation.service import (
+    blocked_execution_result,
+    filter_blocked_campaigns,
+    merge_domain_skips,
+)
 from app.google_ads.interface import PlanExecutionResult
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
@@ -43,6 +49,24 @@ from app.jobs.celery_app import celery_app
 @celery_app.task(name="app.jobs.ping")
 def ping() -> str:
     return "pong"
+
+
+@celery_app.task(name="app.jobs.validate_upload_domains")
+def validate_upload_domains(upload_id: str) -> dict:
+    with SessionLocal() as db:
+        try:
+            upload = db.get(CampaignUpload, UUID(upload_id))
+        except ValueError:
+            upload = None
+        if not upload:
+            return {"ok": False, "code": "UPLOAD_NOT_FOUND"}
+        try:
+            report = validate_upload(db, upload, force=False)
+            db.commit()
+            return {"ok": True, "summary": report["summary"]}
+        except Exception as exc:
+            db.rollback()
+            return {"ok": False, "code": exc.__class__.__name__}
 
 
 @celery_app.task(name="app.jobs.deploy_plan")
@@ -64,21 +88,30 @@ def deploy_plan(plan_id: str, job_id: str) -> dict:
 
         try:
             snapshot, reused_resources = _pending_deployment_snapshot(db, plan, job)
+            domain_report = validate_snapshot(
+                snapshot,
+                cached_report=plan.snapshot.get("domain_validation") or {},
+                force=plan.execution_mode == "LIVE",
+            )
+            snapshot, domain_skipped = filter_blocked_campaigns(snapshot, domain_report)
             if not snapshot.get("campaigns"):
-                result = PlanExecutionResult(
-                    ok=True,
-                    mode=plan.execution_mode,
-                    errors=[],
-                    warnings=[{"code": "IDEMPOTENT_REUSE", "message": "Все Campaign Instance уже созданы"}],
-                    request_ids=[],
-                    resource_names=reused_resources,
-                    details={
-                        "validate_only": False,
-                        "google_contacted": False,
-                        "campaign_status": "PAUSED",
-                        "instances": [],
-                    },
-                )
+                if domain_skipped:
+                    result = blocked_execution_result(plan.execution_mode, domain_skipped, domain_report)
+                else:
+                    result = PlanExecutionResult(
+                        ok=True,
+                        mode=plan.execution_mode,
+                        errors=[],
+                        warnings=[{"code": "IDEMPOTENT_REUSE", "message": "Все Campaign Instance уже созданы"}],
+                        request_ids=[],
+                        resource_names=reused_resources,
+                        details={
+                            "validate_only": False,
+                            "google_contacted": False,
+                            "campaign_status": "PAUSED",
+                            "instances": [],
+                        },
+                    )
             if plan.execution_mode == "SIMULATION":
                 if snapshot.get("campaigns"):
                     result = MockGoogleAdsAdapter().deploy_plan(snapshot)
@@ -87,6 +120,8 @@ def deploy_plan(plan_id: str, job_id: str) -> dict:
                 if not is_google_connection_active(connection):
                     raise ValueError("Активное подключение Google недоступно")
                 result = build_google_ads_adapter(db, connection).deploy_plan(snapshot)
+            if snapshot.get("campaigns"):
+                result = merge_domain_skips(result, domain_skipped, domain_report)
         except Exception as exc:
             _fail_job(db, job, str(exc), "deployment_plan", plan_id)
             plan.status = PlanStatus.FAILED.value
@@ -212,9 +247,10 @@ def _save_deployment_instances(db, plan: DeploymentPlan, result: PlanExecutionRe
                     )
                 )
         else:
-            instance.status = "DEPLOYMENT_FAILED"
+            instance.status = "DOMAIN_BLOCKED" if row.get("skipped") else "DEPLOYMENT_FAILED"
             instance.error_message = "; ".join(
-                str(item.get("message") or "Ошибка Google Ads") for item in row.get("errors") or []
+                str(item.get("code") or item.get("message") or "GOOGLE_ADS_ERROR")
+                for item in row.get("errors") or []
             )
 
 
@@ -256,7 +292,7 @@ def _update_batch_deployment_status(db, plan: DeploymentPlan, succeeded: bool) -
         bundle_instances = [item for item in instances if item.account_test_bundle_id == bundle.id]
         if bundle_instances and all(item.status in {"PAUSED", "ENABLED"} for item in bundle_instances):
             bundle.status = "READY"
-        elif any(item.status == "DEPLOYMENT_FAILED" for item in bundle_instances):
+        elif any(item.status in {"DEPLOYMENT_FAILED", "DOMAIN_BLOCKED"} for item in bundle_instances):
             bundle.status = "PARTIAL_FAILURE"
     if batch:
         if instances and all(item.status in {"PAUSED", "ENABLED"} for item in instances):

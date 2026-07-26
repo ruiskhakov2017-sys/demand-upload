@@ -39,6 +39,7 @@ from app.domain.batch_generator import (
     deep_merge,
     generate_batch_matrix,
 )
+from app.domain_validation.persistence import enqueue_upload_validation, mark_upload_validation_pending
 from app.google_ads.service import is_google_connection_active
 
 router = APIRouter(tags=["campaign-builder"])
@@ -207,6 +208,7 @@ def generate_launch_batch(
     upload.current_step = 13
     upload.status = "DRAFT"
     db.flush()
+    mark_upload_validation_pending(db, upload)
     record_audit(
         db,
         request,
@@ -222,6 +224,7 @@ def generate_launch_batch(
         },
     )
     db.commit()
+    enqueue_upload_validation(upload.id)
     return _batch_detail(db, batch)
 
 
@@ -269,6 +272,9 @@ def patch_campaign_instance(
     instance.deployment_key = build_deployment_key(_instance_key_payload(instance))
     batch = db.get(LaunchBatch, instance.launch_batch_id)
     batch.financial_preview = _recalculate_financial(db, batch.id)
+    upload = db.get(CampaignUpload, batch.upload_id)
+    if upload and "url_settings" in payload.model_fields_set:
+        mark_upload_validation_pending(db, upload)
     db.flush()
     record_audit(
         db,
@@ -281,6 +287,8 @@ def patch_campaign_instance(
     )
     db.commit()
     db.refresh(instance)
+    if upload and "url_settings" in payload.model_fields_set:
+        enqueue_upload_validation(upload.id)
     return _instance_out(instance, db.get(AccountTestBundle, instance.account_test_bundle_id))
 
 

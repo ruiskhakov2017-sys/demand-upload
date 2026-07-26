@@ -38,6 +38,12 @@ from app.domain.scheduling import (
     should_pause_after_downtime,
     snapshot_fingerprint,
 )
+from app.domain_validation.persistence import validate_snapshot
+from app.domain_validation.service import (
+    blocked_execution_result,
+    filter_blocked_campaigns,
+    merge_domain_skips,
+)
 from app.google_ads.interface import PlanExecutionResult
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
@@ -256,6 +262,20 @@ def execute_scheduled_account_run(run_id: str, now_iso: str | None = None) -> di
                     "Immutable plan был изменён после подтверждения",
                 )
             snapshot, reused_resources = _account_snapshot(db, plan, bundle)
+            domain_report = validate_snapshot(
+                snapshot,
+                cached_report=plan.snapshot.get("domain_validation") or {},
+                force=plan.execution_mode == "LIVE",
+            )
+            snapshot, domain_skipped = filter_blocked_campaigns(snapshot, domain_report)
+            if domain_skipped and not snapshot.get("campaigns"):
+                blocked_result = blocked_execution_result(plan.execution_mode, domain_skipped, domain_report)
+                _save_deployment_instances(db, plan, blocked_result)
+                raise ScheduledExecutionError(
+                    "DOMAIN_VALIDATION_BLOCKED",
+                    "DOMAIN_VALIDATION_BLOCKED",
+                    blocked_result.errors,
+                )
             _check_assets(db, snapshot)
             local = validate_plan_snapshot(snapshot)
             if not local["valid"]:
@@ -296,6 +316,7 @@ def execute_scheduled_account_run(run_id: str, now_iso: str | None = None) -> di
                 if snapshot.get("campaigns")
                 else _empty_result(plan.execution_mode, reused_resources, validate_only=False)
             )
+            result = merge_domain_skips(result, domain_skipped, domain_report)
             _save_deployment_instances(db, plan, result)
             run.request_ids = _unique([*(run.request_ids or []), *result.request_ids])
             run.resource_names = _unique(

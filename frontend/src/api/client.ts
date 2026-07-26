@@ -44,6 +44,63 @@ export type CampaignDraft = {
   launch_batch_id?: string;
   schedule_id?: string;
   builder?: Record<string, any>;
+  domain_validation?: DomainValidationReport;
+};
+
+export type DomainProviderResult = {
+  provider: string;
+  verdict: string;
+  categories: string[];
+  diagnostics: Record<string, unknown>;
+  attempts: number;
+};
+
+export type DomainValidationResult = {
+  url_hash: string;
+  domain: string;
+  checked_url: string;
+  status: string;
+  code: string;
+  params: Record<string, any>;
+  blocking: boolean;
+  warning: boolean;
+  cached: boolean;
+  checked_at: string | null;
+  expires_at: string | null;
+  availability: {
+    status?: string;
+    code?: string;
+    http_status?: number | null;
+    final_url?: string | null;
+    response_ms?: number | null;
+    attempts?: number;
+  };
+  reputation: {
+    status?: string;
+    enforcement?: "monitor" | "block";
+    blocking?: boolean;
+    would_block?: boolean;
+    categories?: string[];
+    providers?: DomainProviderResult[];
+    checked_at?: string | null;
+  };
+  references: Array<Record<string, unknown>>;
+};
+
+export type DomainValidationReport = {
+  status: string;
+  fresh: boolean;
+  enforcement: "monitor" | "block";
+  checked_at: string;
+  duration_ms?: number;
+  summary: {
+    urls: number;
+    domains: number;
+    working: number;
+    blocked: number;
+    warnings: number;
+  };
+  results: DomainValidationResult[];
 };
 
 export type CampaignUpload = {
@@ -390,6 +447,10 @@ export const api = {
       { method: "POST", body }
     );
   },
+  getDomainValidation: (id: string) =>
+    request<DomainValidationReport>(`/uploads/${id}/domain-validation`),
+  retryDomainValidation: (id: string) =>
+    request<DomainValidationReport>(`/uploads/${id}/domain-validation/retry`, { method: "POST" }),
 
   listMedia: () => request<MediaAsset[]>("/media"),
   mediaContentUrl: (id: string) => `/api/media/${encodeURIComponent(id)}/content`,

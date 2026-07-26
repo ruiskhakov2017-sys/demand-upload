@@ -6,6 +6,7 @@ from copy import deepcopy
 from urllib.parse import urlparse
 
 from app.db.models import AccountTestBundle, CampaignInstance, CampaignUpload, LaunchBatch, MediaAsset
+from app.domain_validation.url_tools import url_fingerprint
 
 
 def build_plan_snapshot(upload: CampaignUpload, media: list[MediaAsset], execution_mode: str) -> tuple[dict, str]:
@@ -116,6 +117,11 @@ def validate_plan_snapshot(snapshot: dict) -> dict:
     warnings: list[dict] = []
     campaigns = snapshot.get("campaigns") or []
     media_by_id = {item["id"]: item for item in snapshot.get("media") or []}
+    domain_report = snapshot.get("domain_validation") or {}
+    domain_by_hash = {
+        item.get("url_hash"): item for item in domain_report.get("results") or []
+    }
+    domain_error_indexes: set[int] = set()
     if not campaigns:
         errors.append(_issue("campaigns", "EMPTY", "Нет кампаний для создания"))
 
@@ -131,9 +137,33 @@ def validate_plan_snapshot(snapshot: dict) -> dict:
             errors.append(_issue(f"{path}.business_name", "TOO_LONG", "Название компании: максимум 25 символов"))
 
         final_url = str(campaign.get("final_url") or "")
+        domain_result = domain_by_hash.get(url_fingerprint(final_url))
         parsed_url = urlparse(final_url)
-        if parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc:
+        if not domain_result and (parsed_url.scheme not in {"http", "https"} or not parsed_url.netloc):
             errors.append(_issue(f"{path}.final_url", "INVALID_URL", "Нужен полный URL с http:// или https://"))
+        if domain_result and domain_result.get("blocking"):
+            domain_error_indexes.add(index)
+            errors.append(
+                _domain_issue(
+                    f"{path}.final_url",
+                    str(domain_result.get("code") or "DOMAIN_VALIDATION_BLOCKED"),
+                    {
+                        **(domain_result.get("params") or {}),
+                        "domain": domain_result.get("domain") or "",
+                    },
+                )
+            )
+        elif domain_result and domain_result.get("warning"):
+            warnings.append(
+                _domain_issue(
+                    f"{path}.final_url",
+                    str(domain_result.get("code") or "DOMAIN_VALIDATION_WARNING"),
+                    {
+                        **(domain_result.get("params") or {}),
+                        "domain": domain_result.get("domain") or "",
+                    },
+                )
+            )
 
         budget = int(campaign.get("daily_budget_micros") or 0)
         if budget <= 0:
@@ -245,12 +275,16 @@ def validate_plan_snapshot(snapshot: dict) -> dict:
         warnings.append(
             _issue("execution_mode", "SIMULATION", "Проверка выполняется локальным адаптером и не обращается в Google")
         )
+    non_domain_errors = [item for item in errors if not str(item.get("code") or "").startswith("DOMAIN_")]
+    partial_domain_valid = bool(campaigns) and len(domain_error_indexes) < len(campaigns)
     return {
-        "valid": not errors,
+        "valid": not non_domain_errors and (not domain_error_indexes or partial_domain_valid),
         "errors": errors,
         "warnings": warnings,
         "campaign_count": len(campaigns),
         "account_count": len({item.get("customer_id") for item in campaigns if item.get("customer_id")}),
+        "domain_validation": domain_report,
+        "domain_blocked_campaigns": len(domain_error_indexes),
     }
 
 
@@ -402,3 +436,7 @@ def _validate_account_resources(errors: list[dict], campaign: dict, path: str) -
 
 def _issue(path: str, code: str, message: str) -> dict:
     return {"path": path, "code": code, "message": message}
+
+
+def _domain_issue(path: str, code: str, params: dict) -> dict:
+    return {"path": path, "code": code, "message": code, "params": params}
