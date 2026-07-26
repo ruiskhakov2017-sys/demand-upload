@@ -1,0 +1,8 @@
+# False positives: opaque i18n identifiers and static interface copy.
+e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/app/theme.ts:generic-api-key:13
+e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/app/theme.ts:generic-api-key:14
+e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/en.ts:generic-api-key:307
+e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/en.ts:generic-api-key:455
+e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/ru.ts:generic-api-key:184
+e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/ru.ts:generic-api-key:403
+e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/ru.ts:generic-api-key:453
