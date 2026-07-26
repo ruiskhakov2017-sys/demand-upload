@@ -8,6 +8,8 @@ import {
   ListItemIcon,
   ListItemText,
   ListSubheader,
+  Menu,
+  MenuItem,
   Toolbar,
   Tooltip,
   Typography,
@@ -27,6 +29,8 @@ import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
+import CheckIcon from "@mui/icons-material/Check";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import ScheduleOutlinedIcon from "@mui/icons-material/ScheduleOutlined";
 import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
@@ -56,6 +60,8 @@ import { SchedulesPage } from "../pages/SchedulesPage";
 import { TemplatesPage } from "../pages/TemplatesPage";
 import { LaunchGroupsPage } from "../pages/LaunchGroupsPage";
 import { NewUploadPage, UploadWizardPage } from "../pages/UploadWizardPage";
+import { useThemePreference } from "./ThemePreference";
+import { themeChoices } from "./theme";
 
 const drawerWidth = 264;
 
@@ -100,6 +106,8 @@ const navGroups: NavGroup[] = [
 export function App() {
   const [path, navigate] = useBrowserPath();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
+  const { themeName, setThemeName } = useThemePreference();
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const queryClient = useQueryClient();
@@ -190,6 +198,36 @@ export function App() {
           <Typography variant="body2" color="text.secondary" sx={{ mr: 1.5, display: { xs: "none", sm: "block" } }}>
             {user.username} · {user.role}
           </Typography>
+          <Tooltip title="Тема оформления">
+            <IconButton onClick={(event) => setThemeAnchor(event.currentTarget)}>
+              <PaletteOutlinedIcon />
+            </IconButton>
+          </Tooltip>
+          <Menu
+            anchorEl={themeAnchor}
+            open={Boolean(themeAnchor)}
+            onClose={() => setThemeAnchor(null)}
+            slotProps={{ paper: { sx: { minWidth: 220 } } }}
+          >
+            {themeChoices.map((choice) => (
+              <MenuItem
+                key={choice.name}
+                selected={choice.name === themeName}
+                onClick={() => {
+                  setThemeName(choice.name);
+                  setThemeAnchor(null);
+                }}
+              >
+                <Box sx={{ display: "flex", width: 48, height: 18, mr: 1.5, border: 1, borderColor: "divider" }}>
+                  {choice.preview.map((color) => (
+                    <Box key={color} sx={{ flex: 1, bgcolor: color }} />
+                  ))}
+                </Box>
+                <ListItemText>{choice.label}</ListItemText>
+                {choice.name === themeName && <CheckIcon fontSize="small" />}
+              </MenuItem>
+            ))}
+          </Menu>
           <Tooltip title="Выйти">
             <IconButton onClick={() => logout.mutate()} disabled={logout.isPending}>
               <LogoutIcon />

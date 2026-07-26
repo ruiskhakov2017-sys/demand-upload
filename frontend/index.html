@@ -3,11 +3,30 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Demand Gen Uploader</title>
+    <script>
+      (() => {
+        const backgrounds = {
+          light: "#f6f8fb",
+          dark: "#111315",
+          warm: "#f4ede2",
+          ocean: "#edf4f7",
+          forest: "#eef2ed",
+          lavender: "#f2f0f5"
+        };
+        let selected = "light";
+        try {
+          const saved = localStorage.getItem("dgu.theme");
+          if (saved && backgrounds[saved]) selected = saved;
+        } catch {}
+        document.documentElement.dataset.theme = selected;
+        document.documentElement.style.backgroundColor = backgrounds[selected];
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-
