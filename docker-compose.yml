@@ -1,0 +1,144 @@
+x-app-env: &app-env
+  APP_ENV: ${APP_ENV:-development}
+  APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://localhost}
+  APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-dev-only-change-before-production}
+  SETUP_TOKEN: ${SETUP_TOKEN:-dev-setup-token}
+  SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+  DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://dgu:dgu@postgres:5432/dgu}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost","http://localhost:5173","http://127.0.0.1:5173"]}
+  STORAGE_ROOT: ${STORAGE_ROOT:-/var/lib/dgu/storage}
+  GOOGLE_ADS_API_VERSION: ${GOOGLE_ADS_API_VERSION:-v24.2}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-dgu}
+      POSTGRES_USER: ${POSTGRES_USER:-dgu}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dgu}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-dgu} -d ${POSTGRES_DB:-dgu}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    image: demand-gen-uploader-backend:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_storage:/var/lib/dgu/storage
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "--max-time", "5", "http://127.0.0.1:8000/api/ready"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  worker:
+    image: demand-gen-uploader-backend:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - app_storage:/var/lib/dgu/storage
+    command: ["celery", "-A", "app.jobs.celery_app.celery_app", "worker", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.jobs.celery_app.celery_app inspect ping -d celery@$$HOSTNAME --timeout=30 | grep -q pong"]
+      interval: 30s
+      timeout: 90s
+      retries: 5
+      start_period: 30s
+
+  scheduler:
+    image: demand-gen-uploader-backend:latest
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      <<: *app-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: ["celery", "-A", "app.jobs.celery_app.celery_app", "beat", "--loglevel=INFO"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "from pathlib import Path; data = Path('/proc/1/cmdline').read_bytes(); raise SystemExit(0 if b'celery' in data and b'beat' in data else 1)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  reverse-proxy:
+    image: caddy:2.8-alpine
+    depends_on:
+      - frontend
+      - api
+    ports:
+      - "80:80"
+    volumes:
+      - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  postgres_data:
+  redis_data:
+  app_storage:

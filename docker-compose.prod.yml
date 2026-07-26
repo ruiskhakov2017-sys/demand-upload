@@ -1,0 +1,18 @@
+services:
+  reverse-proxy:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  api:
+    environment:
+      APP_ENV: production
+      SESSION_COOKIE_SECURE: "true"
+
+volumes:
+  caddy_data:
+  caddy_config:
