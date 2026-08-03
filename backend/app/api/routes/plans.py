@@ -41,7 +41,12 @@ from app.domain.planner import build_batch_plan_snapshot, build_plan_snapshot, v
 from app.domain.scheduling import snapshot_fingerprint
 from app.domain_validation.persistence import validate_snapshot
 from app.domain_validation.service import filter_blocked_campaigns, merge_domain_skips
+from app.google_ads.execution_guard import refresh_google_test_snapshot_targets
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
+from app.google_ads.safety import (
+    GoogleAdsSafetyError,
+    require_execution_mode_for_connection,
+)
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
 
 router = APIRouter(prefix="/plans", tags=["plans"])
@@ -68,10 +73,14 @@ def build_plan(
     upload = db.get(CampaignUpload, upload_id)
     if not upload:
         raise HTTPException(status_code=404, detail="Загрузка не найдена")
-    if payload.execution_mode == "LIVE":
+    if payload.execution_mode != "SIMULATION":
         connection = db.get(GoogleConnection, upload.connection_id) if upload.connection_id else None
         if not is_google_connection_active(connection):
-            raise HTTPException(status_code=409, detail="Для live-плана нужно активное подключение Google")
+            raise HTTPException(status_code=409, detail="Для Google-плана нужно активное подключение")
+        try:
+            require_execution_mode_for_connection(connection, payload.execution_mode)
+        except GoogleAdsSafetyError as exc:
+            raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
 
     media = list(db.scalars(select(MediaAsset)).all())
     batch, bundles, instances = _load_batch_context(db, upload)
@@ -215,7 +224,22 @@ def validate_plan(
         connection = db.get(GoogleConnection, plan.connection_id) if plan.connection_id else None
         if not is_google_connection_active(connection):
             raise HTTPException(status_code=409, detail="Подключение Google недоступно")
-        execution = build_google_ads_adapter(db, connection).validate_plan(validation_snapshot)
+        try:
+            require_execution_mode_for_connection(connection, plan.execution_mode)
+            adapter = build_google_ads_adapter(db, connection)
+            guard_request_ids = refresh_google_test_snapshot_targets(
+                db,
+                connection,
+                adapter,
+                validation_snapshot,
+                require_confirmation=False,
+            )
+        except GoogleAdsSafetyError as exc:
+            raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
+        execution = adapter.validate_plan(validation_snapshot)
+        execution.request_ids = list(
+            dict.fromkeys([*guard_request_ids, *execution.request_ids])
+        )
         execution = merge_domain_skips(
             execution,
             domain_skipped,
@@ -265,6 +289,16 @@ def confirm_plan(
     user: User = Depends(require_csrf),
 ) -> PlanConfirmOut:
     plan = _get_plan(db, plan_id)
+    if plan.execution_mode != "SIMULATION":
+        connection = (
+            db.get(GoogleConnection, plan.connection_id)
+            if plan.connection_id
+            else None
+        )
+        try:
+            require_execution_mode_for_connection(connection, plan.execution_mode)
+        except GoogleAdsSafetyError as exc:
+            raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
     if plan.status not in {PlanStatus.VALIDATED.value, PlanStatus.FAILED.value}:
         raise HTTPException(status_code=409, detail="Сначала выполните validate_only")
     valid_instance_ids = _valid_instance_ids(plan.google_validation)

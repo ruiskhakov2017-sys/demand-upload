@@ -15,12 +15,19 @@ from app.db.models import (
     AccountTestBundle,
     CampaignInstance,
     CampaignStatusAction,
+    CustomerAccount,
+    GoogleConnection,
     Job,
     JobStatus,
     LaunchBatch,
     User,
 )
 from app.domain.audit import record_audit
+from app.google_ads.safety import (
+    GoogleAdsSafetyError,
+    require_execution_mode_for_connection,
+    require_google_test_connection_target,
+)
 
 router = APIRouter(prefix="/launch-groups", tags=["launch-groups"])
 
@@ -64,6 +71,26 @@ def create_status_action(
         raise HTTPException(status_code=422, detail="Не выбраны кампании")
     if not payload.confirmation:
         raise HTTPException(status_code=409, detail="Подтвердите изменение статуса кампаний")
+    batch = db.get(LaunchBatch, group.launch_batch_id)
+    if batch and batch.execution_mode != "SIMULATION":
+        connection = (
+            db.get(GoogleConnection, batch.connection_id)
+            if batch.connection_id
+            else None
+        )
+        account = db.scalar(
+            select(CustomerAccount).where(
+                CustomerAccount.connection_id == batch.connection_id,
+                CustomerAccount.customer_id == group.customer_id,
+            )
+        )
+        try:
+            require_execution_mode_for_connection(connection, batch.execution_mode)
+            require_google_test_connection_target(
+                connection, account, group.customer_id
+            )
+        except GoogleAdsSafetyError as exc:
+            raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
 
     requested_status = "ENABLED" if payload.action == "ENABLE" else "PAUSED"
     if requested_status == "ENABLED":

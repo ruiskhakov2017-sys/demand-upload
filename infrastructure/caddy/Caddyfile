@@ -1,18 +1,31 @@
-:80 {
+(dgu_app) {
 	encode zstd gzip
 
 	header {
+		-Server
 		X-Content-Type-Options nosniff
 		X-Frame-Options DENY
 		Referrer-Policy same-origin
 		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+		Strict-Transport-Security "max-age=86400"
 	}
 
 	handle /api/* {
-		reverse_proxy api:8000
+		reverse_proxy api:8000 {
+			lb_try_duration 30s
+			lb_try_interval 500ms
+		}
 	}
 
 	handle {
 		reverse_proxy frontend:80
 	}
+}
+
+{$DGU_SITE_ADDRESS:http://localhost} {
+	import dgu_app
+}
+
+{$DGU_WWW_SITE_ADDRESS:http://www.localhost} {
+	redir {$DGU_CANONICAL_URL:http://localhost}{uri} permanent
 }

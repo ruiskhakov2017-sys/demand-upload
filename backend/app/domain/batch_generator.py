@@ -270,27 +270,62 @@ def assign_creatives(
         else:
             selected_set = sets[0]
         ids = [str(item) for item in selected_set.get("media_ids") or []]
-        return {"set_key": selected_set.get("key") or f"set-{offset + 1}", "media_ids": ids, "items": ids}
+        ids = _include_required_logo(ids, creative_config)
+        return {
+            "set_key": selected_set.get("key") or f"set-{offset + 1}",
+            "media_ids": ids,
+            "items": ids,
+            "logo_media_id": creative_config.get("logo_media_id"),
+        }
 
     pool = [str(item) for item in creative_config.get("media_ids") or []]
     if not pool:
         pool = [str(item.get("id")) for item in media_catalog if item.get("id")]
     if copy_mode != "RANDOM_CREATIVE_SUBSET":
-        return {"set_key": "default", "media_ids": pool, "items": pool}
+        selected = _include_required_logo(pool, creative_config)
+        return {
+            "set_key": "default",
+            "media_ids": selected,
+            "items": selected,
+            "logo_media_id": creative_config.get("logo_media_id"),
+        }
 
+    logo_media_id = str(creative_config.get("logo_media_id") or "")
+    subset_pool = [item for item in pool if item != logo_media_id]
     minimum = max(1, int(creative_config.get("minimum_count") or 1))
-    maximum = max(minimum, int(creative_config.get("maximum_count") or len(pool) or minimum))
-    amount = min(len(pool), state["rng"].randint(minimum, maximum))
+    maximum = max(
+        minimum,
+        int(creative_config.get("maximum_count") or len(subset_pool) or minimum),
+    )
+    amount = min(len(subset_pool), state["rng"].randint(minimum, maximum))
     allow_repeats = bool(creative_config.get("allow_repeats", True))
     if not allow_repeats:
-        available = [item for item in state["shuffled_pool"] if item not in state["used"]]
+        available = [
+            item
+            for item in state["shuffled_pool"]
+            if item != logo_media_id and item not in state["used"]
+        ]
         if len(available) < amount:
             raise GenerationError("Пул креативов закончился, а повторение отключено")
         selected = available[:amount]
         state["used"].update(selected)
     else:
-        selected = state["rng"].sample(pool, amount) if amount else []
-    return {"set_key": f"random-{offset + 1}", "media_ids": selected, "items": selected}
+        selected = state["rng"].sample(subset_pool, amount) if amount else []
+    selected = _include_required_logo(selected, creative_config)
+    return {
+        "set_key": f"random-{offset + 1}",
+        "media_ids": selected,
+        "items": selected,
+        "logo_media_id": creative_config.get("logo_media_id"),
+    }
+
+
+def _include_required_logo(ids: list[str], creative_config: dict) -> list[str]:
+    logo_media_id = str(creative_config.get("logo_media_id") or "")
+    ordered = list(dict.fromkeys(str(item) for item in ids if item))
+    if not logo_media_id:
+        return ordered
+    return [logo_media_id, *[item for item in ordered if item != logo_media_id]]
 
 
 def _creative_state(config: dict, media_catalog: list[dict], seed: str) -> dict:

@@ -54,6 +54,8 @@ import {
   DeploymentPlan,
   DomainValidationReport,
   DomainValidationResult,
+  ExecutionMode,
+  GoogleConnection,
   LaunchBatch,
   MediaAsset
 } from "../api/client";
@@ -87,8 +89,23 @@ const steps = [
   "builder.step.report"
 ];
 
-type ExecutionMode = "SIMULATION" | "LIVE";
 type CreationMode = "FROM_TEMPLATE" | "FULL_SETUP" | "FROM_EXISTING" | "FILE";
+
+export function executionModeLabel(mode: ExecutionMode): string {
+  if (mode === "GOOGLE_TEST") return t("googleMode.testShort");
+  if (mode === "PRODUCTION") return t("googleMode.productionShort");
+  return t("googleMode.simulationLabel");
+}
+
+export function executionModeDescription(mode: ExecutionMode): string {
+  if (mode === "GOOGLE_TEST") {
+    return t("googleMode.testDescription");
+  }
+  if (mode === "PRODUCTION") {
+    return t("googleMode.productionDescription");
+  }
+  return t("googleMode.simulationDescription");
+}
 type BuilderAccount = {
   id?: string;
   customer_id: string;
@@ -113,6 +130,8 @@ type BuilderForm = {
   mobile_final_url: string;
   tracking_template: string;
   final_url_suffix: string;
+  display_path: string;
+  custom_parameters: string;
   append_instance_parameter: boolean;
   start_date_time: string;
   end_date_time: string;
@@ -126,6 +145,8 @@ type BuilderForm = {
   audience_resource_names: string;
   user_list_resource_names: string;
   custom_audience_resource_names: string;
+  user_interest_resource_names: string;
+  life_event_ids: string;
   age_ranges: string[];
   genders: string[];
   parental_statuses: string[];
@@ -140,6 +161,7 @@ type BuilderForm = {
   call_to_action: string;
   youtube_video_id: string;
   media_ids: string[];
+  logo_media_id: string;
   campaigns_per_account: number;
   copy_mode: string;
   budget_mode: "FIXED" | "RANGE" | "MANUAL_LIST" | "PER_ACCOUNT_OVERRIDE" | "PER_CAMPAIGN_OVERRIDE";
@@ -153,7 +175,7 @@ type BuilderForm = {
   password_confirmation: string;
 };
 
-function createEmptyForm(): BuilderForm {
+export function createEmptyForm(): BuilderForm {
   return {
   execution_mode: "SIMULATION",
   creation_mode: "FROM_TEMPLATE",
@@ -168,6 +190,8 @@ function createEmptyForm(): BuilderForm {
   mobile_final_url: "",
   tracking_template: "",
   final_url_suffix: "utm_source=dgu",
+  display_path: "",
+  custom_parameters: "",
   append_instance_parameter: false,
   start_date_time: "",
   end_date_time: "",
@@ -181,6 +205,8 @@ function createEmptyForm(): BuilderForm {
   audience_resource_names: "",
   user_list_resource_names: "",
   custom_audience_resource_names: "",
+  user_interest_resource_names: "",
+  life_event_ids: "",
   age_ranges: ["AGE_RANGE_18_24", "AGE_RANGE_25_34", "AGE_RANGE_35_44"],
   genders: ["MALE", "FEMALE", "UNDETERMINED"],
   parental_statuses: [],
@@ -203,6 +229,7 @@ function createEmptyForm(): BuilderForm {
   call_to_action: "LEARN_MORE",
   youtube_video_id: "dQw4w9WgXcQ",
   media_ids: [],
+  logo_media_id: "",
   campaigns_per_account: 3,
   copy_mode: "SAME_SETTINGS_RANDOM_BUDGET",
   budget_mode: "RANGE",
@@ -232,13 +259,12 @@ export function NewUploadPage({ navigate }: { navigate: Navigate }) {
         <Stack spacing={3}>
           <TextField label={t("ui.3de49828e8")} value={name} onChange={(event) => setName(event.target.value)} fullWidth />
           <ToggleButtonGroup exclusive value={mode} onChange={(_, value) => value && setMode(value)} size="small">
-            <ToggleButton value="SIMULATION">TEST / MOCK</ToggleButton>
-            <ToggleButton value="LIVE">LIVE / Google Ads</ToggleButton>
+            <ToggleButton value="SIMULATION">Simulation</ToggleButton>
+            <ToggleButton value="GOOGLE_TEST">Google Test</ToggleButton>
+            <ToggleButton value="PRODUCTION">Production</ToggleButton>
           </ToggleButtonGroup>
-          <Alert severity={mode === "SIMULATION" ? "info" : "warning"}>
-            {mode === "SIMULATION"
-              ? t("ui.4bb40a00df")
-              : t("ui.55a2ff7d68")}
+          <Alert severity={mode === "PRODUCTION" ? "error" : mode === "GOOGLE_TEST" ? "success" : "info"}>
+            {executionModeDescription(mode)}
           </Alert>
           <Box>
             <Button
@@ -404,10 +430,10 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
   });
   const retryDomainValidation = useMutation({
     mutationFn: () => api.retryDomainValidation(uploadId),
-    onSuccess: (report) => {
-      queryClient.setQueryData(["domain-validation", uploadId], report);
+    onSuccess: (result) => {
+      queryClient.setQueryData(["domain-validation", uploadId], result.report);
       queryClient.invalidateQueries({ queryKey: ["upload", uploadId] });
-      setNotice(t("ui.02bf56b131"));
+      setNotice(result.reused ? t("domain.retryAlreadyRunning") : t("domain.retryStarted"));
     }
   });
   const uploadMedia = useMutation({
@@ -459,8 +485,8 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
             <StatusBadge value={uploadQuery.data!.status} />
             <Chip
               size="small"
-              color={form.execution_mode === "LIVE" ? "warning" : "info"}
-              label={form.execution_mode === "LIVE" ? "LIVE · Google Ads" : t("ui.d29f8d1482")}
+              color={form.execution_mode === "PRODUCTION" ? "error" : form.execution_mode === "GOOGLE_TEST" ? "success" : "info"}
+              label={executionModeLabel(form.execution_mode)}
             />
             {batch && <StatusBadge value={batch.status} />}
           </Stack>
@@ -565,7 +591,7 @@ type BuilderStepProps = {
   setUploadName: (value: string) => void;
   connectionId: string;
   setConnectionId: (value: string) => void;
-  connections: Array<{ id: string; name: string; login_customer_id: string; status: string }>;
+  connections: GoogleConnection[];
   accounts: CustomerAccount[];
   selectedAccounts: BuilderAccount[];
   setSelectedAccounts: (value: BuilderAccount[]) => void;
@@ -611,14 +637,16 @@ function BuilderStep(props: BuilderStepProps) {
         <Grid item xs={12} md={6}><TextField fullWidth label={t("ui.7924c4c015")} value={props.uploadName} onChange={(e) => props.setUploadName(e.target.value)} /></Grid>
         <Grid item xs={12} md={6}>
           <ToggleButtonGroup exclusive size="small" value={form.execution_mode} onChange={(_, value) => value && set("execution_mode", value)}>
-            <ToggleButton value="SIMULATION">TEST / MOCK</ToggleButton><ToggleButton value="LIVE">LIVE</ToggleButton>
+            <ToggleButton value="SIMULATION">Simulation</ToggleButton>
+            <ToggleButton value="GOOGLE_TEST">Google Test</ToggleButton>
+            <ToggleButton value="PRODUCTION">Production</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
         <Grid item xs={12} md={6}>
-          <FormControl fullWidth><InputLabel>{t("ui.79e350f743")}</InputLabel><Select label={t("ui.79e350f743")} value={props.connectionId} onChange={(e) => props.setConnectionId(e.target.value)}><MenuItem value="">{t("ui.fad95c5cb0")}</MenuItem>{props.connections.map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {item.status}</MenuItem>)}</Select></FormControl>
+          <FormControl fullWidth><InputLabel>{t("ui.79e350f743")}</InputLabel><Select label={t("ui.79e350f743")} value={props.connectionId} onChange={(e) => props.setConnectionId(e.target.value)}><MenuItem value="">{t("ui.fad95c5cb0")}</MenuItem>{props.connections.filter((item) => form.execution_mode === "SIMULATION" || item.connection_mode === form.execution_mode).map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {executionModeLabel(item.connection_mode)} · {item.status}</MenuItem>)}</Select></FormControl>
         </Grid>
       </Grid>
-      <Alert severity={form.execution_mode === "LIVE" ? "warning" : "info"}>{form.execution_mode === "LIVE" ? t("ui.b813efe348") : t("ui.7bc63ba1ff")}</Alert>
+      <Alert severity={form.execution_mode === "PRODUCTION" ? "error" : form.execution_mode === "GOOGLE_TEST" ? "success" : "info"}>{executionModeDescription(form.execution_mode)}</Alert>
     </StepSection>
   );
   if (step === 1) {
@@ -713,6 +741,9 @@ function CampaignSettingsStep({ form, set, capabilities }: BuilderStepProps) {
         <Grid item xs={12} md={3}><TextField fullWidth type="datetime-local" label={t("ui.ec5bfc700b")} InputLabelProps={{ shrink: true }} value={form.end_date_time} onChange={(e) => set("end_date_time", e.target.value)} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label={t("field.trackingTemplate")} value={form.tracking_template} onChange={(e) => set("tracking_template", e.target.value)} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label={t("field.finalUrlSuffix")} value={form.final_url_suffix} onChange={(e) => set("final_url_suffix", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("field.mobileFinalUrl")} value={form.mobile_final_url} onChange={(e) => set("mobile_final_url", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("field.displayPath")} value={form.display_path} onChange={(e) => set("display_path", e.target.value)} helperText={t("builder.url.displayPathHelp")} /></Grid>
+        <Grid item xs={12}><TextField fullWidth multiline minRows={2} label={t("field.customParameters")} value={form.custom_parameters} onChange={(e) => set("custom_parameters", e.target.value)} helperText={t("builder.url.customParametersHelp")} /></Grid>
       </Grid>
       <FormControlLabel
         control={<Checkbox checked={form.append_instance_parameter} onChange={(e) => set("append_instance_parameter", e.target.checked)} />}
@@ -741,16 +772,61 @@ function AdGroupStep({ form, set, capabilities }: BuilderStepProps) {
   );
 }
 
-function AudienceStep({ form, set }: BuilderStepProps) {
+function AudienceStep(props: BuilderStepProps) {
+  const { form, set } = props;
+  const [catalog, setCatalog] = useState<Record<string, any> | null>(null);
+  const [catalogSearch, setCatalogSearch] = useState("");
+  const catalogAccountId = props.selectedAccounts.find((item) => item.id)?.id;
+  const loadCatalog = useMutation({
+    mutationFn: () => api.getAccountCatalog(catalogAccountId!),
+    onSuccess: setCatalog
+  });
+  const selectedInterests = splitValues(form.user_interest_resource_names);
+  const selectedLifeEvents = splitValues(form.life_event_ids);
+  const catalogItems = ((catalog?.user_interests || []) as Array<Record<string, any>>)
+    .filter((item) => !catalogSearch.trim() ||
+      `${item.name || ""} ${item.taxonomy_type || ""}`.toLocaleLowerCase().includes(catalogSearch.trim().toLocaleLowerCase()))
+    .slice(0, 100);
+  const addCatalogItem = (item: Record<string, any>) => {
+    if (item.taxonomy_type === "LIFE_EVENT") {
+      set("life_event_ids", [...new Set([...selectedLifeEvents, String(item.user_interest_id)])].join("\n"));
+      return;
+    }
+    set("user_interest_resource_names", [...new Set([...selectedInterests, String(item.resource_name)])].join("\n"));
+  };
   return (
     <StepSection title={t("ui.c8092d2f64")}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label={t("field.audienceResources")} value={form.audience_resource_names} onChange={(e) => set("audience_resource_names", e.target.value)} /></Grid>
         <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label={t("field.userList")} value={form.user_list_resource_names} onChange={(e) => set("user_list_resource_names", e.target.value)} /></Grid>
         <Grid item xs={12} md={4}><TextField fullWidth multiline minRows={3} label={t("field.customAudienceResources")} value={form.custom_audience_resource_names} onChange={(e) => set("custom_audience_resource_names", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label={t("builder.field.userInterests")} value={form.user_interest_resource_names} onChange={(e) => set("user_interest_resource_names", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label={t("builder.field.lifeEvents")} value={form.life_event_ids} onChange={(e) => set("life_event_ids", e.target.value)} /></Grid>
       </Grid>
+      <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+        <Button variant="outlined" startIcon={<RefreshIcon />} disabled={!catalogAccountId || loadCatalog.isPending} onClick={() => loadCatalog.mutate()}>{t("builder.audience.loadCatalog")}</Button>
+        {catalog && <TextField size="small" label={t("builder.audience.catalogSearch")} value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} sx={{ minWidth: 300 }} />}
+      </Stack>
+      {!catalogAccountId && <Alert severity="info">{t("builder.audience.selectAccountFirst")}</Alert>}
+      {loadCatalog.error && <Alert severity="error">{loadCatalog.error.message}</Alert>}
+      {catalog && <Box sx={{ maxHeight: 300, overflow: "auto", border: 1, borderColor: "divider" }}>
+        <Table size="small">
+          <TableHead><TableRow><TableCell>{t("common.name")}</TableCell><TableCell>{t("ui.d25691ca40")}</TableCell><TableCell /></TableRow></TableHead>
+          <TableBody>
+            {catalogItems.map((item) => {
+              const selected = item.taxonomy_type === "LIFE_EVENT"
+                ? selectedLifeEvents.includes(String(item.user_interest_id))
+                : selectedInterests.includes(String(item.resource_name));
+              return <TableRow key={String(item.resource_name)}><TableCell>{String(item.name || item.user_interest_id)}</TableCell><TableCell>{String(item.taxonomy_type || "UNKNOWN")}</TableCell><TableCell align="right"><Button size="small" disabled={selected} onClick={() => addCatalogItem(item)}>{selected ? t("builder.audience.added") : t("common.add")}</Button></TableCell></TableRow>;
+            })}
+            {!catalogItems.length && <TableRow><TableCell colSpan={3}>{t("builder.audience.emptyCatalog")}</TableCell></TableRow>}
+          </TableBody>
+        </Table>
+      </Box>}
       <ChoiceChecks label={t("ui.f73f17a2bf")} values={ageOptions} selected={form.age_ranges} onChange={(value) => set("age_ranges", value)} />
       <ChoiceChecks label={t("ui.31c8bce4fe")} values={genderOptions} selected={form.genders} onChange={(value) => set("genders", value)} />
+      <ChoiceChecks label={t("builder.field.parentalStatus")} values={parentalOptions} selected={form.parental_statuses} onChange={(value) => set("parental_statuses", value)} />
+      <ChoiceChecks label={t("builder.field.incomeRange")} values={incomeOptions} selected={form.income_ranges} onChange={(value) => set("income_ranges", value)} />
       <FormControlLabel control={<Checkbox checked={form.optimized_targeting} onChange={(e) => set("optimized_targeting", e.target.checked)} />} label={t("ui.9456363417")} />
       <Alert severity="info">{t("ui.743bb69eb0")}</Alert>
     </StepSection>
@@ -759,26 +835,51 @@ function AudienceStep({ form, set }: BuilderStepProps) {
 
 function AdsAssetsStep(props: BuilderStepProps) {
   const { form, set } = props;
-  const toggleMedia = (item: MediaAsset) => set("media_ids", form.media_ids.includes(item.id) ? form.media_ids.filter((id) => id !== item.id) : [...form.media_ids, item.id]);
+  const selectedLogoOptions = props.media.filter((item) =>
+    form.media_ids.includes(item.id) &&
+    item.kind === "IMAGE" &&
+    item.status === "READY" &&
+    Boolean(item.width && item.height && item.width === item.height)
+  );
+  const toggleMedia = (item: MediaAsset) => {
+    const removing = form.media_ids.includes(item.id);
+    set("media_ids", removing ? form.media_ids.filter((id) => id !== item.id) : [...form.media_ids, item.id]);
+    if (removing && form.logo_media_id === item.id) set("logo_media_id", "");
+  };
+  const selectLogo = (mediaId: string) => {
+    if (mediaId && !form.media_ids.includes(mediaId)) set("media_ids", [...form.media_ids, mediaId]);
+    set("logo_media_id", mediaId);
+  };
   return (
     <StepSection title={t("ui.9edf62a387")}>
       <Grid container spacing={2}>
         <Grid item xs={12} md={3}><FormControl fullWidth><InputLabel>{t("ui.b9563c38ab")}</InputLabel><Select label={t("ui.b9563c38ab")} value={form.ad_type} onChange={(e) => set("ad_type", e.target.value as BuilderForm["ad_type"])}><MenuItem value="VIDEO">{t("option.videoResponsive")}</MenuItem><MenuItem value="IMAGE">{t("option.multiAsset")}</MenuItem><MenuItem value="CAROUSEL">{t("option.carousel")}</MenuItem></Select></FormControl></Grid>
         <Grid item xs={12} md={3}><TextField fullWidth label={t("field.businessName")} value={form.business_name} inputProps={{ maxLength: 25 }} onChange={(e) => set("business_name", e.target.value)} /></Grid>
-        <Grid item xs={12} md={6}><TextField fullWidth label="Final URL" value={form.final_url} onChange={(e) => set("final_url", e.target.value)} /></Grid>
+        <Grid item xs={12} md={6}><TextField fullWidth label={t("field.finalUrl")} value={form.final_url} onChange={(e) => set("final_url", e.target.value)} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label={t("ui.e3917b6fa1")} value={form.headlines} onChange={(e) => set("headlines", e.target.value)} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label={t("ui.eabed68dff")} value={form.descriptions} onChange={(e) => set("descriptions", e.target.value)} /></Grid>
         <Grid item xs={12} md={6}><TextField fullWidth label={t("field.longHeadline")} value={form.long_headline} onChange={(e) => set("long_headline", e.target.value)} /></Grid>
+        {form.ad_type === "CAROUSEL" && <Grid item xs={12} md={6}><TextField fullWidth multiline minRows={3} label={t("builder.field.carouselHeadlines")} value={form.carousel_card_headlines} onChange={(e) => set("carousel_card_headlines", e.target.value)} /></Grid>}
         <Grid item xs={12} md={3}><TextField fullWidth label={t("field.youtubeVideoId")} value={form.youtube_video_id} onChange={(e) => set("youtube_video_id", e.target.value)} /></Grid>
         <Grid item xs={12} md={3}><FormControl fullWidth><InputLabel>{t("field.callToAction")}</InputLabel><Select label={t("field.callToAction")} value={form.call_to_action} onChange={(e) => set("call_to_action", e.target.value)}>{["LEARN_MORE", "SHOP_NOW", "SIGN_UP", "APPLY_NOW", "GET_QUOTE"].map((item) => <MenuItem key={item} value={item}>{item}</MenuItem>)}</Select></FormControl></Grid>
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>{t("builder.field.logo")}</InputLabel>
+            <Select label={t("builder.field.logo")} value={form.logo_media_id} onChange={(e) => selectLogo(String(e.target.value))}>
+              <MenuItem value="">{t("builder.assets.selectLogo")}</MenuItem>
+              {selectedLogoOptions.map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {item.width} x {item.height}</MenuItem>)}
+            </Select>
+          </FormControl>
+        </Grid>
       </Grid>
       <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
         <TextField label={t("ui.94ade8a20a")} value={props.youtubeInput} onChange={(e) => props.setYoutubeInput(e.target.value)} sx={{ flex: 1 }} />
         <Button variant="outlined" startIcon={<YouTubeIcon />} disabled={!props.youtubeInput || props.busy} onClick={props.onRegisterYoutube}>{t("ui.559a87f7cc")}</Button>
         <Button component="label" variant="outlined" startIcon={<CloudUploadOutlinedIcon />} disabled={props.busy}>{t("ui.d381669265")}<input hidden type="file" accept="image/png,image/jpeg,video/mp4,video/quicktime,video/webm" onChange={(e) => e.target.files?.[0] && props.onUploadMedia(e.target.files[0])} /></Button>
       </Stack>
-      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>{t("common.asset")}</TableCell><TableCell>{t("ui.d25691ca40")}</TableCell><TableCell>{t("ui.98713e8814")}</TableCell><TableCell>{t("ui.f7f293b5c5")}</TableCell></TableRow></TableHead><TableBody>{props.media.map((item) => <TableRow key={item.id}><TableCell padding="checkbox"><Checkbox checked={form.media_ids.includes(item.id)} onChange={() => toggleMedia(item)} /></TableCell><TableCell>{item.name}</TableCell><TableCell>{item.kind}</TableCell><TableCell>{item.width && item.height ? `${item.width} × ${item.height}` : item.duration_seconds ? t("media.durationSeconds", { count: formatNumber(item.duration_seconds, { maximumFractionDigits: 1 }) }) : "—"}</TableCell><TableCell><StatusBadge value={item.status} /></TableCell></TableRow>)}</TableBody></Table></Box>
-      <Button disabled variant="outlined">{t("ui.386e7981fc")}</Button>
+      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>{t("common.asset")}</TableCell><TableCell>{t("ui.d25691ca40")}</TableCell><TableCell>{t("ui.98713e8814")}</TableCell><TableCell>{t("builder.assets.role")}</TableCell><TableCell>{t("ui.f7f293b5c5")}</TableCell></TableRow></TableHead><TableBody>{props.media.map((item) => <TableRow key={item.id}><TableCell padding="checkbox"><Checkbox checked={form.media_ids.includes(item.id)} onChange={() => toggleMedia(item)} /></TableCell><TableCell>{item.name}</TableCell><TableCell>{item.kind}</TableCell><TableCell>{item.width && item.height ? `${item.width} x ${item.height}` : item.duration_seconds ? t("media.durationSeconds", { count: formatNumber(item.duration_seconds, { maximumFractionDigits: 1 }) }) : "—"}</TableCell><TableCell>{form.logo_media_id === item.id ? t("builder.assets.logoSelected") : mediaRoleLabel(item)}</TableCell><TableCell><StatusBadge value={item.status} /></TableCell></TableRow>)}</TableBody></Table></Box>
+      {!form.logo_media_id && <Alert severity="warning">{t("builder.assets.logoRequired")}</Alert>}
+      <Alert severity="info">{t("builder.assets.previewUnavailable")}</Alert>
     </StepSection>
   );
 }
@@ -890,7 +991,7 @@ function AccountOverridesStep(props: BuilderStepProps) {
   const update = (index: number, patch: Partial<BuilderAccount>) => props.setSelectedAccounts(props.selectedAccounts.map((item, itemIndex) => itemIndex === index ? { ...item, ...patch } : item));
   return (
     <StepSection title={t("builder.step.overrides")}>
-      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell>{t("ui.5b16fcdd97")}</TableCell><TableCell>Customer ID</TableCell><TableCell>{t("ui.cf645a44e5")}</TableCell><TableCell>{t("ui.18be059f5f")}</TableCell><TableCell>{t("ui.47947a0c46")}</TableCell></TableRow></TableHead><TableBody>{props.selectedAccounts.map((item, index) => <TableRow key={item.customer_id}><TableCell>{item.account_name}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell><TextField size="small" type="number" value={item.campaigns_count || props.form.campaigns_per_account} inputProps={{ min: 1, max: 500 }} onChange={(e) => update(index, { campaigns_count: Number(e.target.value) })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.currency_code} disabled={props.form.execution_mode === "LIVE"} onChange={(e) => update(index, { currency_code: e.target.value.toUpperCase() })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.time_zone} disabled={props.form.execution_mode === "LIVE"} onChange={(e) => update(index, { time_zone: e.target.value })} sx={{ width: 190 }} /></TableCell></TableRow>)}</TableBody></Table></Box>
+      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider" }}><Table size="small"><TableHead><TableRow><TableCell>{t("ui.5b16fcdd97")}</TableCell><TableCell>Customer ID</TableCell><TableCell>{t("ui.cf645a44e5")}</TableCell><TableCell>{t("ui.18be059f5f")}</TableCell><TableCell>{t("ui.47947a0c46")}</TableCell></TableRow></TableHead><TableBody>{props.selectedAccounts.map((item, index) => <TableRow key={item.customer_id}><TableCell>{item.account_name}</TableCell><TableCell sx={{ fontFamily: "monospace" }}>{item.customer_id}</TableCell><TableCell><TextField size="small" type="number" value={item.campaigns_count || props.form.campaigns_per_account} inputProps={{ min: 1, max: 500 }} onChange={(e) => update(index, { campaigns_count: Number(e.target.value) })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.currency_code} disabled={props.form.execution_mode !== "SIMULATION"} onChange={(e) => update(index, { currency_code: e.target.value.toUpperCase() })} sx={{ width: 100 }} /></TableCell><TableCell><TextField size="small" value={item.time_zone} disabled={props.form.execution_mode !== "SIMULATION"} onChange={(e) => update(index, { time_zone: e.target.value })} sx={{ width: 190 }} /></TableCell></TableRow>)}</TableBody></Table></Box>
     </StepSection>
   );
 }
@@ -941,7 +1042,7 @@ function GoogleValidationStep(props: BuilderStepProps) {
   const result = props.plan?.google_validation;
   return (
     <StepSection title={t("builder.step.googleValidation")}>
-      <Alert severity={props.form.execution_mode === "SIMULATION" ? "info" : "warning"}>{props.form.execution_mode === "SIMULATION" ? t("ui.a8558225b1") : t("ui.80ed29a7d6")}</Alert>
+      <Alert severity={props.form.execution_mode === "PRODUCTION" ? "error" : props.form.execution_mode === "GOOGLE_TEST" ? "warning" : "info"}>{props.form.execution_mode === "SIMULATION" ? t("ui.a8558225b1") : props.form.execution_mode === "GOOGLE_TEST" ? t("googleMode.validateTest") : t("googleMode.validateProductionBlocked")}</Alert>
       <Button variant="contained" startIcon={<FactCheckOutlinedIcon />} disabled={!props.plan?.local_validation.valid || props.busy} onClick={props.onValidate}>{t("ui.34f3cdcfdb")}</Button>
       {props.plan?.validated_at && <><Alert severity={result?.ok ? "success" : "error"}>{result?.ok ? t("ui.cfff2f91e4") : t("ui.fa25f1de8e")}</Alert><IssueList severity="error" title={t("ui.681b5ae3d2")} items={result?.errors || []} /><Typography variant="body2">{t("common.requestIds")} {props.plan.request_ids.length ? props.plan.request_ids.join(", ") : t("ui.0d691505ba")}</Typography></>}
     </StepSection>
@@ -956,8 +1057,8 @@ function CreationStep(props: BuilderStepProps) {
   const plan = props.plan;
   return (
     <StepSection title={t("builder.step.creation")}>
-      <Alert severity={props.form.execution_mode === "LIVE" ? "warning" : "info"}>{props.form.execution_mode === "LIVE" ? t("ui.07050a689c") : t("ui.9c49d94bbc")}</Alert>
-      <Button variant="contained" color="warning" startIcon={<PlayArrowIcon />} disabled={!props.confirmed || plan?.status !== "VALIDATED" || props.busy} onClick={props.onConfirm}>{t("ui.318f6d31be")}</Button>
+      <Alert severity={props.form.execution_mode === "PRODUCTION" ? "error" : props.form.execution_mode === "GOOGLE_TEST" ? "warning" : "info"}>{props.form.execution_mode === "SIMULATION" ? t("ui.9c49d94bbc") : props.form.execution_mode === "GOOGLE_TEST" ? t("googleMode.createTest") : t("googleMode.productionMutateBlocked")}</Alert>
+      <Button variant="contained" color="warning" startIcon={<PlayArrowIcon />} disabled={!props.confirmed || plan?.status !== "VALIDATED" || props.busy || props.form.execution_mode === "PRODUCTION"} onClick={props.onConfirm}>{t("ui.318f6d31be")}</Button>
       {plan && <Stack direction="row" spacing={1}><StatusBadge value={plan.status} /><Chip label={t("common.resourceCount", { count: plan.resource_names.length })} /></Stack>}
     </StepSection>
   );
@@ -1016,13 +1117,15 @@ function DomainValidationPanel({
         </Box>
         <DomainStatusChip status={status} />
         {onRetry && (
-          <Tooltip title={t("ui.e2ae3f5568")}>
-            <span>
-              <IconButton size="small" disabled={loading} onClick={onRetry}>
-                {loading ? <CircularProgress size={18} /> : <RefreshIcon fontSize="small" />}
-              </IconButton>
-            </span>
-          </Tooltip>
+          <Button
+            size="small"
+            variant="outlined"
+            disabled={loading}
+            onClick={onRetry}
+            startIcon={loading ? <CircularProgress size={16} /> : <RefreshIcon fontSize="small" />}
+          >
+            {t("ui.a54933578c")}
+          </Button>
         )}
       </Box>
       {error && <Alert severity="error" sx={{ borderRadius: 0 }}>{error}</Alert>}
@@ -1187,7 +1290,7 @@ function CapabilityStrip({ capabilities, prefix }: { capabilities: Array<Record<
 }
 
 function ChoiceChecks({ label, values, selected, onChange }: { label: string; values: Array<[string, string]>; selected: string[]; onChange: (value: string[]) => void }) {
-  return <Box><Typography variant="body2" fontWeight={700}>{label}</Typography><Stack direction="row" useFlexGap sx={{ flexWrap: "wrap" }}>{values.map(([value, text]) => <FormControlLabel key={value} control={<Checkbox checked={selected.includes(value)} onChange={(e) => onChange(e.target.checked ? [...selected, value] : selected.filter((item) => item !== value))} />} label={text.startsWith("ui.") ? t(text) : text} />)}</Stack></Box>;
+  return <Box><Typography variant="body2" fontWeight={700}>{label}</Typography><Stack direction="row" useFlexGap sx={{ flexWrap: "wrap" }}>{values.map(([value, text]) => <FormControlLabel key={value} control={<Checkbox checked={selected.includes(value)} onChange={(e) => onChange(e.target.checked ? [...selected, value] : selected.filter((item) => item !== value))} />} label={text.includes(".") ? t(text) : text} />)}</Stack></Box>;
 }
 
 function IssueList({ title, severity, items }: { title: string; severity: "error" | "warning"; items: Array<{ message: string; path?: string }> }) {
@@ -1195,7 +1298,7 @@ function IssueList({ title, severity, items }: { title: string; severity: "error
   return <Alert severity={severity}><Typography fontWeight={700}>{title}: {items.length}</Typography>{items.slice(0, 20).map((item, index) => <Typography variant="body2" key={`${item.path}-${index}`}>{item.path ? `${item.path}: ` : ""}{item.message}</Typography>)}</Alert>;
 }
 
-function buildBatchPayload(form: BuilderForm, accounts: BuilderAccount[]) {
+export function buildBatchPayload(form: BuilderForm, accounts: BuilderAccount[]) {
   return {
     batch_name: form.batch_name,
     execution_mode: form.execution_mode,
@@ -1225,6 +1328,8 @@ function buildBatchPayload(form: BuilderForm, accounts: BuilderAccount[]) {
         audience_resource_names: splitValues(form.audience_resource_names),
         user_list_resource_names: splitValues(form.user_list_resource_names),
         custom_audience_resource_names: splitValues(form.custom_audience_resource_names),
+        user_interest_resource_names: splitValues(form.user_interest_resource_names),
+        life_event_ids: splitValues(form.life_event_ids),
         demographics: {
           age_ranges: form.age_ranges,
           genders: form.genders,
@@ -1239,8 +1344,9 @@ function buildBatchPayload(form: BuilderForm, accounts: BuilderAccount[]) {
         mobile_final_url: form.mobile_final_url || null,
         tracking_template: form.tracking_template || null,
         final_url_suffix: form.final_url_suffix || null,
+        display_path: form.display_path || null,
         append_dgu_instance: form.append_instance_parameter,
-        custom_parameters: []
+        custom_parameters: parseCustomParameters(form.custom_parameters)
       },
       texts: {
         business_name: form.business_name,
@@ -1262,7 +1368,11 @@ function buildBatchPayload(form: BuilderForm, accounts: BuilderAccount[]) {
       allow_repeats: form.allow_repeats,
       seed: form.generation_seed
     },
-    creative: { media_ids: form.media_ids, subset_size: Math.max(1, Math.min(5, form.media_ids.length)) },
+    creative: {
+      media_ids: form.media_ids,
+      logo_media_id: form.logo_media_id || null,
+      subset_size: Math.max(1, Math.min(5, form.media_ids.length))
+    },
     campaign_overrides: {},
     password_confirmation: form.password_confirmation || null
   };
@@ -1279,7 +1389,7 @@ function hydrateBuilderForm(mode: string, builder: Record<string, any>): Builder
   const budget = builder.budget || {};
   return {
     ...emptyForm,
-    execution_mode: mode === "LIVE" ? "LIVE" : "SIMULATION",
+    execution_mode: mode === "GOOGLE_TEST" || mode === "PRODUCTION" ? mode : "SIMULATION",
     creation_mode: builder.creation_mode || emptyForm.creation_mode,
     template_id: builder.template_id || "",
     batch_name: builder.batch_name || emptyForm.batch_name,
@@ -1292,6 +1402,8 @@ function hydrateBuilderForm(mode: string, builder: Record<string, any>): Builder
     mobile_final_url: urls.mobile_final_url || "",
     tracking_template: urls.tracking_template || "",
     final_url_suffix: urls.final_url_suffix || "",
+    display_path: urls.display_path || "",
+    custom_parameters: customParametersText(urls.custom_parameters),
     append_instance_parameter: Boolean(urls.append_dgu_instance),
     start_date_time: campaign.start_date_time || "",
     end_date_time: campaign.end_date_time || "",
@@ -1305,6 +1417,8 @@ function hydrateBuilderForm(mode: string, builder: Record<string, any>): Builder
     audience_resource_names: listText(targeting.audience_resource_names),
     user_list_resource_names: listText(targeting.user_list_resource_names),
     custom_audience_resource_names: listText(targeting.custom_audience_resource_names),
+    user_interest_resource_names: listText(targeting.user_interest_resource_names),
+    life_event_ids: listText(targeting.life_event_ids),
     age_ranges: targeting.demographics?.age_ranges || emptyForm.age_ranges,
     genders: targeting.demographics?.genders || emptyForm.genders,
     parental_statuses: targeting.demographics?.parental_statuses || [],
@@ -1319,6 +1433,7 @@ function hydrateBuilderForm(mode: string, builder: Record<string, any>): Builder
     call_to_action: texts.call_to_action || emptyForm.call_to_action,
     youtube_video_id: campaign.youtube_video_id || emptyForm.youtube_video_id,
     media_ids: builder.creative?.media_ids || [],
+    logo_media_id: builder.creative?.logo_media_id || "",
     campaigns_per_account: Number(builder.campaigns_per_account || emptyForm.campaigns_per_account),
     copy_mode: builder.copy_mode || emptyForm.copy_mode,
     budget_mode: budget.mode || emptyForm.budget_mode,
@@ -1357,7 +1472,28 @@ const copyModes = [
 const channelLabels = [["youtube_in_stream", "YouTube In-stream"], ["youtube_in_feed", "YouTube In-feed"], ["youtube_shorts", "YouTube Shorts"], ["discover", "Discover"], ["gmail", "Gmail"], ["display", "Display"], ["maps", "Maps"]];
 const ageOptions: Array<[string, string]> = [["AGE_RANGE_18_24", "18–24"], ["AGE_RANGE_25_34", "25–34"], ["AGE_RANGE_35_44", "35–44"], ["AGE_RANGE_45_54", "45–54"], ["AGE_RANGE_55_64", "55–64"], ["AGE_RANGE_65_UP", "65+"]];
 const genderOptions: Array<[string, string]> = [["MALE", "ui.e19b9f8774"], ["FEMALE", "ui.e94aa18bcf"], ["UNDETERMINED", "ui.1962b53a94"]];
+const parentalOptions: Array<[string, string]> = [["PARENT", "builder.audience.parent"], ["NOT_A_PARENT", "builder.audience.notParent"], ["UNDETERMINED", "builder.audience.undetermined"]];
+const incomeOptions: Array<[string, string]> = [["INCOME_RANGE_0_50", "builder.audience.income0to50"], ["INCOME_RANGE_50_60", "builder.audience.income50to60"], ["INCOME_RANGE_60_70", "builder.audience.income60to70"], ["INCOME_RANGE_70_80", "builder.audience.income70to80"], ["INCOME_RANGE_80_90", "builder.audience.income80to90"], ["INCOME_RANGE_90_UP", "builder.audience.income90plus"], ["INCOME_RANGE_UNDETERMINED", "builder.audience.undetermined"]];
 
+function parseCustomParameters(value: string) {
+  return splitLines(value).flatMap((line) => {
+    const separator = line.indexOf("=");
+    if (separator < 1) return [];
+    const key = line.slice(0, separator).trim().replace(/^\{_?|\}$/g, "");
+    const parameterValue = line.slice(separator + 1).trim();
+    return key ? [{ key, value: parameterValue }] : [];
+  });
+}
+function customParametersText(value: unknown) {
+  if (!Array.isArray(value)) return "";
+  return value
+    .map((item) => `${String(item?.key || "")}=${String(item?.value || "")}`)
+    .join("\n");
+}
+function mediaRoleLabel(item: MediaAsset) {
+  const role = String(item.validation?.suggested_role || "").trim();
+  return role || "—";
+}
 function splitLines(value: string) { return value.split(/\r?\n/).map((item) => item.trim()).filter(Boolean); }
 function splitValues(value: string) { return value.split(/[\n,;|]/).map((item) => item.trim()).filter(Boolean); }
 function listText(value: unknown) { return Array.isArray(value) ? value.join(", ") : value ? String(value) : ""; }

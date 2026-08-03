@@ -28,6 +28,7 @@ import ImageOutlinedIcon from "@mui/icons-material/ImageOutlined";
 import LinkOutlinedIcon from "@mui/icons-material/LinkOutlined";
 import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
+import MonitorHeartOutlinedIcon from "@mui/icons-material/MonitorHeartOutlined";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import CheckIcon from "@mui/icons-material/Check";
@@ -38,32 +39,35 @@ import ViewModuleOutlinedIcon from "@mui/icons-material/ViewModuleOutlined";
 import ViewListOutlinedIcon from "@mui/icons-material/ViewListOutlined";
 import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
 import { api, setCsrfToken } from "../api/client";
-import { AccountsPage } from "../pages/AccountsPage";
-import { AuditPage } from "../pages/AuditPage";
-import { ConnectionsPage } from "../pages/ConnectionsPage";
-import { DashboardPage } from "../pages/DashboardPage";
-import { JobsPage } from "../pages/JobsPage";
 import { LoginPage } from "../pages/LoginPage";
-import {
-  AlertsPage,
-  FinancePage,
-  ModerationPage,
-  SettingsPage,
-  StatisticsPage
-} from "../pages/OperationsPages";
-import { MediaPage } from "../pages/MediaPage";
-import { PlansPage } from "../pages/PlansPage";
 import { SetupPage } from "../pages/SetupPage";
-import { SchedulesPage } from "../pages/SchedulesPage";
-import { TemplatesPage } from "../pages/TemplatesPage";
-import { LaunchGroupsPage } from "../pages/LaunchGroupsPage";
-import { NewUploadPage, UploadWizardPage } from "../pages/UploadWizardPage";
 import { useThemePreference } from "./ThemePreference";
 import { themeChoices } from "./theme";
 import { t, useLocale } from "../i18n";
+
+const AccountsPage = lazy(() => import("../pages/AccountsPage").then((module) => ({ default: module.AccountsPage })));
+const AuditPage = lazy(() => import("../pages/AuditPage").then((module) => ({ default: module.AuditPage })));
+const ConnectionsPage = lazy(() => import("../pages/ConnectionsPage").then((module) => ({ default: module.ConnectionsPage })));
+const ControlCenterPage = lazy(() => import("../pages/ControlCenterPage").then((module) => ({ default: module.ControlCenterPage })));
+const DashboardPage = lazy(() => import("../pages/DashboardPage").then((module) => ({ default: module.DashboardPage })));
+const JobsPage = lazy(() => import("../pages/JobsPage").then((module) => ({ default: module.JobsPage })));
+const AlertsPage = lazy(() => import("../pages/OperationsPages").then((module) => ({ default: module.AlertsPage })));
+const FinancePage = lazy(() => import("../pages/OperationsPages").then((module) => ({ default: module.FinancePage })));
+const ModerationPage = lazy(() => import("../pages/OperationsPages").then((module) => ({ default: module.ModerationPage })));
+const SettingsPage = lazy(() => import("../pages/OperationsPages").then((module) => ({ default: module.SettingsPage })));
+const StatisticsPage = lazy(() => import("../pages/OperationsPages").then((module) => ({ default: module.StatisticsPage })));
+const MediaPage = lazy(() => import("../pages/MediaPage").then((module) => ({ default: module.MediaPage })));
+const PlansPage = lazy(() => import("../pages/PlansPage").then((module) => ({ default: module.PlansPage })));
+const SchedulesPage = lazy(() => import("../pages/SchedulesPage").then((module) => ({ default: module.SchedulesPage })));
+const TemplatesPage = lazy(() => import("../pages/TemplatesPage").then((module) => ({ default: module.TemplatesPage })));
+const LaunchGroupsPage = lazy(() => import("../pages/LaunchGroupsPage").then((module) => ({ default: module.LaunchGroupsPage })));
+const NewUploadPage = lazy(() => import("../pages/UploadWizardPage").then((module) => ({ default: module.NewUploadPage })));
+const UploadWizardPage = lazy(() => import("../pages/UploadWizardPage").then((module) => ({ default: module.UploadWizardPage })));
+const PublicSitePage = lazy(() => import("../pages/PublicSitePage").then((module) => ({ default: module.PublicSitePage })));
+const LegalPage = lazy(() => import("../pages/LegalPage").then((module) => ({ default: module.LegalPage })));
 
 const drawerWidth = 264;
 
@@ -74,9 +78,20 @@ type NavGroup = { label: string; items: NavItem[] };
 function getNavGroups(): NavGroup[] {
   return [
   {
-    label: t("ui.75436e3162"),
+    label: t("nav.analytics"),
     items: [
-      { path: "/", label: t("ui.39c6387206"), icon: <DashboardOutlinedIcon /> },
+      { path: "/control-center", label: t("controlCenter.nav"), icon: <MonitorHeartOutlinedIcon /> },
+      { path: "/dashboard", label: t("nav.systemOverview"), icon: <DashboardOutlinedIcon /> },
+      { path: "/statistics", label: t("ui.a77d7f6c0d"), icon: <AssessmentOutlinedIcon /> },
+      { path: "/finance", label: t("ui.61dcf3af42"), icon: <AccountBalanceWalletOutlinedIcon /> },
+      { path: "/alerts", label: t("ui.ee3c35f311"), icon: <NotificationsNoneIcon /> },
+      { path: "/moderation", label: t("ui.80ae616e0b"), icon: <FactCheckOutlinedIcon /> },
+      { path: "/audit", label: t("ui.67ade741ae"), icon: <HistoryOutlinedIcon /> }
+    ]
+  },
+  {
+    label: t("nav.deployment"),
+    items: [
       { path: "/uploads/new", label: t("ui.7075f72219"), icon: <AddCircleOutlineIcon /> },
       { path: "/templates", label: t("ui.67cad9b67b"), icon: <ViewListOutlinedIcon /> },
       { path: "/media", label: t("ui.198be2a9a8"), icon: <ImageOutlinedIcon /> },
@@ -84,16 +99,6 @@ function getNavGroups(): NavGroup[] {
       { path: "/schedules", label: t("ui.f04bd0a064"), icon: <ScheduleOutlinedIcon /> },
       { path: "/launch-groups", label: t("ui.279f79d8f0"), icon: <ViewModuleOutlinedIcon /> },
       { path: "/jobs", label: t("ui.a11acfa069"), icon: <WorkspacesOutlinedIcon /> }
-    ]
-  },
-  {
-    label: t("ui.3468f380e2"),
-    items: [
-      { path: "/moderation", label: t("ui.80ae616e0b"), icon: <FactCheckOutlinedIcon /> },
-      { path: "/statistics", label: t("ui.a77d7f6c0d"), icon: <AssessmentOutlinedIcon /> },
-      { path: "/finance", label: t("ui.61dcf3af42"), icon: <AccountBalanceWalletOutlinedIcon /> },
-      { path: "/alerts", label: t("ui.ee3c35f311"), icon: <NotificationsNoneIcon /> },
-      { path: "/audit", label: t("ui.67ade741ae"), icon: <HistoryOutlinedIcon /> }
     ]
   },
   {
@@ -109,6 +114,7 @@ function getNavGroups(): NavGroup[] {
 
 export function App() {
   const [path, navigate] = useBrowserPath();
+  const publicPath = path === "/" || path === "/privacy" || path === "/terms";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
   const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
@@ -118,7 +124,7 @@ export function App() {
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const queryClient = useQueryClient();
-  const setupQuery = useQuery({ queryKey: ["setup-status"], queryFn: api.setupStatus });
+  const setupQuery = useQuery({ queryKey: ["setup-status"], queryFn: api.setupStatus, enabled: !publicPath });
   const meQuery = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
@@ -126,7 +132,7 @@ export function App() {
       setCsrfToken(session.csrf_token);
       return session;
     },
-    enabled: setupQuery.data?.setup_required === false,
+    enabled: !publicPath && setupQuery.data?.setup_required === false,
     retry: false
   });
   const logout = useMutation({
@@ -134,22 +140,39 @@ export function App() {
     onSuccess: () => {
       sessionStorage.clear();
       queryClient.clear();
-      navigate("/", true);
+      navigate("/login", true);
     }
   });
+
+  const currentTitle = navGroups.flatMap((group) => group.items).find((item) => isSelected(path, item.path))?.label;
+  useEffect(() => {
+    if (!publicPath) {
+      document.title = `${currentTitle || t("app.productName")} | Axyro Analytics`;
+    }
+  }, [currentTitle, publicPath, locale]);
+  useEffect(() => {
+    if (meQuery.data && path === "/login") navigate("/control-center", true);
+  }, [meQuery.data, navigate, path]);
+
+  if (publicPath) {
+    return (
+      <Suspense fallback={<CenteredText text={t("ui.b807935f97")} />}>
+        {path === "/privacy" ? <LegalPage kind="privacy" /> : path === "/terms" ? <LegalPage kind="terms" /> : <PublicSitePage />}
+      </Suspense>
+    );
+  }
 
   if (setupQuery.isLoading) return <CenteredText text={t("ui.b807935f97")} />;
   if (setupQuery.data?.setup_required) return <SetupPage />;
   if (!meQuery.data) return <LoginPage />;
 
   const user = meQuery.data.user;
-  const currentTitle = navGroups.flatMap((group) => group.items).find((item) => isSelected(path, item.path))?.label;
   const drawer = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
       <Toolbar sx={{ px: 2.25 }}>
         <Box>
-          <Typography fontWeight={800} lineHeight={1.15}>Demand Gen Uploader</Typography>
-          <Typography variant="caption" color="text.secondary">{t("app.mccOperations")}</Typography>
+          <Typography fontWeight={800} lineHeight={1.15}>{t("app.productName")}</Typography>
+          <Typography variant="caption" color="text.secondary">{t("app.subtitle")}</Typography>
         </Box>
       </Toolbar>
       <Box sx={{ overflowY: "auto", flex: 1, pb: 2 }}>
@@ -200,7 +223,7 @@ export function App() {
             </Tooltip>
           )}
           <Typography variant="h6" sx={{ flexGrow: 1, fontSize: 18 }}>
-            {currentTitle || "Demand Gen Uploader"}
+            {currentTitle || t("app.productName")}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mr: 1.5, display: { xs: "none", sm: "block" } }}>
             {user.username} · {user.role}
@@ -290,7 +313,11 @@ export function App() {
         }}
       >
         <Toolbar />
-        <Box sx={{ maxWidth: 1440, mx: "auto", pt: 3 }}>{renderRoute(path, navigate)}</Box>
+        <Box sx={{ maxWidth: 1440, mx: "auto", pt: 3 }}>
+          <Suspense fallback={<CenteredText text={t("ui.b807935f97")} />}>
+            {renderRoute(path, navigate)}
+          </Suspense>
+        </Box>
       </Box>
     </Box>
   );
@@ -304,7 +331,7 @@ function renderRoute(path: string, navigate: Navigate) {
   const scheduleMatch = path.match(/^\/schedules\/([0-9a-f-]+)$/i);
   if (scheduleMatch) return <SchedulesPage scheduleId={scheduleMatch[1]} navigate={navigate} />;
   switch (path) {
-    case "/":
+    case "/dashboard":
       return <DashboardPage navigate={navigate} />;
     case "/uploads/new":
       return <NewUploadPage navigate={navigate} />;
@@ -322,6 +349,8 @@ function renderRoute(path: string, navigate: Navigate) {
       return <JobsPage />;
     case "/moderation":
       return <ModerationPage />;
+    case "/control-center":
+      return <ControlCenterPage />;
     case "/statistics":
       return <StatisticsPage />;
     case "/finance":
@@ -336,11 +365,13 @@ function renderRoute(path: string, navigate: Navigate) {
       return <AccountsPage />;
     case "/settings":
       return <SettingsPage />;
+    case "/login":
+      return <ControlCenterPage />;
     default:
       return (
         <Box>
           <Typography variant="h4">{t("ui.b8a9604777")}</Typography>
-          <ListItemButton onClick={() => navigate("/")} sx={{ mt: 2, width: "fit-content" }}>
+          <ListItemButton onClick={() => navigate("/control-center")} sx={{ mt: 2, width: "fit-content" }}>
             {t("ui.e95c3a8b54")}</ListItemButton>
         </Box>
       );
@@ -369,7 +400,7 @@ function useBrowserPath(): [string, Navigate] {
 }
 
 function isSelected(path: string, target: string) {
-  if (target === "/") return path === "/";
+  if (target === "/dashboard") return path === "/dashboard";
   if (target === "/uploads/new") return path.startsWith("/uploads/");
   if (target === "/launch-groups") return path.startsWith("/launch-groups");
   if (target === "/schedules") return path.startsWith("/schedules");

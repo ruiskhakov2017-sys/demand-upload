@@ -40,6 +40,11 @@ from app.domain.batch_generator import (
     generate_batch_matrix,
 )
 from app.domain_validation.persistence import enqueue_upload_validation, mark_upload_validation_pending
+from app.google_ads.safety import (
+    GoogleAdsSafetyError,
+    require_execution_mode_for_connection,
+    require_google_test_connection_target,
+)
 from app.google_ads.service import is_google_connection_active
 
 router = APIRouter(tags=["campaign-builder"])
@@ -80,10 +85,14 @@ def generate_launch_batch(
     upload = db.get(CampaignUpload, upload_id)
     if not upload:
         raise HTTPException(status_code=404, detail="Загрузка не найдена")
-    if payload.execution_mode == "LIVE":
+    if payload.execution_mode != "SIMULATION":
         connection = db.get(GoogleConnection, upload.connection_id) if upload.connection_id else None
         if not is_google_connection_active(connection):
-            raise HTTPException(status_code=409, detail="Для LIVE нужен активный Google OAuth/MCC connection")
+            raise HTTPException(status_code=409, detail="Для Google Test нужно активное OAuth/MCC подключение")
+        try:
+            require_execution_mode_for_connection(connection, payload.execution_mode)
+        except GoogleAdsSafetyError as exc:
+            raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
 
     config = payload.model_dump(mode="json")
     password_confirmation = config.pop("password_confirmation", None)
@@ -354,8 +363,17 @@ def _resolve_template_version(db: Session, payload: BatchGenerateIn) -> Campaign
 
 
 def _trusted_accounts(db: Session, upload: CampaignUpload, accounts: list[dict], execution_mode: str) -> list[dict]:
-    if execution_mode != "LIVE":
+    if execution_mode == "SIMULATION":
         return accounts
+    connection = (
+        db.get(GoogleConnection, upload.connection_id)
+        if upload.connection_id
+        else None
+    )
+    try:
+        require_execution_mode_for_connection(connection, execution_mode)
+    except GoogleAdsSafetyError as exc:
+        raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
     rows = db.scalars(
         select(CustomerAccount).where(CustomerAccount.connection_id == upload.connection_id)
     ).all()
@@ -366,6 +384,10 @@ def _trusted_accounts(db: Session, upload: CampaignUpload, accounts: list[dict],
         item = known.get(customer_id)
         if not item:
             raise HTTPException(status_code=422, detail=f"Аккаунт {customer_id} не принадлежит выбранному connection")
+        try:
+            require_google_test_connection_target(connection, item, customer_id)
+        except GoogleAdsSafetyError as exc:
+            raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
         result.append(
             {
                 **selected,

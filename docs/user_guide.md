@@ -1,11 +1,18 @@
-# Demand Gen Uploader
+# Axyro Analytics: модуль Demand Gen Uploader
 
 ## Полное руководство оператора
 
-Версия руководства: 26 июля 2026 года  
-Проект: `D:\Cursor AI\demand-gen-uploader`  
-Адрес локальной панели: [http://localhost/](http://localhost/)  
-Назначение: массовая подготовка и создание Google Ads Demand Gen кампаний в дочерних аккаунтах MCC.
+Версия руководства: 26 июля 2026 года
+Проект: `D:\Cursor AI\demand-gen-uploader`
+Адрес локального кабинета: [http://localhost/login](http://localhost/login)
+Назначение этого документа: безопасная подготовка, проверка и контролируемое
+создание Google Ads Demand Gen кампаний в дочерних аккаунтах MCC.
+
+> **Позиционирование продукта**
+>
+> Axyro Analytics — внутренняя платформа аналитики и операционного контроля
+> Google Ads. Demand Gen Uploader — её дополнительный модуль **Validated
+> campaign deployment**, а не основное назначение продукта.
 
 > **Самое важное правило**
 >

@@ -1,0 +1,16 @@
+[Unit]
+Description=Demand Gen Uploader backup
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/opt/demand-gen-uploader/docker-compose.prod.yml
+
+[Service]
+Type=oneshot
+User=root
+Group=root
+WorkingDirectory=/opt/demand-gen-uploader
+UMask=0077
+ExecStart=/opt/demand-gen-uploader/infrastructure/scripts/production-backup.sh
+TimeoutStartSec=30min
+

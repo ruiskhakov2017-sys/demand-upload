@@ -2,11 +2,17 @@ from collections.abc import Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.router import api_router
 from app.core.config import settings
 
-app = FastAPI(title=settings.app_name)
+app = FastAPI(
+    title=settings.app_name,
+    openapi_url=f"{settings.api_prefix}/openapi.json",
+    docs_url=f"{settings.api_prefix}/docs",
+    redoc_url=f"{settings.api_prefix}/redoc",
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,6 +21,7 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "X-CSRF-Token", "Idempotency-Key"],
 )
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.allowed_hosts)
 
 
 @app.middleware("http")

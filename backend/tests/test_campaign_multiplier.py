@@ -56,7 +56,7 @@ def _config(counts: list[int], **updates: object) -> dict:
             "targeting": {"location_ids": ["2203"], "language_ids": ["1000"]},
             "url": {
                 "final_url": "https://example.com",
-                "tracking_template": "https://tracker.example/click?cid={campaignid}",
+                "tracking_template": "https://tracker.example/click?url={lpurl}&cid={campaignid}",
             },
             "texts": {
                 "business_name": "Example",
@@ -66,7 +66,10 @@ def _config(counts: list[int], **updates: object) -> dict:
             },
         },
         "budget": {"mode": "FIXED", "fixed": 25},
-        "creative": {"media_ids": ["asset-1", "asset-2", "asset-3"]},
+        "creative": {
+            "media_ids": ["logo", "asset-1", "asset-2", "asset-3"],
+            "logo_media_id": "logo",
+        },
         "campaign_overrides": {},
     }
     config.update(updates)
@@ -194,7 +197,8 @@ def test_random_creative_assignment_is_seeded() -> None:
         [8],
         copy_mode="RANDOM_CREATIVE_SUBSET",
         creative={
-            "media_ids": ["a", "b", "c", "d", "e"],
+            "media_ids": ["logo", "a", "b", "c", "d", "e"],
+            "logo_media_id": "logo",
             "minimum_count": 2,
             "maximum_count": 4,
             "seed": "creative-seed",
@@ -205,6 +209,55 @@ def test_random_creative_assignment_is_seeded() -> None:
     assert [item["creative_assignment"] for item in first["instances"]] == [
         item["creative_assignment"] for item in second["instances"]
     ]
+    assert all(
+        item["creative_assignment"]["media_ids"][0] == "logo"
+        and item["creative_assignment"]["logo_media_id"] == "logo"
+        for item in first["instances"]
+    )
+
+
+@pytest.mark.parametrize(
+    ("copy_mode", "creative"),
+    [
+        (
+            "EXACT_COPY",
+            {
+                "media_ids": ["asset-1", "logo", "asset-2"],
+                "logo_media_id": "logo",
+            },
+        ),
+        (
+            "ROTATE_CREATIVE_SETS",
+            {
+                "logo_media_id": "logo",
+                "sets": [
+                    {"key": "one", "media_ids": ["asset-1"]},
+                    {"key": "two", "media_ids": ["asset-2"]},
+                ],
+            },
+        ),
+        (
+            "RANDOM_CREATIVE_SUBSET",
+            {
+                "media_ids": ["asset-1", "asset-2", "logo", "asset-3"],
+                "logo_media_id": "logo",
+                "minimum_count": 1,
+                "maximum_count": 2,
+                "seed": "required-logo",
+            },
+        ),
+    ],
+)
+def test_required_logo_is_preserved_by_every_creative_distribution(
+    copy_mode: str,
+    creative: dict,
+) -> None:
+    instances = _matrix(
+        _config([7], copy_mode=copy_mode, creative=creative)
+    )["instances"]
+
+    assert all(item["creative_assignment"]["logo_media_id"] == "logo" for item in instances)
+    assert all(item["creative_assignment"]["media_ids"][0] == "logo" for item in instances)
 
 
 def test_valuetrack_is_preserved_and_internal_parameter_is_opt_in() -> None:
@@ -237,15 +290,85 @@ def test_duplicate_exact_copies_are_a_warning_not_an_error() -> None:
         "long_headline": "A valid long headline",
         "descriptions": ["A valid description"],
         "youtube_video_id": "dQw4w9WgXcQ",
-        "media_ids": [],
+        "media_ids": ["logo"],
+        "logo_media_id": "logo",
     }
     second = deepcopy(campaign)
     second["campaign_name"] = "Copy 2"
     result = validate_plan_snapshot(
-        {"campaigns": [campaign, second], "media": [], "execution_mode": "SIMULATION"}
+        {
+            "campaigns": [campaign, second],
+            "media": [
+                {
+                    "id": "logo",
+                    "kind": "IMAGE",
+                    "name": "Logo",
+                    "width": 1200,
+                    "height": 1200,
+                    "status": "READY",
+                }
+            ],
+            "execution_mode": "SIMULATION",
+        }
     )
     assert result["valid"] is True
     assert any(item["code"] == "INTENTIONAL_DUPLICATES" for item in result["warnings"])
+
+
+def test_local_validation_checks_url_options_and_account_owned_audiences() -> None:
+    campaign = {
+        "customer_id": "1234567890",
+        "campaign_name": "Validated options",
+        "ad_group_name": "Main",
+        "business_name": "Example",
+        "final_url": "https://example.com",
+        "mobile_final_url": "not-a-url",
+        "tracking_template": "https://tracker.example/click",
+        "final_url_suffix": "?utm_source=test",
+        "display_path": "this-part-is-far-too-long/second/third",
+        "custom_parameters": [{"key": "invalid-key", "value": "ok"}],
+        "daily_budget_micros": 10_000_000,
+        "bidding_strategy": "TARGET_CPA",
+        "target_cpa_micros": 5_000_000,
+        "location_ids": ["2203"],
+        "language_ids": ["1000"],
+        "ad_type": "VIDEO",
+        "headlines": ["First headline"],
+        "long_headline": "A valid long headline",
+        "descriptions": ["A valid description"],
+        "youtube_video_id": "dQw4w9WgXcQ",
+        "media_ids": ["logo"],
+        "logo_media_id": "logo",
+        "user_interest_resource_names": ["customers/9999999999/userInterests/1"],
+        "life_event_ids": ["not-numeric"],
+    }
+    result = validate_plan_snapshot(
+        {
+            "campaigns": [campaign],
+            "media": [
+                {
+                    "id": "logo",
+                    "kind": "IMAGE",
+                    "name": "Logo",
+                    "width": 1200,
+                    "height": 1200,
+                    "status": "READY",
+                }
+            ],
+            "execution_mode": "SIMULATION",
+        }
+    )
+
+    codes = {item["code"] for item in result["errors"]}
+    assert {
+        "INVALID_MOBILE_URL",
+        "TRACKING_TEMPLATE_LPURL_REQUIRED",
+        "INVALID_FINAL_URL_SUFFIX",
+        "INVALID_DISPLAY_PATH",
+        "INVALID_CUSTOM_PARAMETER_KEY",
+        "CROSS_ACCOUNT_RESOURCE",
+        "INVALID_LIFE_EVENT",
+    } <= codes
 
 
 def test_mock_validation_and_deployment_never_contact_google_and_stay_paused() -> None:

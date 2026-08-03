@@ -6,6 +6,9 @@ from app.api.routes import (
     auth,
     batches,
     capabilities,
+    control_center,
+    control_center_drilldown,
+    control_center_structure,
     dashboard,
     google_connections,
     health,
@@ -28,6 +31,9 @@ api_router.include_router(setup.router)
 api_router.include_router(auth.router)
 api_router.include_router(batches.router)
 api_router.include_router(capabilities.router)
+api_router.include_router(control_center.router)
+api_router.include_router(control_center_drilldown.router)
+api_router.include_router(control_center_structure.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(google_connections.router)
 api_router.include_router(oauth.router)

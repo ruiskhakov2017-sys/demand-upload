@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
 
-describe("Demand Gen Uploader frontend", () => {
+describe("Axyro Analytics frontend", () => {
   it("has a test harness", () => {
-    expect("Demand Gen Uploader").toContain("Demand Gen");
+    expect("Axyro Analytics").toContain("Analytics");
   });
 });
-

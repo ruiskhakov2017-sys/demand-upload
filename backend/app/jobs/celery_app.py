@@ -6,7 +6,11 @@ celery_app = Celery(
     "demand_gen_uploader",
     broker=settings.redis_url,
     backend=settings.redis_url,
-    include=["app.jobs.tasks", "app.jobs.schedule_tasks"],
+    include=[
+        "app.jobs.tasks",
+        "app.jobs.schedule_tasks",
+        "app.jobs.control_center_tasks",
+    ],
 )
 
 celery_app.conf.update(
@@ -22,6 +26,14 @@ celery_app.conf.update(
         "dispatch-due-scheduled-accounts": {
             "task": "app.jobs.dispatch_due_scheduled_accounts",
             "schedule": 15.0,
-        }
+        },
+        "dispatch-due-control-center-sync": {
+            "task": "app.jobs.dispatch_due_control_center_sync",
+            "schedule": 60.0,
+        },
+        "evaluate-control-center-rules": {
+            "task": "app.jobs.evaluate_control_center_rules",
+            "schedule": 300.0,
+        },
     },
 )

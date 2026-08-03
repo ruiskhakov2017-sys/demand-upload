@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import ast
 from contextlib import contextmanager
+from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -14,6 +15,7 @@ from app.google_ads.errors import GoogleAdsAdapterError
 from app.google_ads.interface import GoogleAdsConnectionConfig
 from app.google_ads.versions.v24_2 import adapter as adapter_module
 from app.google_ads.versions.v24_2.adapter import GoogleAdsV242Adapter
+from app.google_ads.versions.v25.adapter import GoogleAdsV25Adapter
 
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
@@ -88,6 +90,108 @@ def test_connection_uses_read_only_google_ads_search(monkeypatch) -> None:
     ):
         assert field in query
     assert "mutate" not in query
+
+
+def test_change_event_query_uses_supported_v24_fields(monkeypatch) -> None:
+    captured: dict[str, str] = {}
+    event = SimpleNamespace(
+        resource_name="customers/123/changeEvents/1~0~0",
+        change_date_time="2026-07-31 12:00:00",
+        change_resource_name="customers/123/campaigns/456",
+        change_resource_type=SimpleNamespace(name="CAMPAIGN"),
+        client_type=SimpleNamespace(name="GOOGLE_ADS_API"),
+        resource_change_operation=SimpleNamespace(name="UPDATE"),
+        user_email="operator@example.test",
+        changed_fields=SimpleNamespace(paths=["status"]),
+        old_resource=None,
+        new_resource=None,
+    )
+
+    @contextmanager
+    def fake_google_ads_client(config):
+        yield object()
+
+    def fake_search_rows(self, client, customer_id, query):
+        captured["customer_id"] = customer_id
+        captured["query"] = " ".join(query.split()).lower()
+        return [SimpleNamespace(change_event=event)], ["request-id"]
+
+    monkeypatch.setattr(adapter_module, "google_ads_client", fake_google_ads_client)
+    monkeypatch.setattr(GoogleAdsV242Adapter, "_search_rows", fake_search_rows)
+
+    result = GoogleAdsV242Adapter(_config()).fetch_control_center_changes(
+        "123-456-7890",
+        "2026-07-30T12:00:00+00:00",
+        "2026-07-31T12:00:00+00:00",
+    )
+
+    assert captured["customer_id"] == "1234567890"
+    assert "change_event.client_type" in captured["query"]
+    assert "change_event.change_client_type" not in captured["query"]
+    assert "change_event.resource_change_operation" in captured["query"]
+    assert "change_event.change_date_time >= '2026-07-30'" in captured["query"]
+    assert "change_event.change_date_time <= '2026-07-31'" in captured["query"]
+    assert "2026-07-30t12:00:00" not in captured["query"]
+    assert "+00:00" not in captured["query"]
+    assert result[0]["client_type"] == "GOOGLE_ADS_API"
+    assert result[0]["change_type"] == "UPDATED"
+    assert result[0]["_request_ids"] == ["request-id"]
+
+
+def test_monthly_invoicing_read_uses_only_billing_gaql(monkeypatch) -> None:
+    queries: list[str] = []
+    setup = SimpleNamespace(
+        resource_name="customers/123/billingSetups/1",
+        id=1,
+        status=SimpleNamespace(name="APPROVED"),
+        start_date_time="2026-01-01 00:00:00",
+        end_date_time="",
+        end_time_type=SimpleNamespace(name="FOREVER"),
+        payments_account_info=SimpleNamespace(
+            payments_account_name="Monthly account",
+            payments_profile_name="Profile",
+        ),
+    )
+    budget = SimpleNamespace(
+        resource_name="customers/123/accountBudgets/2",
+        status=SimpleNamespace(name="APPROVED"),
+        billing_setup=setup.resource_name,
+        approved_spending_limit_micros=100_000_000,
+        approved_spending_limit_type=SimpleNamespace(name="UNSPECIFIED"),
+        adjusted_spending_limit_micros=100_000_000,
+        adjusted_spending_limit_type=SimpleNamespace(name="UNSPECIFIED"),
+        amount_served_micros=0,
+        total_adjustments_micros=0,
+        approved_start_date_time="2026-01-01 00:00:00",
+        approved_end_date_time="",
+        approved_end_time_type=SimpleNamespace(name="FOREVER"),
+        purchase_order_number="PO-1",
+    )
+
+    @contextmanager
+    def fake_google_ads_client(config):
+        yield object()
+
+    def fake_search_rows(self, client, customer_id, query):
+        del self, client
+        normalized = " ".join(query.split())
+        queries.append(normalized)
+        if "FROM billing_setup" in normalized:
+            return [SimpleNamespace(billing_setup=setup)], ["billing-request"]
+        return [SimpleNamespace(account_budget=budget)], ["budget-request"]
+
+    monkeypatch.setattr(adapter_module, "google_ads_client", fake_google_ads_client)
+    monkeypatch.setattr(GoogleAdsV242Adapter, "_search_rows", fake_search_rows)
+
+    result = GoogleAdsV242Adapter(_config()).fetch_billing_summary("123-456-7890")
+
+    assert len(queries) == 2
+    assert all("mutate" not in query.lower() for query in queries)
+    assert "billing_setup.payments_account_info.payments_account_name" in queries[0]
+    assert "account_budget.approved_spending_limit_micros" in queries[1]
+    assert result["billing_setups"][0]["status"] == "APPROVED"
+    assert result["account_budgets"][0]["amount_served_micros"] == 0
+    assert result["request_ids"] == ["billing-request", "budget-request"]
 
 
 def test_google_client_config_trims_outer_developer_token_whitespace() -> None:
@@ -195,11 +299,14 @@ def test_adapter_service_methods_exist_in_installed_google_ads_sdk() -> None:
     )
     expected_methods = {
         "GoogleAdsService": ("search", "search_stream", "mutate"),
-        "CampaignBudgetService": ("campaign_budget_path",),
+        "CustomerService": ("list_accessible_customers",),
+        "CampaignBudgetService": ("campaign_budget_path", "mutate_campaign_budgets"),
         "CampaignService": ("campaign_path",),
         "AdGroupService": ("ad_group_path",),
         "AssetService": ("asset_path",),
+        "AudienceService": ("audience_path",),
         "YouTubeVideoUploadService": ("create_you_tube_video_upload",),
+        "IdentityVerificationService": ("get_identity_verification",),
     }
 
     source = (BACKEND_ROOT / "app" / "google_ads" / "versions" / "v24_2" / "adapter.py").read_text(
@@ -223,3 +330,33 @@ def test_adapter_service_methods_exist_in_installed_google_ads_sdk() -> None:
         service = client.get_service(service_name)
         missing.extend(f"{service_name}.{method}" for method in methods if not hasattr(service, method))
     assert missing == []
+
+
+def test_account_catalog_reads_supported_user_interest_resource() -> None:
+    source = (
+        BACKEND_ROOT / "app" / "google_ads" / "versions" / "v24_2" / "adapter.py"
+    ).read_text(encoding="utf-8")
+
+    assert "FROM user_interest" in source
+    assert "user_interest.resource_name" in source
+    assert "user_interest.user_interest_id" in source
+    assert "user_interest.taxonomy_type" in source
+
+
+def test_v25_adapter_boundary_uses_the_installed_v25_sdk_contract() -> None:
+    config = replace(_config(), api_version="v25")
+    adapter = GoogleAdsV25Adapter(config)
+    client = GoogleAdsClient(
+        credentials=AnonymousCredentials(),
+        developer_token="test-token",
+        login_customer_id="5589335362",
+        version="v25",
+        use_proto_plus=True,
+    )
+
+    assert adapter.config.api_version == "v25"
+    assert hasattr(client.get_service("GoogleAdsService"), "search")
+    assert hasattr(client.get_service("GoogleAdsService"), "mutate")
+    assert client.get_type("CampaignOperation") is not None
+    with pytest.raises(ValueError):
+        GoogleAdsV25Adapter(_config())

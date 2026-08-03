@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -39,8 +40,13 @@ from app.domain_validation.service import (
     filter_blocked_campaigns,
     merge_domain_skips,
 )
+from app.google_ads.execution_guard import (
+    refresh_google_test_snapshot_targets,
+    refresh_google_test_target,
+)
 from app.google_ads.interface import PlanExecutionResult
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
+from app.google_ads.safety import require_execution_mode_for_connection
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
 from app.integrations.brocard import BrocardClient
 from app.jobs.celery_app import celery_app
@@ -52,20 +58,86 @@ def ping() -> str:
 
 
 @celery_app.task(name="app.jobs.validate_upload_domains")
-def validate_upload_domains(upload_id: str) -> dict:
+def validate_upload_domains(
+    upload_id: str,
+    job_id: str | None = None,
+    force: bool = False,
+) -> dict:
     with SessionLocal() as db:
         try:
             upload = db.get(CampaignUpload, UUID(upload_id))
         except ValueError:
             upload = None
+        job = None
+        if job_id:
+            try:
+                job = db.get(Job, UUID(job_id))
+            except ValueError:
+                job = None
         if not upload:
+            if job:
+                job.status = JobStatus.FAILED.value
+                job.error_message = "Загрузка не найдена"
+                db.add(
+                    JobEvent(
+                        job_id=job.id,
+                        level="ERROR",
+                        message="Проверка доменов не выполнена: загрузка не найдена",
+                        data={"code": "UPLOAD_NOT_FOUND"},
+                    )
+                )
+                db.commit()
             return {"ok": False, "code": "UPLOAD_NOT_FOUND"}
+        if job and job.status == JobStatus.SUCCEEDED.value:
+            summary = (upload.draft or {}).get("domain_validation", {}).get(
+                "summary", {}
+            )
+            return {"ok": True, "reused": True, "summary": summary}
+        if job:
+            job.status = JobStatus.RUNNING.value
+            job.progress_current = 0
+            job.progress_total = 1
+            db.add(
+                JobEvent(
+                    job_id=job.id,
+                    level="INFO",
+                    message="Проверка доменов начата",
+                    data={"upload_id": upload_id, "force": force},
+                )
+            )
+            db.commit()
         try:
-            report = validate_upload(db, upload, force=False)
+            report = validate_upload(db, upload, force=force)
+            if job:
+                job.status = JobStatus.SUCCEEDED.value
+                job.progress_current = 1
+                job.error_message = None
+                db.add(
+                    JobEvent(
+                        job_id=job.id,
+                        level="INFO",
+                        message="Проверка доменов завершена",
+                        data={"summary": report["summary"]},
+                    )
+                )
             db.commit()
             return {"ok": True, "summary": report["summary"]}
         except Exception as exc:
             db.rollback()
+            if job:
+                job = db.get(Job, job.id)
+                if job:
+                    job.status = JobStatus.FAILED.value
+                    job.error_message = "Проверка доменов временно недоступна"
+                    db.add(
+                        JobEvent(
+                            job_id=job.id,
+                            level="ERROR",
+                            message="Проверка доменов завершилась ошибкой",
+                            data={"code": exc.__class__.__name__},
+                        )
+                    )
+                    db.commit()
             return {"ok": False, "code": exc.__class__.__name__}
 
 
@@ -91,7 +163,7 @@ def deploy_plan(plan_id: str, job_id: str) -> dict:
             domain_report = validate_snapshot(
                 snapshot,
                 cached_report=plan.snapshot.get("domain_validation") or {},
-                force=plan.execution_mode == "LIVE",
+                force=plan.execution_mode == "GOOGLE_TEST",
             )
             snapshot, domain_skipped = filter_blocked_campaigns(snapshot, domain_report)
             if not snapshot.get("campaigns"):
@@ -119,7 +191,20 @@ def deploy_plan(plan_id: str, job_id: str) -> dict:
                 connection = db.get(GoogleConnection, plan.connection_id) if plan.connection_id else None
                 if not is_google_connection_active(connection):
                     raise ValueError("Активное подключение Google недоступно")
-                result = build_google_ads_adapter(db, connection).deploy_plan(snapshot)
+                require_execution_mode_for_connection(connection, plan.execution_mode)
+                adapter = build_google_ads_adapter(db, connection)
+                guard_request_ids = refresh_google_test_snapshot_targets(
+                    db,
+                    connection,
+                    adapter,
+                    snapshot,
+                    confirmed_at=plan.confirmed_at,
+                    require_confirmation=True,
+                )
+                result = adapter.deploy_plan(snapshot)
+                result.request_ids = list(
+                    dict.fromkeys([*guard_request_ids, *result.request_ids])
+                )
             if snapshot.get("campaigns"):
                 result = merge_domain_skips(result, domain_skipped, domain_report)
         except Exception as exc:
@@ -328,6 +413,31 @@ def apply_campaign_status_action(action_id: str, job_id: str) -> dict:
         db.commit()
         try:
             adapter = _status_adapter(db, batch, action.execution_mode)
+            if action.execution_mode == "GOOGLE_TEST":
+                connection = db.get(GoogleConnection, batch.connection_id)
+                _, _, guard_request_ids = refresh_google_test_target(
+                    db,
+                    connection,
+                    adapter,
+                    bundle.customer_id,
+                    confirmed_at=action.created_at,
+                    require_confirmation=True,
+                )
+                validation = adapter.validate_campaign_status(
+                    bundle.customer_id,
+                    _campaign_refs(instances),
+                    "ENABLED" if action.requested_status == "ENABLED" else "PAUSED",
+                )
+                if not validation.ok:
+                    raise RuntimeError(
+                        "; ".join(
+                            item.get("message", "validate_only failed")
+                            for item in validation.errors
+                        )
+                    )
+            else:
+                guard_request_ids = []
+                validation = None
             google_status = "ENABLED" if action.requested_status == "ENABLED" else "PAUSED"
             results = [adapter.change_campaign_status(bundle.customer_id, _campaign_refs(instances), google_status)]
         except Exception as exc:
@@ -339,7 +449,23 @@ def apply_campaign_status_action(action_id: str, job_id: str) -> dict:
             return {"ok": False, "error": str(exc)}
 
         errors = [item for result in results for item in result.errors]
-        action.request_ids = list(dict.fromkeys(item for result in results for item in result.request_ids))
+        action.request_ids = list(
+            dict.fromkeys(
+                [
+                    *guard_request_ids,
+                    *(
+                        validation.request_ids
+                        if validation is not None
+                        else []
+                    ),
+                    *(
+                        item
+                        for result in results
+                        for item in result.request_ids
+                    ),
+                ]
+            )
+        )
         action.resource_names = list(dict.fromkeys(item for result in results for item in result.resource_names))
         action.completed_at = utcnow()
         if errors:
@@ -516,6 +642,15 @@ def upload_youtube_video(job_id: str) -> dict:
                 if not is_google_connection_active(connection):
                     raise ValueError("Активное подключение Google недоступно")
                 adapter = build_google_ads_adapter(db, connection)
+                confirmed_at = datetime.fromisoformat(job.payload["confirmed_at"])
+                refresh_google_test_target(
+                    db,
+                    connection,
+                    adapter,
+                    job.payload["customer_id"],
+                    confirmed_at=confirmed_at,
+                    require_confirmation=True,
+                )
             result = adapter.start_youtube_video_upload(
                 job.payload["customer_id"],
                 str(settings.storage_root / asset.storage_key),

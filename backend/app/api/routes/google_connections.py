@@ -19,7 +19,9 @@ from app.db.models import (
     AuditLog,
     AuthType,
     ConnectionStatus,
+    EnvironmentType,
     GoogleConnection,
+    GoogleConnectionMode,
     GoogleCredential,
     User,
     UserRole,
@@ -45,9 +47,38 @@ def create_connection(
     user: User = Depends(require_role(UserRole.ADMIN)),
     _: User = Depends(require_csrf),
 ) -> GoogleConnection:
+    if db.scalar(select(GoogleConnection).where(GoogleConnection.name == payload.name)):
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Подключение с таким названием уже существует",
+        )
     developer_credential = None
     auth_credential = None
-    if payload.developer_token:
+    oauth_client_credential = None
+    credential_source = None
+    if payload.credential_source_connection_id:
+        credential_source = db.get(
+            GoogleConnection, payload.credential_source_connection_id
+        )
+        if not credential_source:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Источник защищённых реквизитов не найден",
+            )
+        developer_credential = credential_source.developer_token_credential
+        oauth_client_credential = (
+            credential_source.oauth_client_credential
+            or credential_source.auth_credential
+        )
+        if not developer_credential or not oauth_client_credential:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=(
+                    "В выбранном credential profile нет Developer Token "
+                    "или OAuth Client"
+                ),
+            )
+    elif payload.developer_token:
         developer_credential = GoogleCredential(
             kind="DEVELOPER_TOKEN",
             encrypted_payload=encrypt_json({"developer_token": payload.developer_token}),
@@ -67,27 +98,41 @@ def create_connection(
             "refresh_token": payload.oauth_refresh_token,
         }
 
-    if any(value for value in auth_payload.values()):
+    if any(value for value in auth_payload.values()) and not credential_source:
         auth_credential = GoogleCredential(
             kind=payload.auth_type.value,
             encrypted_payload=encrypt_json(auth_payload),
             created_by_id=user.id,
         )
         db.add(auth_credential)
+        if payload.auth_type == AuthType.OAUTH_WEB:
+            oauth_client_credential = auth_credential
 
+    has_refresh_token = bool(payload.oauth_refresh_token)
     connection = GoogleConnection(
         name=payload.name,
         login_customer_id=payload.login_customer_id,
         auth_type=payload.auth_type.value,
-        environment=payload.environment.value,
+        environment=(
+            EnvironmentType.TEST.value
+            if payload.connection_mode == GoogleConnectionMode.GOOGLE_TEST
+            else payload.environment.value
+        ),
+        connection_mode=payload.connection_mode.value,
         developer_token_credential=developer_credential,
         auth_credential=auth_credential,
+        oauth_client_credential=oauth_client_credential,
         api_version=settings.google_ads_api_version,
+        test_hierarchy_root_customer_id=(
+            payload.login_customer_id
+            if payload.connection_mode == GoogleConnectionMode.GOOGLE_TEST
+            else None
+        ),
         status=(
             ConnectionStatus.DRAFT.value
             if developer_credential
-            and auth_credential
-            and (payload.auth_type == AuthType.SERVICE_ACCOUNT or payload.oauth_refresh_token)
+            and (auth_credential or oauth_client_credential)
+            and (payload.auth_type == AuthType.SERVICE_ACCOUNT or has_refresh_token)
             else ConnectionStatus.NEEDS_CREDENTIALS.value
         ),
         created_by_id=user.id,
@@ -102,12 +147,18 @@ def create_connection(
             entity_type="google_connection",
             entity_id=str(connection.id),
             ip_address=request.client.host if request.client else None,
-            summary=redact(payload.model_dump()),
+            summary=connection_create_audit_summary(payload),
         )
     )
     db.commit()
     db.refresh(connection)
     return connection
+
+
+def connection_create_audit_summary(
+    payload: GoogleConnectionCreateIn,
+) -> dict:
+    return redact(payload.model_dump(mode="json"))
 
 
 @router.post("/{connection_id}/test", response_model=AdapterCheckOut)
@@ -134,8 +185,26 @@ def test_connection(
 
     connection.last_checked_at = utcnow()
     if result.ok:
-        connection.status = ConnectionStatus.VERIFIED.value
-        connection.last_error = None
+        if connection.connection_mode == GoogleConnectionMode.GOOGLE_TEST.value:
+            try:
+                from app.google_ads.hierarchy import sync_google_ads_hierarchy
+
+                _, hierarchy_request_ids = sync_google_ads_hierarchy(db, connection)
+                if hierarchy_request_ids and not result.request_id:
+                    result.request_id = hierarchy_request_ids[-1]
+            except Exception as exc:
+                result = AdapterCheckOut(
+                    ok=False,
+                    status=ConnectionStatus.ERROR.value,
+                    message=str(exc),
+                    api_version=connection.api_version,
+                )
+        if result.ok:
+            connection.status = ConnectionStatus.VERIFIED.value
+            connection.last_error = None
+        else:
+            connection.status = ConnectionStatus.ERROR.value
+            connection.last_error = result.message
     else:
         connection.status = ConnectionStatus.ERROR.value
         connection.last_error = result.message

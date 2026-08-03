@@ -7,10 +7,12 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+ExecutionMode = Literal["SIMULATION", "GOOGLE_TEST", "PRODUCTION"]
+
 
 class UploadCreateIn(BaseModel):
     name: str = Field(default="Новая загрузка", min_length=2, max_length=180)
-    execution_mode: Literal["SIMULATION", "LIVE"] = "SIMULATION"
+    execution_mode: ExecutionMode = "SIMULATION"
 
 
 class UploadPatchIn(BaseModel):
@@ -93,7 +95,7 @@ class YouTubeUploadIn(BaseModel):
     customer_id: str = Field(min_length=6, max_length=32)
     title: str = Field(min_length=1, max_length=100)
     description: str = Field(default="", max_length=5000)
-    execution_mode: Literal["SIMULATION", "LIVE"] = "SIMULATION"
+    execution_mode: ExecutionMode = "SIMULATION"
 
 
 class TemplateCreateIn(BaseModel):
@@ -118,7 +120,7 @@ class TemplateOut(BaseModel):
 
 
 class PlanBuildIn(BaseModel):
-    execution_mode: Literal["SIMULATION", "LIVE"] = "SIMULATION"
+    execution_mode: ExecutionMode = "SIMULATION"
     schedule_id: UUID | None = None
 
 
@@ -286,7 +288,7 @@ class BatchAccountIn(BaseModel):
 
 class BatchGenerateIn(BaseModel):
     batch_name: str = Field(min_length=2, max_length=180)
-    execution_mode: Literal["SIMULATION", "LIVE"] = "SIMULATION"
+    execution_mode: ExecutionMode = "SIMULATION"
     creation_mode: Literal["FROM_TEMPLATE", "FULL_SETUP", "FROM_EXISTING", "FILE"] = "FULL_SETUP"
     template_id: UUID | None = None
     template_version_id: UUID | None = None

@@ -3,9 +3,15 @@ from __future__ import annotations
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.db.models import AuthType, ConnectionStatus, EnvironmentType, UserRole
+from app.db.models import (
+    AuthType,
+    ConnectionStatus,
+    EnvironmentType,
+    GoogleConnectionMode,
+    UserRole,
+)
 
 
 def normalize_customer_id(value: str) -> str:
@@ -52,6 +58,8 @@ class GoogleConnectionCreateIn(BaseModel):
     login_customer_id: str
     auth_type: AuthType
     environment: EnvironmentType = EnvironmentType.TEST
+    connection_mode: GoogleConnectionMode = GoogleConnectionMode.PRODUCTION
+    credential_source_connection_id: UUID | None = None
     developer_token: str | None = Field(default=None, max_length=512)
     service_account_json: dict | None = None
     oauth_client_id: str | None = None
@@ -63,6 +71,19 @@ class GoogleConnectionCreateIn(BaseModel):
     def validate_login_customer_id(cls, value: str) -> str:
         return normalize_customer_id(value)
 
+    @model_validator(mode="after")
+    def validate_connection_mode(self) -> GoogleConnectionCreateIn:
+        if self.connection_mode == GoogleConnectionMode.GOOGLE_TEST:
+            if self.auth_type != AuthType.OAUTH_WEB:
+                raise ValueError("GOOGLE_TEST поддерживает только OAuth Web")
+            if self.environment != EnvironmentType.TEST:
+                raise ValueError("GOOGLE_TEST должен использовать среду TEST")
+            if self.credential_source_connection_id is None:
+                raise ValueError(
+                    "Для GOOGLE_TEST выберите защищённый credential profile"
+                )
+        return self
+
 
 class GoogleConnectionOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -72,10 +93,14 @@ class GoogleConnectionOut(BaseModel):
     login_customer_id: str
     auth_type: AuthType
     environment: EnvironmentType
+    connection_mode: GoogleConnectionMode
     api_version: str
     status: ConnectionStatus
     last_checked_at: datetime | None
     last_error: str | None
+    test_hierarchy_root_customer_id: str | None
+    hierarchy_verified_at: datetime | None
+    hierarchy_request_ids: list
     created_at: datetime
     updated_at: datetime
 
@@ -102,6 +127,13 @@ class CustomerAccountOut(BaseModel):
     is_test_account: bool
     is_hidden: bool
     status: str | None
+    parent_customer_id: str | None
+    hierarchy_root_customer_id: str | None
+    hierarchy_level: int | None
+    account_type: str
+    last_sync_success_at: datetime | None
+    test_account_verified_at: datetime | None
+    last_google_request_ids: list
     updated_at: datetime
 
 

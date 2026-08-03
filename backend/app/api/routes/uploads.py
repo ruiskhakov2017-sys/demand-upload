@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from sqlalchemy import desc, select
@@ -8,15 +8,17 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_csrf
 from app.api.workflow_schemas import ImportOut, ManualRowsIn, UploadCreateIn, UploadOut, UploadPatchIn
+from app.core.config import settings
 from app.core.database import get_db
-from app.db.models import CampaignUpload, UploadStatus, User
+from app.db.models import CampaignUpload, Job, JobEvent, JobStatus, UploadStatus, User
 from app.domain.audit import record_audit
 from app.domain.tabular import parse_tabular
 from app.domain_validation.persistence import (
+    collect_upload_references,
     enqueue_upload_validation,
     mark_upload_validation_pending,
-    validate_upload,
 )
+from app.domain_validation.service import DomainValidationService
 
 router = APIRouter(prefix="/uploads", tags=["uploads"])
 MAX_IMPORT_BYTES = 20 * 1024 * 1024
@@ -178,10 +180,23 @@ def get_domain_validation(
     report = (upload.draft or {}).get("domain_validation")
     if report:
         return report
-    report = mark_upload_validation_pending(db, upload)
-    db.commit()
-    enqueue_upload_validation(upload.id)
+    report = DomainValidationService.pending(collect_upload_references(db, upload))
+    report["status"] = "NOT_RUN"
+    report["checked_at"] = None
+    for result in report["results"]:
+        result["status"] = "NOT_RUN"
+        result["code"] = "DOMAIN_CHECK_NOT_RUN"
     return report
+
+
+@router.post("/{upload_id}/domain-validation", status_code=status.HTTP_202_ACCEPTED)
+def start_domain_validation(
+    upload_id: UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_csrf),
+) -> dict:
+    return _start_domain_validation(upload_id, request, db, user)
 
 
 @router.post("/{upload_id}/domain-validation/retry")
@@ -191,23 +206,105 @@ def retry_domain_validation(
     db: Session = Depends(get_db),
     user: User = Depends(require_csrf),
 ) -> dict:
-    upload = _get_upload(db, upload_id)
-    report = validate_upload(db, upload, force=True)
+    return _start_domain_validation(upload_id, request, db, user)
+
+
+def _start_domain_validation(
+    upload_id: UUID,
+    request: Request,
+    db: Session,
+    user: User,
+) -> dict:
+    upload = db.scalar(
+        select(CampaignUpload)
+        .where(CampaignUpload.id == upload_id)
+        .with_for_update()
+    )
+    if not upload:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Загрузка не найдена")
+    active_jobs = list(
+        db.scalars(
+            select(Job)
+            .where(
+                Job.type == "DOMAIN_VALIDATION",
+                Job.status.in_([JobStatus.QUEUED.value, JobStatus.RUNNING.value]),
+            )
+            .order_by(desc(Job.created_at))
+        ).all()
+    )
+    existing = next(
+        (
+            job
+            for job in active_jobs
+            if str((job.payload or {}).get("upload_id")) == str(upload.id)
+        ),
+        None,
+    )
+    if existing:
+        return {
+            "job_id": str(existing.id),
+            "job_status": existing.status,
+            "reused": True,
+            "report": (upload.draft or {}).get("domain_validation")
+            or DomainValidationService.pending(collect_upload_references(db, upload)),
+        }
+
+    report = mark_upload_validation_pending(db, upload)
+    job = Job(
+        type="DOMAIN_VALIDATION",
+        status=JobStatus.QUEUED.value,
+        created_by_id=user.id,
+        idempotency_key=f"domain-validation:{upload.id}:{uuid4().hex}",
+        progress_current=0,
+        progress_total=1,
+        payload={"upload_id": str(upload.id), "force": True, "source": "USER_REQUEST"},
+    )
+    db.add(job)
+    db.flush()
+    db.add(
+        JobEvent(
+            job_id=job.id,
+            level="INFO",
+            message="Проверка доменов поставлена в очередь",
+            data={"upload_id": str(upload.id)},
+        )
+    )
     record_audit(
         db,
         request,
         user,
-        "upload.domain_validation.retry",
+        "upload.domain_validation.start",
         "campaign_upload",
         str(upload.id),
         {
             "urls": report["summary"]["urls"],
-            "blocked": report["summary"]["blocked"],
             "enforcement": report["enforcement"],
+            "job_id": str(job.id),
         },
     )
     db.commit()
-    return report
+    queued = enqueue_upload_validation(upload.id, job_id=job.id, force=True)
+    if not queued:
+        job = db.get(Job, job.id)
+        if job and settings.app_env.lower() != "test":
+            job.status = JobStatus.FAILED.value
+            job.error_message = "Не удалось поставить проверку доменов в очередь"
+            db.add(
+                JobEvent(
+                    job_id=job.id,
+                    level="ERROR",
+                    message=job.error_message,
+                    data={"code": "QUEUE_UNAVAILABLE"},
+                )
+            )
+            db.commit()
+            raise HTTPException(status_code=503, detail=job.error_message)
+    return {
+        "job_id": str(job.id),
+        "job_status": job.status,
+        "reused": False,
+        "report": report,
+    }
 
 
 def _get_upload(db: Session, upload_id: UUID) -> CampaignUpload:

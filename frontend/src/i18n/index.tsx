@@ -75,5 +75,8 @@ export function getLocale() {
 
 function readInitialLocale(): Locale {
   if (typeof localStorage === "undefined") return "ru";
-  return localStorage.getItem(STORAGE_KEY) === "en" ? "en" : "ru";
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored === "ru" || stored === "en") return stored;
+  if (typeof navigator !== "undefined" && navigator.language.toLowerCase().startsWith("ru")) return "ru";
+  return "en";
 }

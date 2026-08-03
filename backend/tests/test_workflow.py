@@ -1,9 +1,14 @@
+from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
 import httpx
+import pytest
+from openpyxl import Workbook
+from PIL import Image
 
-from app.db.models import CampaignUpload
+from app.db.models import CampaignUpload, MediaAsset
+from app.domain.media import inspect_media
 from app.domain.planner import build_plan_snapshot, validate_plan_snapshot
 from app.domain.tabular import parse_tabular
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
@@ -25,7 +30,56 @@ def test_csv_import_normalizes_columns_and_lists() -> None:
     ]
 
 
+def test_xlsx_import_normalizes_the_same_campaign_fields() -> None:
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.append(["Customer ID", "Campaign name", "Headlines", "Descriptions"])
+    sheet.append([
+        "123-456-7890",
+        "XLSX launch",
+        "First|Second",
+        "Description one|Description two",
+    ])
+    content = BytesIO()
+    workbook.save(content)
+
+    rows = parse_tabular("campaigns.xlsx", content.getvalue())
+
+    assert rows == [
+        {
+            "customer_id": "123-456-7890",
+            "campaign_name": "XLSX launch",
+            "headlines": ["First", "Second"],
+            "descriptions": ["Description one", "Description two"],
+        }
+    ]
+
+
+@pytest.mark.parametrize(
+    ("dimensions", "expected_role"),
+    [
+        ((1200, 1200), "SQUARE"),
+        ((1200, 628), "LANDSCAPE"),
+        ((960, 1200), "PORTRAIT"),
+        ((720, 1280), "TALL"),
+    ],
+)
+def test_image_inspection_assigns_demand_gen_roles(
+    tmp_path: Path,
+    dimensions: tuple[int, int],
+    expected_role: str,
+) -> None:
+    path = tmp_path / f"{expected_role.lower()}.png"
+    Image.new("RGB", dimensions, color=(240, 240, 240)).save(path, "PNG")
+
+    inspection = inspect_media(path, "image/png")
+
+    assert inspection["validation"]["valid"] is True
+    assert inspection["validation"]["suggested_role"] == expected_role
+
+
 def test_plan_is_canonical_paused_and_valid_for_video_simulation() -> None:
+    logo_id = uuid4()
     upload = CampaignUpload(
         id=uuid4(),
         name="Acceptance",
@@ -45,18 +99,39 @@ def test_plan_is_canonical_paused_and_valid_for_video_simulation() -> None:
                 "long_headline": "A valid long headline",
                 "descriptions": ["A valid description"],
                 "youtube_video_id": "dQw4w9WgXcQ",
+                "media_ids": [str(logo_id)],
+                "logo_media_id": str(logo_id),
             }
         },
         current_step=0,
         created_by_id=uuid4(),
     )
-    snapshot, first_fingerprint = build_plan_snapshot(upload, [], "SIMULATION")
-    second_snapshot, second_fingerprint = build_plan_snapshot(upload, [], "SIMULATION")
+    logo = MediaAsset(
+        id=logo_id,
+        kind="IMAGE",
+        source="UPLOAD",
+        name="Logo",
+        sha256="1" * 64,
+        storage_key="media/logo.png",
+        content_type="image/png",
+        size_bytes=100,
+        width=1200,
+        height=1200,
+        aspect_ratio=1.0,
+        status="READY",
+        validation={"valid": True, "suggested_role": "LOGO"},
+        google_asset_resources={},
+        details={},
+        created_by_id=upload.created_by_id,
+    )
+    snapshot, first_fingerprint = build_plan_snapshot(upload, [logo], "SIMULATION")
+    second_snapshot, second_fingerprint = build_plan_snapshot(upload, [logo], "SIMULATION")
     validation = validate_plan_snapshot(snapshot)
     assert first_fingerprint == second_fingerprint
     assert snapshot == second_snapshot
     assert snapshot["campaigns"][0]["campaign_status"] == "PAUSED"
     assert snapshot["campaigns"][0]["daily_budget_micros"] == 10_000_000
+    assert snapshot["media"][0]["id"] == str(logo_id)
     assert validation["valid"] is True
 
 

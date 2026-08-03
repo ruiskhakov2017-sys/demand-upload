@@ -12,6 +12,7 @@ from app.core.database import get_db
 from app.core.security import utcnow
 from app.db.models import AuditLog, CustomerAccount, GoogleConnection, User, UserRole
 from app.google_ads.errors import GoogleAdsAdapterError
+from app.google_ads.hierarchy import sync_google_ads_hierarchy
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
@@ -41,31 +42,10 @@ def sync_accounts(
     if not connection:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Подключение не найдено")
 
-    adapter = build_google_ads_adapter(db, connection)
     try:
-        remote_accounts = adapter.list_customer_accounts()
-    except GoogleAdsAdapterError as exc:
+        synced_accounts, request_ids = sync_google_ads_hierarchy(db, connection)
+    except (GoogleAdsAdapterError, ValueError) as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
-    synced_accounts: list[CustomerAccount] = []
-
-    for remote in remote_accounts:
-        account = db.scalar(
-            select(CustomerAccount)
-            .where(CustomerAccount.connection_id == connection.id)
-            .where(CustomerAccount.customer_id == remote.customer_id)
-        )
-        if not account:
-            account = CustomerAccount(connection_id=connection.id, customer_id=remote.customer_id)
-        account.manager_customer_id = remote.manager_customer_id
-        account.descriptive_name = remote.descriptive_name
-        account.currency_code = remote.currency_code
-        account.time_zone = remote.time_zone
-        account.can_manage_clients = remote.can_manage_clients
-        account.is_test_account = remote.is_test_account
-        account.is_hidden = remote.is_hidden
-        account.status = remote.status
-        db.add(account)
-        synced_accounts.append(account)
 
     db.add(
         AuditLog(
@@ -75,7 +55,11 @@ def sync_accounts(
             entity_type="google_connection",
             entity_id=str(connection.id),
             ip_address=request.client.host if request.client else None,
-            summary={"synced": len(synced_accounts)},
+            summary={
+                "synced": len(synced_accounts),
+                "request_ids": request_ids,
+                "connection_mode": connection.connection_mode,
+            },
         )
     )
     db.commit()

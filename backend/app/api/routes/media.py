@@ -13,9 +13,23 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_csrf
 from app.api.workflow_schemas import MediaOut, YouTubeRegisterIn, YouTubeUploadIn
 from app.core.database import get_db
-from app.db.models import GoogleConnection, Job, JobStatus, MediaAsset, MediaStatus, User
+from app.core.security import utcnow
+from app.db.models import (
+    CustomerAccount,
+    GoogleConnection,
+    Job,
+    JobStatus,
+    MediaAsset,
+    MediaStatus,
+    User,
+)
 from app.domain.audit import record_audit
 from app.domain.media import inspect_media
+from app.google_ads.safety import (
+    GoogleAdsSafetyError,
+    require_execution_mode_for_connection,
+    require_google_test_connection_target,
+)
 from app.google_ads.service import is_google_connection_active
 from app.storage.filesystem import FilesystemStorage
 
@@ -179,10 +193,23 @@ def queue_youtube_upload(
     asset = db.get(MediaAsset, media_id)
     if not asset or asset.kind != "VIDEO" or not asset.storage_key:
         raise HTTPException(status_code=404, detail="Исходное видео не найдено")
-    if payload.execution_mode == "LIVE":
+    if payload.execution_mode != "SIMULATION":
         connection = db.get(GoogleConnection, payload.connection_id) if payload.connection_id else None
         if not is_google_connection_active(connection):
-            raise HTTPException(status_code=409, detail="Для live-загрузки нужно активное подключение Google")
+            raise HTTPException(status_code=409, detail="Для Google Test нужно активное подключение")
+        account = db.scalar(
+            select(CustomerAccount).where(
+                CustomerAccount.connection_id == connection.id,
+                CustomerAccount.customer_id == payload.customer_id,
+            )
+        )
+        try:
+            require_execution_mode_for_connection(connection, payload.execution_mode)
+            require_google_test_connection_target(
+                connection, account, payload.customer_id
+            )
+        except GoogleAdsSafetyError as exc:
+            raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc
     key = f"youtube-upload:{asset.id}:{payload.execution_mode}:{payload.connection_id or 'simulation'}"
     existing = db.scalar(select(Job).where(Job.idempotency_key == key))
     if existing and existing.status in {JobStatus.QUEUED.value, JobStatus.RUNNING.value, JobStatus.SUCCEEDED.value}:
@@ -199,7 +226,11 @@ def queue_youtube_upload(
     )
     job.status = JobStatus.QUEUED.value
     job.error_message = None
-    job.payload = {"media_id": str(asset.id), **payload.model_dump(mode="json")}
+    job.payload = {
+        "media_id": str(asset.id),
+        "confirmed_at": utcnow().isoformat(),
+        **payload.model_dump(mode="json"),
+    }
     asset.status = MediaStatus.PENDING.value
     db.add(job)
     db.flush()

@@ -12,7 +12,6 @@ from app.db.models import (
     AccountTestBundle,
     CampaignInstance,
     CampaignUpload,
-    CustomerAccount,
     DeploymentPlan,
     DeploymentSchedule,
     DeploymentWave,
@@ -44,8 +43,10 @@ from app.domain_validation.service import (
     filter_blocked_campaigns,
     merge_domain_skips,
 )
+from app.google_ads.execution_guard import refresh_google_test_target
 from app.google_ads.interface import PlanExecutionResult
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
+from app.google_ads.safety import require_execution_mode_for_connection
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
 from app.jobs.celery_app import celery_app
 from app.jobs.tasks import _save_deployment_instances, _update_batch_deployment_status
@@ -265,7 +266,7 @@ def execute_scheduled_account_run(run_id: str, now_iso: str | None = None) -> di
             domain_report = validate_snapshot(
                 snapshot,
                 cached_report=plan.snapshot.get("domain_validation") or {},
-                force=plan.execution_mode == "LIVE",
+                force=plan.execution_mode == "GOOGLE_TEST",
             )
             snapshot, domain_skipped = filter_blocked_campaigns(snapshot, domain_report)
             if domain_skipped and not snapshot.get("campaigns"):
@@ -284,7 +285,12 @@ def execute_scheduled_account_run(run_id: str, now_iso: str | None = None) -> di
                     "Локальная проверка Launch Group не пройдена",
                     local["errors"],
                 )
-            adapter = _adapter_for_run(db, schedule, plan, bundle)
+            adapter, guard_request_ids = _adapter_for_run(
+                db, schedule, plan, bundle
+            )
+            run.request_ids = _unique(
+                [*(run.request_ids or []), *guard_request_ids]
+            )
             if snapshot.get("campaigns"):
                 validation = adapter.validate_plan(snapshot)
                 _save_jit_validation(db, plan, validation)
@@ -443,38 +449,31 @@ def _adapter_for_run(
     bundle: AccountTestBundle,
 ):
     if plan.execution_mode == "SIMULATION":
-        return MockGoogleAdsAdapter()
+        return MockGoogleAdsAdapter(), []
     connection = db.get(GoogleConnection, schedule.connection_id)
     if not is_google_connection_active(connection):
         raise ScheduledExecutionError(
             "CONNECTION_UNAVAILABLE",
             "Активное подключение Google недоступно",
         )
-    adapter = build_google_ads_adapter(db, connection)
     try:
-        accounts = adapter.list_customer_accounts()
+        require_execution_mode_for_connection(connection, plan.execution_mode)
+        adapter = build_google_ads_adapter(db, connection)
+        _, _, request_ids = refresh_google_test_target(
+            db,
+            connection,
+            adapter,
+            bundle.customer_id,
+            confirmed_at=plan.confirmed_at,
+            require_confirmation=True,
+        )
     except Exception as exc:
         raise ScheduledExecutionError(
             "MCC_ACCESS_CHECK_FAILED",
             f"Не удалось проверить доступ MCC: {exc}",
             [{"code": exc.__class__.__name__, "message": str(exc)}],
         ) from exc
-    visible_ids = {_digits(item.customer_id) for item in accounts}
-    if _digits(bundle.customer_id) not in visible_ids:
-        local_account = db.scalar(
-            select(CustomerAccount).where(
-                CustomerAccount.connection_id == connection.id,
-                CustomerAccount.customer_id == bundle.customer_id,
-            )
-        )
-        message = (
-            f"MCC {schedule.mcc_customer_id or connection.login_customer_id} "
-            f"не имеет доступа к {bundle.customer_id}"
-        )
-        if local_account:
-            message += "; локальный каталог аккаунтов устарел"
-        raise ScheduledExecutionError("MCC_ACCESS_LOST", message)
-    return adapter
+    return adapter, request_ids
 
 
 def _save_jit_validation(

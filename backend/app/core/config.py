@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name: str = "Demand Gen Uploader"
+    app_name: str = "Axyro Analytics"
     app_env: str = Field(default="development", alias="APP_ENV")
     app_public_base_url: str = Field(default="http://localhost", alias="APP_PUBLIC_BASE_URL")
     api_prefix: str = "/api"
@@ -16,12 +16,19 @@ class Settings(BaseSettings):
         default_factory=lambda: ["http://localhost", "http://localhost:5173"],
         alias="CORS_ORIGINS",
     )
+    allowed_hosts: list[str] = Field(default_factory=lambda: ["*"], alias="ALLOWED_HOSTS")
     session_cookie_name: str = "dgu_session"
     session_cookie_secure: bool = Field(default=True, alias="SESSION_COOKIE_SECURE")
     session_ttl_minutes: int = 720
     setup_token: str | None = Field(default=None, alias="SETUP_TOKEN")
     app_encryption_key: str = Field(alias="APP_ENCRYPTION_KEY")
     google_ads_api_version: str = Field(default="v24.2", alias="GOOGLE_ADS_API_VERSION")
+    control_center_live_actions_enabled: bool = Field(
+        default=False, alias="CONTROL_CENTER_LIVE_ACTIONS_ENABLED"
+    )
+    control_center_daily_operation_limit: int = Field(
+        default=15_000, ge=100, alias="CONTROL_CENTER_DAILY_OPERATION_LIMIT"
+    )
     storage_root: Path = Field(default=Path("/var/lib/dgu/storage"), alias="STORAGE_ROOT")
     domain_validation_timeout_seconds: float = Field(default=8.0, ge=1.0, le=30.0)
     domain_validation_max_redirects: int = Field(default=5, ge=1, le=10)
@@ -42,9 +49,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    @field_validator("cors_origins", mode="before")
+    @field_validator("cors_origins", "allowed_hosts", mode="before")
     @classmethod
-    def parse_cors_origins(cls, value: object) -> object:
+    def parse_string_list(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip().startswith("["):
             return [item.strip() for item in value.split(",") if item.strip()]
         return value

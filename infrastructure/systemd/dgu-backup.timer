@@ -1,0 +1,12 @@
+[Unit]
+Description=Run Demand Gen Uploader backup daily
+
+[Timer]
+OnCalendar=*-*-* 03:15:00 UTC
+Persistent=true
+RandomizedDelaySec=15min
+AccuracySec=1min
+Unit=dgu-backup.service
+
+[Install]
+WantedBy=timers.target

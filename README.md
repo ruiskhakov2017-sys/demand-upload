@@ -1,11 +1,28 @@
-# Demand Gen Uploader
+# Axyro Analytics
 
-Серверная русскоязычная панель для подготовки и массового создания Google Ads Demand Gen кампаний через официальный Google Ads API.
+**Internal Google Ads Analytics & Control Center** — серверная платформа для
+централизованного сбора, нормализации, анализа и операционного контроля данных
+из нескольких MCC и рекламных аккаунтов. Продукт предназначен только для
+авторизованной внутренней команды.
+
+`Demand Gen Uploader` сохранён как техническое название репозитория и отдельного
+вторичного модуля **Validated campaign deployment**. Он не является главным
+назначением продукта.
 
 Проект создан как production-first приложение: FastAPI backend, React frontend, PostgreSQL, Redis/Celery, Caddy и отдельный Google Ads adapter-слой.
 
 ## Что работает
 
+- Центр контроля Google Ads: иерархия MCC и GEO, аккаунты и кампании, расходы,
+  показы, клики, CTR, CPC, регистрации, депозиты, CPA, статусы, проблемы и
+  история изменений.
+- Фильтры, сортировка, сохранённые представления, локальные рабочие статусы,
+  заметки, теги, уведомления, CSV/XLSX-экспорт и AuditLog с Google Request ID.
+- Безопасные ручные операции: preview, явное подтверждение, `validate_only`,
+  выполнение, повторное чтение и аудит для PAUSE, ENABLE и изменения бюджета.
+- Demand Gen Uploader как дополнительный модуль: предварительный immutable plan,
+  локальная проверка, `validate_only`, подтверждение и создание только в `PAUSED`
+  без автоматического включения.
 - Сохраняемый пошаговый мастер: MCC и аккаунты, CSV/XLSX или ручной ввод, бюджет, bidding, targeting, тексты и медиа.
 - Канонический immutable deployment plan, локальная проверка, отдельный `validate_only` и явное подтверждение.
 - Отложенное расписание по аккаунтам: немедленный, равномерный, ступенчатый и полностью ручной режимы с предварительным просмотром.
@@ -14,7 +31,7 @@
 - Медиатека с проверкой размеров/пропорций, SHA-256-дедупликацией, защищенным предпросмотром и YouTube upload polling.
 - Шаблоны, планы, задания, модерация, статистика, Brocard, уведомления, журнал и настройки, связанные с API и PostgreSQL.
 - Brocard API v2: фоновая синхронизация счетов и карт с сохранением баланса, статусов и request IDs.
-- Явные режимы `SIMULATION` и `LIVE`: симуляция никогда не обращается к Google и не выдает поддельные request IDs.
+- Три изолированных режима: `SIMULATION`, `GOOGLE_TEST` и `PRODUCTION`. Только `GOOGLE_TEST` допускает реальные запросы mutate после проверки `test_account`; production mutate жёстко заблокирован.
 - Session cookies, CSRF, роли `ADMIN`/`OPERATOR`/`VIEWER`, аудит и зашифрованные внешние реквизиты.
 - Семь Docker-сервисов: `frontend`, `api`, `worker`, `scheduler`, `postgres`, `redis`, `reverse-proxy`.
 
@@ -35,7 +52,8 @@ docker compose exec api alembic upgrade head
 docker compose up -d --wait
 ```
 
-5. Откройте `http://localhost`.
+5. Откройте публичную страницу `http://localhost`, затем защищённый кабинет
+   `http://localhost/login`.
 
 Первый пользователь создаётся через setup-экран. Если задан `SETUP_TOKEN`, его нужно ввести в форме. После создания первого пользователя endpoint bootstrap автоматически закрывается и возвращает `409` при повторной попытке.
 
@@ -54,9 +72,9 @@ docker compose up -d --wait
 
 PostgreSQL является источником истины. Celery Beat каждые 15 секунд ищет готовые строки, а worker забирает их через блокировку `FOR UPDATE SKIP LOCKED`. По умолчанию одновременно выполняется один аккаунт. Повторяются только временные ошибки Google Ads; серьёзные ошибки включают circuit breaker. После простоя приложение не отправляет накопившиеся аккаунты одной пачкой, а приостанавливает расписание и предлагает последовательное продолжение или новую версию со сдвигом.
 
-На странице `Расписание` доступны пауза и продолжение, подтверждение волны, немедленный запуск следующего аккаунта, перенос, повтор после исправления, отмена и CSV-отчёт. В `SIMULATION` Google не вызывается и request ID не подделываются; в `LIVE` перед каждым аккаунтом повторно проверяются доступ MCC, immutable plan и готовность assets.
+На странице `Расписание` доступны пауза и продолжение, подтверждение волны, немедленный запуск следующего аккаунта, перенос, повтор после исправления, отмена и CSV-отчёт. В `SIMULATION` Google не вызывается и request ID не подделываются; в `GOOGLE_TEST` перед каждым аккаунтом повторно проверяются OAuth, принадлежность тестовой иерархии, `test_account`, immutable plan и готовность assets. В `PRODUCTION` реальные изменения запрещены.
 
-## Live-подключения
+## Google Ads подключения
 
 Для Google OAuth Web Application зарегистрируйте redirect URI:
 
@@ -64,8 +82,13 @@ PostgreSQL является источником истины. Celery Beat ка�
 http://localhost/api/google-connections/oauth/callback
 ```
 
-Для другого домена замените `APP_PUBLIC_BASE_URL`; callback строится из него автоматически. В интерфейсе подключения понадобятся OAuth Client ID/Secret, MCC customer ID и Google Ads Developer Token.
+Для другого домена замените `APP_PUBLIC_BASE_URL`; callback строится из него автоматически. Отдельное подключение `GOOGLE_TEST` может безопасно переиспользовать защищённые Developer Token и OAuth Client ID/Secret существующего профиля. Refresh Token тестового пользователя хранится отдельно и зашифрованно; значения секретов не передаются во frontend.
 
 Для Brocard используйте API key из кабинета автоматизации. По умолчанию запросы идут к `https://private.mybrocard.com` через актуальные endpoints `/api/v2/accounts` и `/api/v2/cards`.
 
-Подробный результат проверки находится в [docs/final-acceptance-report.md](docs/final-acceptance-report.md).
+Инструкция по Центру контроля находится в
+[docs/control-center-user-guide.md](docs/control-center-user-guide.md).
+Подробный результат общей проверки находится в
+[docs/final-acceptance-report.md](docs/final-acceptance-report.md).
+Архитектурный документ для повторной заявки Google находится в
+[docs/google-ads-api-design-document.md](docs/google-ads-api-design-document.md).

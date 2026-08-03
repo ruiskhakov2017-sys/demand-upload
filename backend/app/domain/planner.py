@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 from copy import deepcopy
 from urllib.parse import urlparse
 
@@ -37,7 +38,15 @@ def build_plan_snapshot(upload: CampaignUpload, media: list[MediaAsset], executi
         )[:255]
         campaigns.append(campaign)
 
-    selected_ids = {media_id for campaign in campaigns for media_id in campaign.get("media_ids", [])}
+    selected_ids = {
+        media_id
+        for campaign in campaigns
+        for media_id in [
+            *(campaign.get("media_ids") or []),
+            campaign.get("logo_media_id"),
+        ]
+        if media_id
+    }
     selected_media = [
         {
             "id": str(item.id),
@@ -86,7 +95,15 @@ def build_batch_plan_snapshot(
         campaign = _instance_to_campaign(instance, bundle)
         campaigns.append(campaign)
 
-    selected_ids = {media_id for campaign in campaigns for media_id in campaign.get("media_ids", [])}
+    selected_ids = {
+        media_id
+        for campaign in campaigns
+        for media_id in [
+            *(campaign.get("media_ids") or []),
+            campaign.get("logo_media_id"),
+        ]
+        if media_id
+    }
     selected_media = [_media_snapshot(item) for item in media if str(item.id) in selected_ids]
     snapshot = {
         "schema_version": 2,
@@ -164,6 +181,7 @@ def validate_plan_snapshot(snapshot: dict) -> dict:
                     },
                 )
             )
+        _validate_url_options(errors, campaign, path)
 
         budget = int(campaign.get("daily_budget_micros") or 0)
         if budget <= 0:
@@ -212,6 +230,29 @@ def validate_plan_snapshot(snapshot: dict) -> dict:
 
         ad_type = campaign.get("ad_type")
         campaign_media = [media_by_id[item] for item in campaign.get("media_ids", []) if item in media_by_id]
+        logo_media_id = str(campaign.get("logo_media_id") or "")
+        logo_media = media_by_id.get(logo_media_id)
+        if not logo_media_id or not logo_media:
+            errors.append(
+                _issue(
+                    f"{path}.logo_media_id",
+                    "LOGO_REQUIRED",
+                    "Выберите отдельный квадратный логотип",
+                )
+            )
+        elif (
+            logo_media.get("kind") != "IMAGE"
+            or logo_media.get("status") != "READY"
+            or not logo_media.get("width")
+            or logo_media.get("width") != logo_media.get("height")
+        ):
+            errors.append(
+                _issue(
+                    f"{path}.logo_media_id",
+                    "INVALID_LOGO",
+                    "Логотип должен быть готовым квадратным изображением",
+                )
+            )
         youtube_ids = [campaign.get("youtube_video_id")] + [item.get("youtube_video_id") for item in campaign_media]
         if ad_type == "VIDEO" and not any(youtube_ids):
             errors.append(
@@ -340,6 +381,11 @@ def _instance_to_campaign(instance: CampaignInstance, bundle: AccountTestBundle)
         "ad_type": str(campaign_settings.get("ad_type") or "VIDEO").upper(),
         "youtube_video_id": creative.get("youtube_video_id") or campaign_settings.get("youtube_video_id"),
         "media_ids": [str(item) for item in creative.get("media_ids") or creative.get("items") or []],
+        "logo_media_id": (
+            str(creative.get("logo_media_id"))
+            if creative.get("logo_media_id")
+            else None
+        ),
         "deployment_key": instance.deployment_key,
         "contains_eu_political_advertising": "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING",
         "conversion_action_resource_names": _as_list(
@@ -413,6 +459,80 @@ def _validate_text_assets(
             errors.append(_issue(f"{path}.{index}", "INVALID_LENGTH", f"Максимум {length} символов"))
 
 
+def _validate_url_options(errors: list[dict], campaign: dict, path: str) -> None:
+    mobile_url = str(campaign.get("mobile_final_url") or "").strip()
+    if mobile_url:
+        parsed = urlparse(mobile_url)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            errors.append(
+                _issue(
+                    f"{path}.mobile_final_url",
+                    "INVALID_MOBILE_URL",
+                    "Mobile Final URL должен быть полным http:// или https:// адресом",
+                )
+            )
+    tracking_template = str(campaign.get("tracking_template") or "").strip()
+    if tracking_template and "{lpurl}" not in tracking_template.casefold():
+        errors.append(
+            _issue(
+                f"{path}.tracking_template",
+                "TRACKING_TEMPLATE_LPURL_REQUIRED",
+                "Tracking template должен содержать {lpurl}",
+            )
+        )
+    final_url_suffix = str(campaign.get("final_url_suffix") or "").strip()
+    if final_url_suffix.startswith("?") or "#" in final_url_suffix:
+        errors.append(
+            _issue(
+                f"{path}.final_url_suffix",
+                "INVALID_FINAL_URL_SUFFIX",
+                "Final URL suffix указывается без начального ? и без fragment",
+            )
+        )
+    display_parts = [
+        part.strip()
+        for part in str(campaign.get("display_path") or "").split("/")
+        if part.strip()
+    ]
+    if len(display_parts) > 2 or any(len(part) > 15 for part in display_parts):
+        errors.append(
+            _issue(
+                f"{path}.display_path",
+                "INVALID_DISPLAY_PATH",
+                "Display path: не более двух частей по 15 символов",
+            )
+        )
+    custom_parameters = campaign.get("custom_parameters") or []
+    if len(custom_parameters) > 8:
+        errors.append(
+            _issue(
+                f"{path}.custom_parameters",
+                "TOO_MANY_CUSTOM_PARAMETERS",
+                "Допускается не более восьми custom parameters",
+            )
+        )
+    for index, parameter in enumerate(custom_parameters):
+        key = str(parameter.get("key") or "").strip()
+        value = str(parameter.get("value") or "")
+        parameter_path = f"{path}.custom_parameters.{index}"
+        if not re.fullmatch(r"[A-Za-z0-9_]{1,16}", key):
+            errors.append(
+                _issue(
+                    f"{parameter_path}.key",
+                    "INVALID_CUSTOM_PARAMETER_KEY",
+                    "Ключ: 1–16 латинских букв, цифр или _",
+                )
+            )
+        if len(value) > 200:
+            errors.append(
+                _issue(
+                    f"{parameter_path}.value",
+                    "CUSTOM_PARAMETER_VALUE_TOO_LONG",
+                    "Значение custom parameter: максимум 200 символов",
+                )
+            )
+
+
 def _validate_account_resources(errors: list[dict], campaign: dict, path: str) -> None:
     customer_id = str(campaign.get("customer_id") or "")
     fields = {
@@ -420,6 +540,7 @@ def _validate_account_resources(errors: list[dict], campaign: dict, path: str) -
         "audience_resource_names": "audiences",
         "user_list_resource_names": "userLists",
         "custom_audience_resource_names": "customAudiences",
+        "user_interest_resource_names": "userInterests",
     }
     for field, collection in fields.items():
         prefix = f"customers/{customer_id}/{collection}/"
@@ -432,6 +553,15 @@ def _validate_account_resources(errors: list[dict], campaign: dict, path: str) -
                         f"Ресурс должен принадлежать customer_id {customer_id}",
                     )
                 )
+    for index, life_event_id in enumerate(campaign.get("life_event_ids") or []):
+        if not str(life_event_id).isdigit():
+            errors.append(
+                _issue(
+                    f"{path}.life_event_ids.{index}",
+                    "INVALID_LIFE_EVENT",
+                    "Life event должен быть числовым ID Google Ads",
+                )
+            )
 
 
 def _issue(path: str, code: str, message: str) -> dict:

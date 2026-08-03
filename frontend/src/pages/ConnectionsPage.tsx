@@ -27,6 +27,7 @@ import { t } from "../i18n";
 
 type AuthType = "SERVICE_ACCOUNT" | "OAUTH_WEB";
 type Environment = "TEST" | "PRODUCTION";
+type ConnectionMode = "SIMULATION" | "GOOGLE_TEST" | "PRODUCTION";
 type Notice = { message: string; severity: "success" | "error" | "info" };
 
 export function ConnectionsPage() {
@@ -38,6 +39,8 @@ export function ConnectionsPage() {
     login_customer_id: "",
     auth_type: "OAUTH_WEB" as AuthType,
     environment: "TEST" as Environment,
+    connection_mode: "PRODUCTION" as ConnectionMode,
+    credential_source_connection_id: "",
     developer_token: "",
     oauth_client_id: "",
     oauth_client_secret: "",
@@ -63,9 +66,23 @@ export function ConnectionsPage() {
         login_customer_id: form.login_customer_id,
         auth_type: form.auth_type,
         environment: form.environment,
-        developer_token: form.developer_token || undefined,
-        oauth_client_id: form.auth_type === "OAUTH_WEB" ? form.oauth_client_id : undefined,
-        oauth_client_secret: form.auth_type === "OAUTH_WEB" ? form.oauth_client_secret : undefined,
+        connection_mode: form.connection_mode,
+        credential_source_connection_id:
+          form.connection_mode === "GOOGLE_TEST"
+            ? form.credential_source_connection_id
+            : undefined,
+        developer_token:
+          form.connection_mode === "GOOGLE_TEST"
+            ? undefined
+            : form.developer_token || undefined,
+        oauth_client_id:
+          form.auth_type === "OAUTH_WEB" && form.connection_mode !== "GOOGLE_TEST"
+            ? form.oauth_client_id
+            : undefined,
+        oauth_client_secret:
+          form.auth_type === "OAUTH_WEB" && form.connection_mode !== "GOOGLE_TEST"
+            ? form.oauth_client_secret
+            : undefined,
         service_account_json
       });
     },
@@ -90,20 +107,64 @@ export function ConnectionsPage() {
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}><TextField fullWidth label={t("ui.3de49828e8")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Grid>
           <Grid item xs={12} md={4}><TextField fullWidth label="MCC Customer ID" value={form.login_customer_id} onChange={(e) => setForm({ ...form, login_customer_id: e.target.value })} /></Grid>
-          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>{t("ui.f81e505f9b")}</InputLabel><Select label={t("ui.f81e505f9b")} value={form.environment} onChange={(e) => setForm({ ...form, environment: e.target.value as Environment })}><MenuItem value="TEST">TEST</MenuItem><MenuItem value="PRODUCTION">PRODUCTION</MenuItem></Select></FormControl></Grid>
-          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>{t("ui.93900fccba")}</InputLabel><Select label={t("ui.93900fccba")} value={form.auth_type} onChange={(e) => setForm({ ...form, auth_type: e.target.value as AuthType })}><MenuItem value="OAUTH_WEB">OAuth Web</MenuItem><MenuItem value="SERVICE_ACCOUNT">Service account</MenuItem></Select></FormControl></Grid>
-          <Grid item xs={12}><TextField fullWidth type="password" label={t("field.developerToken")} value={form.developer_token} onChange={(e) => setForm({ ...form, developer_token: e.target.value })} /></Grid>
-          {form.auth_type === "OAUTH_WEB" ? (
+          <Grid item xs={12} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>{t("googleMode.connectionLabel")}</InputLabel>
+              <Select
+                label={t("googleMode.connectionLabel")}
+                value={form.connection_mode}
+                onChange={(e) => {
+                  const connection_mode = e.target.value as ConnectionMode;
+                  setForm({
+                    ...form,
+                    connection_mode,
+                    auth_type: connection_mode === "GOOGLE_TEST" ? "OAUTH_WEB" : form.auth_type,
+                    environment: connection_mode === "GOOGLE_TEST" ? "TEST" : form.environment
+                  });
+                }}
+              >
+                <MenuItem value="SIMULATION">{t("googleMode.simulationLabel")}</MenuItem>
+                <MenuItem value="GOOGLE_TEST">{t("googleMode.testLabel")}</MenuItem>
+                <MenuItem value="PRODUCTION">{t("googleMode.productionLabel")}</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>{t("ui.f81e505f9b")}</InputLabel><Select disabled={form.connection_mode === "GOOGLE_TEST"} label={t("ui.f81e505f9b")} value={form.environment} onChange={(e) => setForm({ ...form, environment: e.target.value as Environment })}><MenuItem value="TEST">TEST</MenuItem><MenuItem value="PRODUCTION">PRODUCTION</MenuItem></Select></FormControl></Grid>
+          <Grid item xs={6} md={2}><FormControl fullWidth><InputLabel>{t("ui.93900fccba")}</InputLabel><Select disabled={form.connection_mode === "GOOGLE_TEST"} label={t("ui.93900fccba")} value={form.auth_type} onChange={(e) => setForm({ ...form, auth_type: e.target.value as AuthType })}><MenuItem value="OAUTH_WEB">OAuth Web</MenuItem><MenuItem value="SERVICE_ACCOUNT">Service account</MenuItem></Select></FormControl></Grid>
+          {form.connection_mode === "GOOGLE_TEST" ? (
+            <>
+              <Grid item xs={12}>
+                <FormControl fullWidth>
+                  <InputLabel>{t("googleMode.credentialProfile")}</InputLabel>
+                  <Select
+                    label={t("googleMode.credentialProfile")}
+                    value={form.credential_source_connection_id}
+                    onChange={(e) => setForm({ ...form, credential_source_connection_id: e.target.value })}
+                  >
+                    {(connections.data || [])
+                      .filter((item) => item.auth_type === "OAUTH_WEB")
+                      .map((item) => <MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>)}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <Alert severity="info">{t("googleMode.credentialReuseHelp")}</Alert>
+              </Grid>
+            </>
+          ) : (
+            <Grid item xs={12}><TextField fullWidth type="password" label={t("field.developerToken")} value={form.developer_token} onChange={(e) => setForm({ ...form, developer_token: e.target.value })} /></Grid>
+          )}
+          {form.auth_type === "OAUTH_WEB" && form.connection_mode !== "GOOGLE_TEST" ? (
             <>
               <Grid item xs={12} md={6}><TextField fullWidth label={t("field.oauthClientId")} value={form.oauth_client_id} onChange={(e) => setForm({ ...form, oauth_client_id: e.target.value })} /></Grid>
               <Grid item xs={12} md={6}><TextField fullWidth type="password" label={t("field.oauthClientSecret")} value={form.oauth_client_secret} onChange={(e) => setForm({ ...form, oauth_client_secret: e.target.value })} /></Grid>
               <Grid item xs={12}><Alert severity="info">{t("ui.b8943a071c")}{" "}{window.location.origin}/api/google-connections/oauth/callback</Alert></Grid>
             </>
-          ) : (
+          ) : form.auth_type === "SERVICE_ACCOUNT" ? (
             <Grid item xs={12}><TextField fullWidth multiline minRows={6} label={t("field.serviceAccountJson")} value={form.service_account_json_text} onChange={(e) => setForm({ ...form, service_account_json_text: e.target.value })} /></Grid>
-          )}
+          ) : null}
         </Grid>
-        <Button sx={{ mt: 2 }} variant="contained" startIcon={form.auth_type === "OAUTH_WEB" ? <GoogleIcon /> : <AddLinkIcon />} disabled={create.isPending || oauth.isPending || !form.name || !form.login_customer_id} onClick={() => create.mutate()}>{form.auth_type === "OAUTH_WEB" ? t("ui.ba5527f9f1") : t("ui.b40f28bb9c")}</Button>
+        <Button sx={{ mt: 2 }} variant="contained" startIcon={form.auth_type === "OAUTH_WEB" ? <GoogleIcon /> : <AddLinkIcon />} disabled={create.isPending || oauth.isPending || !form.name || !form.login_customer_id || (form.connection_mode === "GOOGLE_TEST" && !form.credential_source_connection_id)} onClick={() => create.mutate()}>{form.auth_type === "OAUTH_WEB" ? t("ui.ba5527f9f1") : t("ui.b40f28bb9c")}</Button>
       </Paper>
 
       <Paper variant="outlined" sx={{ p: 3 }}>
@@ -111,9 +172,9 @@ export function ConnectionsPage() {
         <Stack spacing={2} divider={<Divider flexItem />}>
           {(connections.data || []).map((connection) => (
             <Box key={connection.id} sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(260px, 1fr) auto" }, gap: 2, alignItems: "center" }}>
-              <Box><Typography fontWeight={700}>{connection.name}</Typography><Typography variant="body2" color="text.secondary">MCC {connection.login_customer_id} · {connection.auth_type} · {connection.api_version}</Typography>{connection.last_error && <Typography variant="body2" color="error">{connection.last_error}</Typography>}</Box>
+              <Box><Typography fontWeight={700}>{connection.name}</Typography><Typography variant="body2" color="text.secondary">MCC {connection.login_customer_id} · {connection.auth_type} · {connection.api_version}</Typography>{connection.connection_mode === "GOOGLE_TEST" && <Typography variant="caption" color="success.main">{t("googleMode.testCaption")}</Typography>}{connection.last_error && <Typography variant="body2" color="error">{connection.last_error}</Typography>}</Box>
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                <StatusBadge value={connection.environment} /><StatusBadge value={connection.status} />
+                <StatusBadge value={connection.connection_mode} /><StatusBadge value={connection.status} />
                 {connection.auth_type === "OAUTH_WEB" && <Button size="small" variant="outlined" startIcon={<GoogleIcon />} onClick={() => oauth.mutate(connection.id)}>{connection.status === "NEEDS_CREDENTIALS" ? t("ui.124298ec71") : t("ui.deda92776c")}</Button>}
                 <Button size="small" variant="outlined" startIcon={<FactCheckIcon />} disabled={test.isPending} onClick={() => test.mutate(connection.id)}>{t("ui.52dec92eda")}</Button>
                 <Button size="small" variant="outlined" startIcon={<SyncIcon />} disabled={sync.isPending} onClick={() => sync.mutate(connection.id)}>{t("ui.e9af21d100")}</Button>

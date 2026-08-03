@@ -83,13 +83,22 @@ def validate_snapshot(
     )
 
 
-def enqueue_upload_validation(upload_id) -> bool:
+def enqueue_upload_validation(
+    upload_id,
+    *,
+    job_id=None,
+    force: bool = False,
+) -> bool:
     if settings.app_env.lower() == "test":
         return False
     try:
         from app.jobs.tasks import validate_upload_domains
 
-        validate_upload_domains.delay(str(upload_id))
+        validate_upload_domains.delay(
+            str(upload_id),
+            str(job_id) if job_id else None,
+            force,
+        )
         return True
     except Exception:
         return False

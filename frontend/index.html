@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="light dark" />
-    <title>Demand Gen Uploader</title>
+    <meta
+      name="description"
+      content="Axyro Analytics is an internal Google Ads analytics and operations platform for centralized MCC reporting, account monitoring, and controlled campaign management."
+    />
+    <title>Axyro Analytics | Internal Google Ads Analytics &amp; Control Center</title>
     <script>
       (() => {
         const backgrounds = {
@@ -23,7 +27,10 @@
         document.documentElement.dataset.theme = selected;
         document.documentElement.style.backgroundColor = backgrounds[selected];
         try {
-          document.documentElement.lang = localStorage.getItem("dgu.locale") === "en" ? "en" : "ru";
+          const storedLocale = localStorage.getItem("dgu.locale");
+          document.documentElement.lang = storedLocale === "ru" || storedLocale === "en"
+            ? storedLocale
+            : (navigator.language || "en").toLowerCase().startsWith("ru") ? "ru" : "en";
         } catch {
           document.documentElement.lang = "ru";
         }

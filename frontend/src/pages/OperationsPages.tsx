@@ -6,6 +6,7 @@ import {
   FormControl,
   Grid,
   InputLabel,
+  LinearProgress,
   MenuItem,
   Paper,
   Select,
@@ -27,7 +28,7 @@ import { useEffect, useState } from "react";
 
 import { api } from "../api/client";
 import { StatusBadge } from "../components/StatusBadge";
-import { formatDate, t } from "../i18n";
+import { formatDate, formatNumber, t } from "../i18n";
 
 export function ModerationPage() {
   return <GoogleDataPage kind="moderation" title={t("ui.80ae616e0b")} />;
@@ -78,14 +79,58 @@ function ModerationTable({ rows }: { rows: Array<Record<string, any>> }) {
 }
 
 function StatisticsTable({ rows }: { rows: Array<Record<string, any>> }) {
-  return <Table size="small"><TableHead><TableRow><TableCell>{t("ui.a5b49d2eba")}</TableCell><TableCell>Customer ID</TableCell><TableCell align="right">{t("ui.8d112fb582")}</TableCell><TableCell align="right">{t("ui.07e2b83b27")}</TableCell><TableCell align="right">{t("ui.a470ac24e2")}</TableCell><TableCell align="right">{t("ui.4150f46b4a")}</TableCell></TableRow></TableHead><TableBody>{rows.map((row) => <TableRow key={row.id}><TableCell>{row.snapshot_date}</TableCell><TableCell>{row.customer_id}</TableCell><TableCell align="right">{row.metrics?.impressions || 0}</TableCell><TableCell align="right">{row.metrics?.clicks || 0}</TableCell><TableCell align="right">{((row.metrics?.cost_micros || 0) / 1_000_000).toFixed(2)}</TableCell><TableCell align="right">{Number(row.metrics?.conversions || 0).toFixed(2)}</TableCell></TableRow>)}{!rows.length && <EmptyRow columns={6} text={t("ui.ff3cef635c")} />}</TableBody></Table>;
+  return (
+    <Table size="small">
+      <TableHead>
+        <TableRow>
+          <TableCell>{t("ui.a5b49d2eba")}</TableCell>
+          <TableCell>Customer ID</TableCell>
+          <TableCell align="right">{t("ui.8d112fb582")}</TableCell>
+          <TableCell align="right">{t("ui.07e2b83b27")}</TableCell>
+          <TableCell align="right">{t("ui.a470ac24e2")}</TableCell>
+          <TableCell align="right">{t("ui.4150f46b4a")}</TableCell>
+        </TableRow>
+      </TableHead>
+      <TableBody>
+        {rows.map((row) => (
+          <TableRow key={row.id}>
+            <TableCell>{row.snapshot_date}</TableCell>
+            <TableCell>{row.customer_id}</TableCell>
+            <TableCell align="right">{optionalMetric(row.metrics?.impressions, 0)}</TableCell>
+            <TableCell align="right">{optionalMetric(row.metrics?.clicks, 0)}</TableCell>
+            <TableCell align="right">{optionalMetric(row.metrics?.cost_micros, 2, 1_000_000)}</TableCell>
+            <TableCell align="right">{optionalMetric(row.metrics?.conversions, 2)}</TableCell>
+          </TableRow>
+        ))}
+        {!rows.length && <EmptyRow columns={6} text={t("ui.ff3cef635c")} />}
+      </TableBody>
+    </Table>
+  );
+}
+
+export function optionalMetric(value: unknown, digits: number, divisor = 1) {
+  if (value === null || value === undefined || value === "") return t("operations.noData");
+  const numeric = Number(value) / divisor;
+  if (!Number.isFinite(numeric)) return t("operations.noData");
+  return formatNumber(numeric, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
+  });
 }
 
 export function FinancePage() {
   const queryClient = useQueryClient();
   const finance = useQuery({ queryKey: ["finance"], queryFn: api.listFinance, refetchInterval: 5000 });
+  const accounts = useQuery({ queryKey: ["finance-google-accounts"], queryFn: api.listAccounts });
   const [form, setForm] = useState({ name: "Brocard", api_token: "", api_base_url: "https://private.mybrocard.com" });
+  const [googleAccountId, setGoogleAccountId] = useState("");
   const [message, setMessage] = useState<string | null>(null);
+  const googleBilling = useQuery({
+    queryKey: ["finance-google-billing", googleAccountId],
+    queryFn: () => api.getGoogleBilling(googleAccountId),
+    enabled: false,
+    retry: false
+  });
   const save = useMutation({
     mutationFn: () => api.configureFinance(form),
     onSuccess: () => {
@@ -105,9 +150,41 @@ export function FinancePage() {
   return (
     <Stack spacing={3}>
       <Typography variant="h4">{t("ui.da65f953fb")}</Typography>
-      {(finance.error || save.error || sync.error) && <Alert severity="error">{finance.error?.message || save.error?.message || sync.error?.message}</Alert>}
+      {(finance.error || accounts.error || googleBilling.error || save.error || sync.error) && <Alert severity="error">{finance.error?.message || accounts.error?.message || googleBilling.error?.message || save.error?.message || sync.error?.message}</Alert>}
       {message && <Alert severity="success" onClose={() => setMessage(null)}>{message}</Alert>}
+      <Alert severity="info">{t("finance.googleAdsLimitations")}</Alert>
       <Paper variant="outlined" sx={{ p: 3 }}>
+        <Typography variant="h6">{t("finance.googleBillingTitle")}</Typography>
+        <Typography color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>{t("finance.googleBillingDescription")}</Typography>
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems={{ sm: "center" }}>
+          <FormControl size="small" sx={{ minWidth: { sm: 360 } }}>
+            <InputLabel>{t("finance.googleAccount")}</InputLabel>
+            <Select
+              value={googleAccountId}
+              label={t("finance.googleAccount")}
+              onChange={(event) => setGoogleAccountId(event.target.value)}
+            >
+              {(accounts.data || []).filter((account) => !account.can_manage_clients).map((account) => (
+                <MenuItem key={account.id} value={account.id}>
+                  {account.descriptive_name || account.customer_id} · {account.customer_id}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <Button
+            variant="outlined"
+            startIcon={<RefreshIcon />}
+            disabled={!googleAccountId || googleBilling.isFetching}
+            onClick={() => googleBilling.refetch()}
+          >
+            {t("finance.readBilling")}
+          </Button>
+        </Stack>
+        {googleBilling.isFetching && <LinearProgress sx={{ mt: 2 }} />}
+        {googleBilling.data && <GoogleBillingDetails data={googleBilling.data} />}
+      </Paper>
+      <Paper variant="outlined" sx={{ p: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>{t("finance.brocardOptional")}</Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={3}><TextField fullWidth label={t("ui.7c5815637f")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Grid>
           <Grid item xs={12} md={4}><TextField fullWidth type="password" label={t("field.apiToken")} value={form.api_token} onChange={(e) => setForm({ ...form, api_token: e.target.value })} /></Grid>
@@ -117,6 +194,42 @@ export function FinancePage() {
         <Button sx={{ mt: 2 }} variant="contained" startIcon={<SaveOutlinedIcon />} disabled={!form.api_token || save.isPending} onClick={() => save.mutate()}>{t("ui.4864057d62")}</Button>
       </Paper>
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", bgcolor: "background.paper" }}><Table size="small"><TableHead><TableRow><TableCell>{t("ui.eb0b9b0d90")}</TableCell><TableCell>{t("ui.2d385af6d6")}</TableCell><TableCell>{t("ui.f7f293b5c5")}</TableCell><TableCell>{t("ui.5266d4a020")}</TableCell><TableCell>{t("ui.f5585974e7")}</TableCell><TableCell>{t("ui.05df0b42f4")}</TableCell><TableCell align="right">{t("ui.4fe9c0675c")}</TableCell></TableRow></TableHead><TableBody>{(finance.data || []).map((row) => <TableRow key={row.id}><TableCell>{row.name}</TableCell><TableCell>{row.provider}</TableCell><TableCell><StatusBadge value={row.status} /></TableCell><TableCell>{row.latest_snapshot ? `${row.latest_snapshot.balance} ${row.latest_snapshot.currency}` : "—"}</TableCell><TableCell>{row.latest_snapshot ? `${row.latest_snapshot.cards_active}/${row.latest_snapshot.cards_total}` : "—"}</TableCell><TableCell>{formatDate(row.updated_at)}</TableCell><TableCell align="right"><Button size="small" startIcon={<SyncIcon />} disabled={row.status === "SYNCING" || sync.isPending} onClick={() => sync.mutate(row.id)}>{t("ui.289c55ebed")}</Button></TableCell></TableRow>)}{!finance.data?.length && <EmptyRow columns={7} text={t("ui.daf4e830c5")} />}</TableBody></Table></Box>
+    </Stack>
+  );
+}
+
+function GoogleBillingDetails({ data }: { data: Record<string, any> }) {
+  if (!data.available) {
+    const message = data.reason === "TEST_ACCOUNT_NO_BILLING"
+      ? t("finance.testBillingUnavailable")
+      : t("finance.noMonthlyBillingData");
+    return <Alert severity="info" sx={{ mt: 2 }}>{message}</Alert>;
+  }
+  return (
+    <Stack spacing={2} sx={{ mt: 2 }}>
+      <Typography fontWeight={700}>{t("finance.billingSetups")}</Typography>
+      <Box sx={{ overflowX: "auto" }}>
+        <Table size="small">
+          <TableHead><TableRow><TableCell>{t("ui.f7f293b5c5")}</TableCell><TableCell>{t("finance.paymentsAccount")}</TableCell><TableCell>{t("finance.paymentsProfile")}</TableCell><TableCell>{t("finance.period")}</TableCell></TableRow></TableHead>
+          <TableBody>
+            {(data.billing_setups || []).map((row: Record<string, any>) => (
+              <TableRow key={row.resource_name}><TableCell>{row.status}</TableCell><TableCell>{row.payments_account_name || t("operations.noData")}</TableCell><TableCell>{row.payments_profile_name || t("operations.noData")}</TableCell><TableCell>{row.start_date_time || "—"} · {row.end_date_time || row.end_time_type || "—"}</TableCell></TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+      <Typography fontWeight={700}>{t("finance.accountBudgets")}</Typography>
+      <Box sx={{ overflowX: "auto" }}>
+        <Table size="small">
+          <TableHead><TableRow><TableCell>{t("ui.f7f293b5c5")}</TableCell><TableCell align="right">{t("finance.spendingLimit")}</TableCell><TableCell align="right">{t("finance.amountServed")}</TableCell><TableCell>{t("finance.purchaseOrder")}</TableCell></TableRow></TableHead>
+          <TableBody>
+            {(data.account_budgets || []).map((row: Record<string, any>) => (
+              <TableRow key={row.resource_name}><TableCell>{row.status}</TableCell><TableCell align="right">{row.approved_spending_limit_type === "INFINITE" ? "∞" : `${optionalMetric(row.approved_spending_limit_micros, 2, 1_000_000)} ${data.currency_code || ""}`}</TableCell><TableCell align="right">{optionalMetric(row.amount_served_micros, 2, 1_000_000)} {data.currency_code || ""}</TableCell><TableCell>{row.purchase_order_number || "—"}</TableCell></TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Box>
+      {!!data.request_ids?.length && <Typography variant="caption" color="text.secondary">Request ID: {data.request_ids.join(", ")}</Typography>}
     </Stack>
   );
 }

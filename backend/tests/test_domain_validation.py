@@ -1,12 +1,17 @@
 from __future__ import annotations
 
+import ast
 import socket
+from copy import deepcopy
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from types import SimpleNamespace
+from uuid import uuid4
 
 import httpx
 import pytest
 
+from app.api.routes.uploads import get_domain_validation
 from app.domain_validation.availability import AvailabilityChecker
 from app.domain_validation.providers.base import (
     ProviderResult,
@@ -21,6 +26,7 @@ from app.domain_validation.service import DomainValidationService, filter_blocke
 from app.domain_validation.url_tools import safe_url_for_storage
 
 PUBLIC_IP = "93.184.216.34"
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _resolver(host: str, _port: int) -> list[str]:
@@ -172,6 +178,52 @@ def test_tracking_and_fragment_are_removed_for_reputation() -> None:
         "https://public.test/path?utm_source=secret&offer=42&gclid=hidden#fragment"
     )
     assert sanitized == "https://public.test/path?offer=42"
+
+
+def test_domain_validation_get_does_not_change_database_state() -> None:
+    upload = SimpleNamespace(id=uuid4(), draft={}, source_rows=[], updated_at=datetime.now(UTC))
+    before = deepcopy(upload.__dict__)
+
+    class ReadOnlyDb:
+        def get(self, _model, identifier):
+            assert identifier == upload.id
+            return upload
+
+    report = get_domain_validation(upload.id, db=ReadOnlyDb(), user=SimpleNamespace())
+
+    assert upload.__dict__ == before
+    assert report["status"] == "NOT_RUN"
+    assert report["checked_at"] is None
+
+
+def test_get_routes_do_not_call_database_write_methods() -> None:
+    forbidden = {"add", "add_all", "delete", "flush", "commit"}
+    violations: list[str] = []
+    for path in (BACKEND_ROOT / "app" / "api" / "routes").glob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in tree.body:
+            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            is_get = any(
+                isinstance(decorator, ast.Call)
+                and isinstance(decorator.func, ast.Attribute)
+                and decorator.func.attr == "get"
+                for decorator in node.decorator_list
+            )
+            if not is_get:
+                continue
+            for item in ast.walk(node):
+                if (
+                    isinstance(item, ast.Call)
+                    and isinstance(item.func, ast.Attribute)
+                    and isinstance(item.func.value, ast.Name)
+                    and item.func.value.id == "db"
+                    and item.func.attr in forbidden
+                ):
+                    violations.append(
+                        f"{path.name}:{item.lineno}:{node.name}:{item.func.attr}"
+                    )
+    assert violations == []
 
 
 def test_google_web_risk_clean_and_threat() -> None:

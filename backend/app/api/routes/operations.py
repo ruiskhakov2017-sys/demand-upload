@@ -14,6 +14,7 @@ from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import encrypt_json, utcnow
 from app.db.models import (
+    CustomerAccount,
     FinanceProfile,
     FinanceSnapshot,
     GoogleConnection,
@@ -27,7 +28,12 @@ from app.db.models import (
 )
 from app.domain.audit import record_audit
 from app.google_ads.capability_registry import get_demand_gen_capabilities
-from app.google_ads.service import ACTIVE_GOOGLE_CONNECTION_STATUSES, is_google_connection_active
+from app.google_ads.errors import GoogleAdsAdapterError
+from app.google_ads.service import (
+    ACTIVE_GOOGLE_CONNECTION_STATUSES,
+    build_google_ads_adapter,
+    is_google_connection_active,
+)
 
 router = APIRouter(prefix="/operations", tags=["operations"])
 
@@ -141,6 +147,51 @@ def list_finance(db: Session = Depends(get_db), user: User = Depends(get_current
             }
         )
     return result
+
+
+@router.get("/finance/google-billing/{account_id}")
+def get_google_billing(
+    account_id: UUID,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> dict:
+    account = db.get(CustomerAccount, account_id)
+    if not account:
+        raise HTTPException(status_code=404, detail="Аккаунт не найден")
+    connection = db.get(GoogleConnection, account.connection_id)
+    if not is_google_connection_active(connection):
+        raise HTTPException(status_code=409, detail="Google connection недоступен")
+    base = {
+        "account_id": str(account.id),
+        "customer_id": account.customer_id,
+        "currency_code": account.currency_code,
+        "monthly_invoicing_only": True,
+        "automatic_payment_threshold_available": False,
+        "next_card_charge_available": False,
+        "card_charge_history_available": False,
+    }
+    if account.is_test_account:
+        return {
+            **base,
+            "available": False,
+            "reason": "TEST_ACCOUNT_NO_BILLING",
+            "billing_setups": [],
+            "account_budgets": [],
+            "request_ids": [],
+        }
+    try:
+        result = build_google_ads_adapter(db, connection).fetch_billing_summary(
+            account.customer_id
+        )
+    except (GoogleAdsAdapterError, ValueError) as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    available = bool(result["billing_setups"] or result["account_budgets"])
+    return {
+        **base,
+        **result,
+        "available": available,
+        "reason": None if available else "NO_MONTHLY_INVOICING_DATA",
+    }
 
 
 @router.post("/finance", status_code=status.HTTP_201_CREATED)

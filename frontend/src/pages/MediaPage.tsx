@@ -29,7 +29,7 @@ import YouTubeIcon from "@mui/icons-material/YouTube";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
-import { api, MediaAsset } from "../api/client";
+import { api, ExecutionMode, MediaAsset } from "../api/client";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatNumber, t } from "../i18n";
 
@@ -42,7 +42,7 @@ export function MediaPage() {
   const [target, setTarget] = useState<MediaAsset | null>(null);
   const [previewAsset, setPreviewAsset] = useState<MediaAsset | null>(null);
   const [queueForm, setQueueForm] = useState({
-    execution_mode: "SIMULATION" as "SIMULATION" | "LIVE",
+    execution_mode: "SIMULATION" as ExecutionMode,
     connection_id: "",
     customer_id: "",
     title: "",
@@ -161,13 +161,13 @@ export function MediaPage() {
         <DialogTitle>{t("ui.9826673908")}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t("ui.ff0fbd56f4")}</InputLabel><Select label={t("ui.ff0fbd56f4")} value={queueForm.execution_mode} onChange={(e) => setQueueForm({ ...queueForm, execution_mode: e.target.value as "SIMULATION" | "LIVE" })}><MenuItem value="SIMULATION">{t("ui.c69d7e0c09")}</MenuItem><MenuItem value="LIVE">Google Ads</MenuItem></Select></FormControl></Grid>
+            <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t("ui.ff0fbd56f4")}</InputLabel><Select label={t("ui.ff0fbd56f4")} value={queueForm.execution_mode} onChange={(e) => setQueueForm({ ...queueForm, execution_mode: e.target.value as ExecutionMode })}><MenuItem value="SIMULATION">{t("ui.c69d7e0c09")}</MenuItem><MenuItem value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem><MenuItem value="PRODUCTION" disabled>{t("googleMode.productionShort")}</MenuItem></Select></FormControl></Grid>
             <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t("ui.79e350f743")}</InputLabel><Select label={t("ui.79e350f743")} value={queueForm.connection_id} onChange={(e) => setQueueForm({ ...queueForm, connection_id: e.target.value })}><MenuItem value="">{t("ui.fad95c5cb0")}</MenuItem>{(connections.data || []).map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {item.status}</MenuItem>)}</Select></FormControl></Grid>
             <Grid item xs={12}><FormControl fullWidth><InputLabel>Customer ID</InputLabel><Select label="Customer ID" value={queueForm.customer_id} onChange={(e) => setQueueForm({ ...queueForm, customer_id: e.target.value })}>{visibleAccounts.map((item) => <MenuItem key={item.id} value={item.customer_id}>{item.customer_id} · {item.descriptive_name || t("ui.32b74a3c47")}</MenuItem>)}</Select></FormControl></Grid>
             {!visibleAccounts.length && <Grid item xs={12}><TextField fullWidth label="Customer ID" value={queueForm.customer_id} onChange={(e) => setQueueForm({ ...queueForm, customer_id: e.target.value })} /></Grid>}
             <Grid item xs={12}><TextField fullWidth label={t("ui.d4cf7388b0")} value={queueForm.title} onChange={(e) => setQueueForm({ ...queueForm, title: e.target.value })} /></Grid>
             <Grid item xs={12}><TextField fullWidth multiline minRows={3} label={t("ui.f5441f6aee")} value={queueForm.description} onChange={(e) => setQueueForm({ ...queueForm, description: e.target.value })} /></Grid>
-            <Grid item xs={12}><Alert severity={queueForm.execution_mode === "LIVE" ? "warning" : "info"}>{queueForm.execution_mode === "LIVE" ? t("ui.b083a83c9c") : t("ui.eef262846e")}</Alert></Grid>
+            <Grid item xs={12}><Alert severity={queueForm.execution_mode === "GOOGLE_TEST" ? "warning" : queueForm.execution_mode === "PRODUCTION" ? "error" : "info"}>{queueForm.execution_mode === "GOOGLE_TEST" ? t("googleMode.mediaTest") : queueForm.execution_mode === "PRODUCTION" ? t("googleMode.mediaProductionBlocked") : t("ui.eef262846e")}</Alert></Grid>
           </Grid>
         </DialogContent>
         <DialogActions><Button onClick={() => setTarget(null)}>{t("ui.0ec753be8d")}</Button><Button variant="contained" disabled={!queueForm.customer_id || !queueForm.title || queue.isPending} onClick={() => queue.mutate()}>{t("ui.9da5491295")}</Button></DialogActions>
