@@ -1,0 +1,40 @@
+# Как устроены разработка и обновление Axyro
+
+## Три связанные копии
+
+1. `D:\Cursor AI\demand-gen-uploader` — рабочая копия на ноутбуке.
+2. Приватный GitHub-репозиторий `ruiskhakov2017-sys/demand-upload` — единственный источник исходного кода.
+3. Timeweb — место, где запускается заранее выбранный commit из GitHub.
+
+База, загруженные файлы, `.env` и секреты Google/OpenAI остаются вне GitHub.
+
+## Обычная работа
+
+1. Откройте папку проекта в Codex или Cursor.
+2. Перед новой задачей получите изменения из `main` и создайте отдельную ветку `feature/...`.
+3. Для локального запуска включите Docker Desktop и выполните `docker compose up -d --build`.
+4. Откройте `http://localhost/`, затем проверьте `http://localhost/api/health` и `http://localhost/api/ready`.
+5. Перед отправкой выполните backend-тесты, frontend-тесты, production-сборку и проверку секретов.
+6. Отправьте рабочую ветку в GitHub. Большие изменения объединяются в `main` после успешного CI.
+
+## Обновление Timeweb
+
+1. Откройте в GitHub раздел **Actions**.
+2. Выберите **Deploy production** и нажмите **Run workflow**.
+3. Введите полный 40-символьный SHA принятого commit из `main`.
+4. Workflow проверит SHA, создаст архив только из Git, сделает серверную резервную копию, соберёт images, применит additive migrations и дождётся здоровья всех семи контейнеров.
+5. Установленная версия видна по адресу `https://axyro.tech/api/version`.
+
+Deploy никогда не получает произвольный «последний код» и не удаляет Docker volumes. Production Google mutate этим процессом не выполняется.
+
+## Возврат application-версии
+
+При неуспешной проверке deploy автоматически возвращает предыдущие application images. Для ручного возврата запустите **Deploy production** с SHA ранее принятой версии. Миграции проектируются additive: базу нельзя откатывать удалением volume или разрушительной командой.
+
+## Резервные копии
+
+- Сервер: `/var/backups/demand-gen-uploader/`.
+- Локальная контрольная точка перед AI: `D:\Cursor AI\backups\demand-gen-uploader\pre-ai-analyst-20260803-2038`.
+- Автоматическая серверная копия выполняется до каждого production deploy и по системному таймеру.
+
+У исправной копии файл `SHA256SUMS` проходит проверку, а `postgres-restore-verification.txt` подтверждает тестовое восстановление. `.env`, PostgreSQL dump, Redis и media нельзя отправлять в GitHub.

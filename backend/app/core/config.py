@@ -9,6 +9,9 @@ class Settings(BaseSettings):
     app_name: str = "Axyro Analytics"
     app_env: str = Field(default="development", alias="APP_ENV")
     app_public_base_url: str = Field(default="http://localhost", alias="APP_PUBLIC_BASE_URL")
+    app_version_sha: str = Field(default="development", alias="APP_VERSION_SHA")
+    app_release_tag: str | None = Field(default=None, alias="APP_RELEASE_TAG")
+    app_deployed_at: str | None = Field(default=None, alias="APP_DEPLOYED_AT")
     api_prefix: str = "/api"
     database_url: str = Field(alias="DATABASE_URL")
     redis_url: str = Field(default="redis://redis:6379/0", alias="REDIS_URL")

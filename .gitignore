@@ -7,6 +7,8 @@ docker-compose.override.yml
 docker-compose.local.yml
 compose.override.yml
 compose.local.yml
+.deployment.env
+.git-sha
 
 # Credentials, tokens and private cryptographic material
 secrets/

@@ -1,6 +1,9 @@
 x-app-env: &app-env
   APP_ENV: ${APP_ENV:-development}
   APP_PUBLIC_BASE_URL: ${APP_PUBLIC_BASE_URL:-http://localhost}
+  APP_VERSION_SHA: ${APP_VERSION_SHA:-development}
+  APP_RELEASE_TAG: ${APP_RELEASE_TAG:-}
+  APP_DEPLOYED_AT: ${APP_DEPLOYED_AT:-}
   APP_ENCRYPTION_KEY: ${APP_ENCRYPTION_KEY:-dev-only-change-before-production}
   SETUP_TOKEN: ${SETUP_TOKEN:-dev-setup-token}
   SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
@@ -46,7 +49,7 @@ services:
       retries: 5
 
   api:
-    image: demand-gen-uploader-backend:latest
+    image: ${DGU_API_IMAGE:-demand-gen-uploader-backend:latest}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -71,7 +74,7 @@ services:
       start_period: 20s
 
   worker:
-    image: demand-gen-uploader-backend:latest
+    image: ${DGU_WORKER_IMAGE:-demand-gen-uploader-backend:latest}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -96,7 +99,7 @@ services:
       start_period: 30s
 
   scheduler:
-    image: demand-gen-uploader-backend:latest
+    image: ${DGU_SCHEDULER_IMAGE:-demand-gen-uploader-backend:latest}
     build:
       context: .
       dockerfile: backend/Dockerfile
@@ -119,6 +122,7 @@ services:
       start_period: 20s
 
   frontend:
+    image: ${DGU_FRONTEND_IMAGE:-demand-gen-uploader-frontend:latest}
     build:
       context: .
       dockerfile: frontend/Dockerfile

@@ -1,0 +1,77 @@
+name: Deploy production
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Full 40-character commit SHA to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+          fetch-depth: 0
+      - name: Verify exact commit
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          requested='${{ inputs.commit_sha }}'
+          [[ "$requested" =~ ^[0-9a-fA-F]{40}$ ]]
+          resolved="$(git rev-parse HEAD)"
+          test "${resolved,,}" = "${requested,,}"
+          echo "sha=$resolved" >> "$GITHUB_OUTPUT"
+      - name: Create source archive
+        shell: bash
+        run: git archive --format=tar.gz --output="/tmp/dgu-${{ steps.version.outputs.sha }}.tar.gz" "${{ steps.version.outputs.sha }}"
+      - name: Configure SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.TIMEWEB_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.TIMEWEB_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/timeweb_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/timeweb_deploy ~/.ssh/known_hosts
+      - name: Upload exact release
+        shell: bash
+        env:
+          HOST: ${{ secrets.TIMEWEB_HOST }}
+          USER: ${{ secrets.TIMEWEB_USER }}
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/timeweb_deploy -o IdentitiesOnly=yes \
+            "/tmp/dgu-${{ steps.version.outputs.sha }}.tar.gz" \
+            infrastructure/scripts/deploy-release.sh \
+            "$USER@$HOST:/tmp/"
+      - name: Deploy, migrate and verify
+        shell: bash
+        env:
+          HOST: ${{ secrets.TIMEWEB_HOST }}
+          USER: ${{ secrets.TIMEWEB_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/timeweb_deploy -o IdentitiesOnly=yes "$USER@$HOST" \
+            "sudo bash /tmp/deploy-release.sh '${{ steps.version.outputs.sha }}' '/tmp/dgu-${{ steps.version.outputs.sha }}.tar.gz'"
+      - name: Public smoke check
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --max-time 20 https://axyro.tech/ >/dev/null
+          curl --fail --silent --show-error --max-time 20 https://axyro.tech/api/health | grep -q '${{ steps.version.outputs.sha }}'
+          curl --fail --silent --show-error --max-time 20 https://axyro.tech/api/ready | grep -q 'ready'

@@ -6,7 +6,8 @@ umask 077
 APP_DIR=${APP_DIR:-/opt/demand-gen-uploader}
 BACKUP_ROOT=${BACKUP_ROOT:-/var/backups/demand-gen-uploader}
 RETENTION_DAYS=${RETENTION_DAYS:-14}
-COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME:-demand-gen-uploader}
+COMPOSE="docker compose -p $COMPOSE_PROJECT_NAME -f docker-compose.yml -f docker-compose.prod.yml"
 STAMP=$(date -u +%Y%m%d-%H%M%S)
 TMP_DIR="$BACKUP_ROOT/.tmp-$STAMP"
 FINAL_DIR="$BACKUP_ROOT/$STAMP"
@@ -26,7 +27,9 @@ $COMPOSE exec -T postgres sh -c \
   'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' \
   > "$TMP_DIR/postgres.dump"
 
-tar -C "$APP_DIR" -czf "$TMP_DIR/storage.tar.gz" storage
+storage_path=$(readlink -f "$APP_DIR/storage")
+test -d "$storage_path"
+tar -C "$(dirname "$storage_path")" -czf "$TMP_DIR/storage.tar.gz" "$(basename "$storage_path")"
 cp .env "$TMP_DIR/environment.env"
 
 $COMPOSE exec -T redis redis-cli SAVE >/dev/null

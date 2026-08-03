@@ -8,8 +8,24 @@ router = APIRouter(tags=["health"])
 
 
 @router.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": settings.app_name}
+def health() -> dict[str, str | None]:
+    return {
+        "status": "ok",
+        "service": settings.app_name,
+        "version_sha": settings.app_version_sha,
+        "release_tag": settings.app_release_tag,
+        "deployed_at": settings.app_deployed_at,
+    }
+
+
+@router.get("/version")
+def version() -> dict[str, str | None]:
+    return {
+        "version_sha": settings.app_version_sha,
+        "release_tag": settings.app_release_tag,
+        "deployed_at": settings.app_deployed_at,
+        "environment": settings.app_env,
+    }
 
 
 @router.get("/ready")
