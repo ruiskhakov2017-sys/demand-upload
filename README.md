@@ -13,6 +13,10 @@
 
 ## Что работает
 
+- Встроенный **AI-аналитик**: scoped-анализ MCC/GEO/аккаунтов/кампаний,
+  проверяемые источники и freshness, история диалогов, отчёты, редактируемые
+  черновики, безопасный preview, usage/cost dashboard и голосовой ввод с
+  обязательной проверкой распознанного текста.
 - Центр контроля Google Ads: иерархия MCC и GEO, аккаунты и кампании, расходы,
   показы, клики, CTR, CPC, регистрации, депозиты, CPA, статусы, проблемы и
   история изменений.
@@ -90,5 +94,7 @@ http://localhost/api/google-connections/oauth/callback
 [docs/control-center-user-guide.md](docs/control-center-user-guide.md).
 Подробный результат общей проверки находится в
 [docs/final-acceptance-report.md](docs/final-acceptance-report.md).
+Инструкция по AI-аналитику находится в
+[docs/user-guide-ru.md](docs/user-guide-ru.md#21-ai-аналитик).
 Архитектурный документ для повторной заявки Google находится в
 [docs/google-ads-api-design-document.md](docs/google-ads-api-design-document.md).

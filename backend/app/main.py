@@ -7,6 +7,13 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 from app.api.router import api_router
 from app.core.config import settings
 
+CONTENT_SECURITY_POLICY = (
+    "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; "
+    "form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; "
+    "media-src 'self' blob:; frame-src https://www.youtube-nocookie.com"
+)
+
 app = FastAPI(
     title=settings.app_name,
     openapi_url=f"{settings.api_prefix}/openapi.json",
@@ -33,7 +40,8 @@ async def security_headers(
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "same-origin"
-    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(self), geolocation=()"
+    response.headers["Content-Security-Policy"] = CONTENT_SECURITY_POLICY
     if settings.is_production:
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     return response

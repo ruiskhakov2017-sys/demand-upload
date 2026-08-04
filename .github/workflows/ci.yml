@@ -49,6 +49,7 @@ jobs:
       CORS_ORIGINS: '["http://localhost"]'
       ALLOWED_HOSTS: '["localhost","testserver"]'
       RUN_GOOGLE_TEST_INTEGRATION: "0"
+      RUN_AI_DB_INTEGRATION: "1"
       CONTROL_CENTER_LIVE_ACTIONS_ENABLED: "false"
       WEB_RISK_ENABLED: "false"
       SPAMHAUS_DQS_ENABLED: "false"
@@ -67,7 +68,9 @@ jobs:
         run: ruff check app tests
       - name: Safety-critical type checks
         working-directory: backend
-        run: mypy app/core/config.py app/api/routes/health.py --ignore-missing-imports
+        run: |
+          mypy app/core/config.py app/api/routes/health.py --ignore-missing-imports
+          mypy app/ai app/api/routes/ai_analyst.py --ignore-missing-imports --follow-imports=skip
       - name: Alembic single-head and upgrade check
         working-directory: backend
         run: |

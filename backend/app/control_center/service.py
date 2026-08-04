@@ -35,11 +35,14 @@ PROBLEM_GOOGLE_STATUSES = {
     "SYNC_ERROR",
 }
 WORK_STATUS_LABELS = {
-    "UNCLASSIFIED": "Не разобран",
     "PREPARATION": "Подготовка",
+    "READY": "Готов к работе",
     "WORKING": "В работе",
-    "PAUSED": "На паузе",
+    "MANUAL_PAUSE": "Ручная пауза",
+    "PROBLEM": "Проблема",
+    "APPEAL": "Апелляция",
     "ARCHIVED": "Архив",
+    "DO_NOT_USE": "Не использовать",
 }
 GOOGLE_STATUS_LABELS = {
     "ENABLED": "Активен",
@@ -336,6 +339,11 @@ def account_payload(
         "current_note": account.current_note,
         "note_updated_at": account.note_updated_at,
         "note_updated_by_id": str(account.note_updated_by_id) if account.note_updated_by_id else None,
+        "pinned_note": getattr(account, "pinned_note", None),
+        "pinned_note_updated_at": getattr(account, "pinned_note_updated_at", None),
+        "pinned_note_updated_by_id": (
+            str(account.pinned_note_updated_by_id) if getattr(account, "pinned_note_updated_by_id", None) else None
+        ),
         "tags": tags,
         "is_pinned": account.is_pinned,
         "is_test_account": account.is_test_account,
@@ -473,7 +481,7 @@ def quick_filter_counts(db: Session, accounts: list[CustomerAccount]) -> dict[st
             (account.verification_status or "").upper() in {"REQUIRED", "PENDING", "ACTION_REQUIRED"}
             for account in accounts
         ),
-        "paused": sum(account.work_status == "PAUSED" for account in accounts),
+        "paused": sum(account.work_status == "MANUAL_PAUSE" for account in accounts),
         "archive": sum(account.work_status == "ARCHIVED" for account in accounts),
     }
 

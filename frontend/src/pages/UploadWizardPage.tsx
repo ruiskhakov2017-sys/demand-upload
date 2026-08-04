@@ -64,6 +64,7 @@ import { StatusBadge } from "../components/StatusBadge";
 import { ScheduleEditor } from "../components/ScheduleEditor";
 import { applyCampaignCount, normalizeCampaignCount, QUICK_CAMPAIGN_COUNTS } from "../domain/campaignCounts";
 import { formatDate, formatNumber, localeTag, t } from "../i18n";
+import { ai } from "../i18n/aiAnalyst";
 
 const steps = [
   "builder.step.connection",
@@ -282,6 +283,8 @@ export function NewUploadPage({ navigate }: { navigate: Navigate }) {
 }
 
 export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; navigate: Navigate }) {
+  const linkedAiDraftId = new URLSearchParams(window.location.search).get("ai_draft");
+  const requestedEditorStep = new URLSearchParams(window.location.search).get("step");
   const queryClient = useQueryClient();
   const uploadQuery = useQuery({ queryKey: ["upload", uploadId], queryFn: () => api.getUpload(uploadId) });
   const connections = useQuery({ queryKey: ["connections"], queryFn: api.listConnections });
@@ -318,13 +321,15 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
     const builder = (upload.draft?.builder || {}) as Record<string, any>;
     setUploadName(upload.name);
     setConnectionId(upload.connection_id || "");
-    setStep(Math.min(upload.current_step || 0, steps.length - 1));
+    setStep(requestedEditorStep === "schedule"
+      ? steps.indexOf("builder.step.schedule")
+      : Math.min(upload.current_step || 0, steps.length - 1));
     setBatchId(upload.draft?.launch_batch_id || null);
     setScheduleId(upload.draft?.schedule_id || null);
     setSelectedAccounts((builder.accounts || []).map(normalizeBuilderAccount));
     setForm(hydrateBuilderForm(upload.draft?.execution_mode || "SIMULATION", builder));
     setHydrated(true);
-  }, [hydrated, uploadQuery.data]);
+  }, [hydrated, requestedEditorStep, uploadQuery.data]);
 
   const latestPlan = useMemo(
     () => (plans.data || [])
@@ -495,6 +500,7 @@ export function UploadWizardPage({ uploadId, navigate }: { uploadId: string; nav
           {t("ui.4864057d62")}</Button>
       </Box>
       {mutationError && <Alert severity="error">{mutationError.message}</Alert>}
+      {linkedAiDraftId && <Alert severity="info">{ai("ai.editorLinked")}</Alert>}
       {notice && <Alert severity="success" onClose={() => setNotice(null)}>{notice}</Alert>}
       <DomainValidationPanel
         report={domainValidation.data}

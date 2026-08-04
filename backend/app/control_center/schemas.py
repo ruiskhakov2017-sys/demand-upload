@@ -14,6 +14,7 @@ class AccountPatchIn(BaseModel):
     local_name: str | None = Field(default=None, max_length=255)
     work_status: AccountWorkStatus | None = None
     current_note: str | None = Field(default=None, max_length=20_000)
+    pinned_note: str | None = Field(default=None, max_length=20_000)
     is_pinned: bool | None = None
     geo_override_id: UUID | None = None
 
@@ -116,7 +117,7 @@ class MccGeoAssignmentIn(BaseModel):
 class ConversionActionMappingIn(BaseModel):
     connection_id: UUID
     account_id: UUID | None = None
-    semantic_type: Literal["REGISTRATION", "DEPOSIT"]
+    semantic_type: Literal["LEAD", "REGISTRATION", "DEPOSIT", "PURCHASE"]
     resource_name: str = Field(
         min_length=10,
         max_length=255,

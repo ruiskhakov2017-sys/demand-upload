@@ -159,10 +159,7 @@ def evaluate_rules(
                 },
                 "campaign": campaign_payload(campaign, account),
             }
-            condition_results = [
-                matches_rule_condition(candidate, condition)
-                for condition in (rule.conditions or [])
-            ]
+            condition_results = [_matches_condition_node(candidate, condition) for condition in (rule.conditions or [])]
             condition_match = (
                 all(condition_results)
                 if rule.condition_logic == "AND"
@@ -496,7 +493,7 @@ def _saved_view_matches(
     quick_filter = str(config.get("quickFilter") or "")
     if quick_filter == "working" and account.work_status != "WORKING":
         return False
-    if quick_filter == "paused" and account.work_status != "PAUSED":
+    if quick_filter == "paused" and account.work_status != "MANUAL_PAUSE":
         return False
     if quick_filter == "archive" and account.work_status != "ARCHIVED":
         return False
@@ -564,7 +561,7 @@ def _safeguard_skip_reason(
         return "MINIMUM_RUNTIME"
     conversion_fields = {
         str(condition.get("field") or "")
-        for condition in (rule.conditions or [])
+        for condition in _leaf_conditions(rule.conditions or [])
         if any(
             token in str(condition.get("field") or "").casefold()
             for token in ("conversion", "registration", "deposit", "cpa", "roas")
@@ -594,6 +591,27 @@ def _safeguard_skip_reason(
     if recent:
         return "COOLDOWN"
     return None
+
+
+def _matches_condition_node(candidate: dict[str, Any], condition: dict[str, Any]) -> bool:
+    children = condition.get("conditions")
+    if isinstance(children, list):
+        results = [_matches_condition_node(candidate, child) for child in children if isinstance(child, dict)]
+        if not results:
+            return False
+        return all(results) if str(condition.get("logic") or "AND").upper() == "AND" else any(results)
+    return matches_rule_condition(candidate, condition)
+
+
+def _leaf_conditions(conditions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    leaves: list[dict[str, Any]] = []
+    for condition in conditions:
+        children = condition.get("conditions")
+        if isinstance(children, list):
+            leaves.extend(_leaf_conditions([child for child in children if isinstance(child, dict)]))
+        else:
+            leaves.append(condition)
+    return leaves
 
 
 def _plan_actions(

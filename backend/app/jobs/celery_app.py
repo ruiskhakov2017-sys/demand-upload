@@ -10,6 +10,7 @@ celery_app = Celery(
         "app.jobs.tasks",
         "app.jobs.schedule_tasks",
         "app.jobs.control_center_tasks",
+        "app.jobs.ai_tasks",
     ],
 )
 
@@ -34,6 +35,10 @@ celery_app.conf.update(
         "evaluate-control-center-rules": {
             "task": "app.jobs.evaluate_control_center_rules",
             "schedule": 300.0,
+        },
+        "cleanup-ai-retention": {
+            "task": "app.jobs.cleanup_ai_retention",
+            "schedule": 86400.0,
         },
     },
 )

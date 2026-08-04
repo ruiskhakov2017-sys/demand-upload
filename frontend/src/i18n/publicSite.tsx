@@ -1,20 +1,18 @@
-import {
-  AccountTreeOutlined,
-  AnalyticsOutlined,
-  ArrowForward,
-  CheckCircleOutline,
-  CrisisAlertOutlined,
-  DownloadOutlined,
-  EditNoteOutlined,
-  FactCheckOutlined,
-  FilterAltOutlined,
-  HistoryOutlined,
-  LockOutlined,
-  Login,
-  PaidOutlined,
-  SecurityOutlined,
-  TuneOutlined
-} from "@mui/icons-material";
+import AccountTreeOutlined from "@mui/icons-material/AccountTreeOutlined";
+import AnalyticsOutlined from "@mui/icons-material/AnalyticsOutlined";
+import ArrowForward from "@mui/icons-material/ArrowForward";
+import CheckCircleOutline from "@mui/icons-material/CheckCircleOutline";
+import CrisisAlertOutlined from "@mui/icons-material/CrisisAlertOutlined";
+import DownloadOutlined from "@mui/icons-material/DownloadOutlined";
+import EditNoteOutlined from "@mui/icons-material/EditNoteOutlined";
+import FactCheckOutlined from "@mui/icons-material/FactCheckOutlined";
+import FilterAltOutlined from "@mui/icons-material/FilterAltOutlined";
+import HistoryOutlined from "@mui/icons-material/HistoryOutlined";
+import LockOutlined from "@mui/icons-material/LockOutlined";
+import Login from "@mui/icons-material/Login";
+import PaidOutlined from "@mui/icons-material/PaidOutlined";
+import SecurityOutlined from "@mui/icons-material/SecurityOutlined";
+import TuneOutlined from "@mui/icons-material/TuneOutlined";
 import {
   AppBar,
   Box,

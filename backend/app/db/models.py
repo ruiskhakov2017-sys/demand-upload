@@ -125,11 +125,29 @@ class ScheduleRunStatus(StrEnum):
 
 
 class AccountWorkStatus(StrEnum):
-    UNCLASSIFIED = "UNCLASSIFIED"
     PREPARATION = "PREPARATION"
+    READY = "READY"
     WORKING = "WORKING"
-    PAUSED = "PAUSED"
+    MANUAL_PAUSE = "MANUAL_PAUSE"
+    PROBLEM = "PROBLEM"
+    APPEAL = "APPEAL"
     ARCHIVED = "ARCHIVED"
+    DO_NOT_USE = "DO_NOT_USE"
+
+
+class AiAuthorityMode(StrEnum):
+    READ_ONLY = "READ_ONLY"
+    DRAFT_ONLY = "DRAFT_ONLY"
+    CONFIRM_REQUIRED = "CONFIRM_REQUIRED"
+
+
+class AiRunStatus(StrEnum):
+    QUEUED = "QUEUED"
+    RUNNING = "RUNNING"
+    SUCCEEDED = "SUCCEEDED"
+    PARTIAL = "PARTIAL"
+    FAILED = "FAILED"
+    CANCELLED = "CANCELLED"
 
 
 class ScheduleWaveStatus(StrEnum):
@@ -207,9 +225,7 @@ class GoogleConnection(UuidPrimaryKeyMixin, TimestampMixin, Base):
     timeout_seconds: Mapped[int] = mapped_column(default=60)
     retry_count: Mapped[int] = mapped_column(default=3)
     sync_failure_count: Mapped[int] = mapped_column(Integer, default=0)
-    sync_circuit_open_until: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, index=True
-    )
+    sync_circuit_open_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
 
     developer_token_credential: Mapped[GoogleCredential | None] = relationship(
         foreign_keys=[developer_token_credential_id]
@@ -286,10 +302,13 @@ class CustomerAccount(UuidPrimaryKeyMixin, TimestampMixin, Base):
     )
     geo_override_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
     geo_override_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    work_status: Mapped[str] = mapped_column(String(40), default=AccountWorkStatus.UNCLASSIFIED.value, index=True)
+    work_status: Mapped[str] = mapped_column(String(40), default=AccountWorkStatus.PREPARATION.value, index=True)
     current_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     note_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     note_updated_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
+    pinned_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    pinned_note_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    pinned_note_updated_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     first_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
@@ -621,7 +640,19 @@ class AccountNoteHistory(UuidPrimaryKeyMixin, Base):
     account_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("customer_accounts.id"), index=True)
     previous_note: Mapped[str | None] = mapped_column(Text, nullable=True)
     note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    note_kind: Mapped[str] = mapped_column(String(20), default="REGULAR", index=True)
     changed_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class AccountWorkStatusHistory(UuidPrimaryKeyMixin, Base):
+    __tablename__ = "account_work_status_history"
+
+    account_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("customer_accounts.id"), index=True)
+    previous_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    status: Mapped[str] = mapped_column(String(40), index=True)
+    changed_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
+    source: Mapped[str] = mapped_column(String(30), default="LOCAL", index=True)
     changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
 
 
@@ -801,6 +832,9 @@ class ControlCenterActionRequest(UuidPrimaryKeyMixin, TimestampMixin, Base):
     confirmation_token_hash: Mapped[str] = mapped_column(String(64))
     confirmation_expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    second_approval_required: Mapped[bool] = mapped_column(Boolean, default=False)
+    second_approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    second_approved_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     idempotency_key: Mapped[str] = mapped_column(String(180), unique=True, index=True)
     request_ids: Mapped[list] = mapped_column(JSONB, default=list)
@@ -1295,6 +1329,272 @@ class ApplicationSetting(UuidPrimaryKeyMixin, TimestampMixin, Base):
     key: Mapped[str] = mapped_column(String(120), unique=True, index=True)
     value: Mapped[dict] = mapped_column(JSONB, default=dict)
     updated_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
+
+
+class AiConversation(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_conversations"
+
+    owner_user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    title: Mapped[str] = mapped_column(String(180), default="Новый диалог")
+    authority_mode: Mapped[str] = mapped_column(String(30), default=AiAuthorityMode.READ_ONLY.value, index=True)
+    google_environment: Mapped[str] = mapped_column(
+        String(24), default=GoogleConnectionMode.SIMULATION.value, index=True
+    )
+    scope: Mapped[dict] = mapped_column(JSONB, default=dict)
+    locale: Mapped[str] = mapped_column(String(12), default="ru")
+    time_zone: Mapped[str] = mapped_column(String(80), default="Europe/Moscow")
+    last_message_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    retention_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+
+class AiRun(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_runs"
+
+    conversation_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("ai_conversations.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    request_id: Mapped[str] = mapped_column(String(100), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(30), default=AiRunStatus.QUEUED.value, index=True)
+    model_profile: Mapped[str] = mapped_column(String(24), default="BALANCED", index=True)
+    model_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    prompt_version: Mapped[str] = mapped_column(String(40), default="ai-analyst-v1")
+    tool_schema_version: Mapped[str] = mapped_column(String(40), default="axyro-tools-v1")
+    authority_mode: Mapped[str] = mapped_column(String(30), index=True)
+    google_environment: Mapped[str] = mapped_column(String(24), index=True)
+    resolved_scope: Mapped[dict] = mapped_column(JSONB, default=dict)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    estimated_cost_usd: Mapped[Decimal] = mapped_column(Numeric(14, 8), default=0)
+    latency_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    model_turns: Mapped[int] = mapped_column(Integer, default=0)
+    read_tool_calls: Mapped[int] = mapped_column(Integer, default=0)
+    draft_tool_calls: Mapped[int] = mapped_column(Integer, default=0)
+    partial: Mapped[bool] = mapped_column(Boolean, default=False)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+    started_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class AiMessage(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_messages"
+
+    conversation_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("ai_conversations.id", ondelete="CASCADE"), index=True
+    )
+    user_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    run_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("ai_runs.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    role: Mapped[str] = mapped_column(String(20), index=True)
+    content: Mapped[str] = mapped_column(Text)
+    structured_content: Mapped[dict] = mapped_column(JSONB, default=dict)
+    evidence: Mapped[list] = mapped_column(JSONB, default=list)
+    status: Mapped[str] = mapped_column(String(30), default="COMPLETE", index=True)
+
+
+class AiToolCall(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_tool_calls"
+    __table_args__ = (UniqueConstraint("run_id", "call_fingerprint", name="uq_ai_tool_call_fingerprint"),)
+
+    run_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("ai_runs.id", ondelete="CASCADE"), index=True)
+    tool_call_id: Mapped[str] = mapped_column(String(180), index=True)
+    tool_name: Mapped[str] = mapped_column(String(100), index=True)
+    tool_version: Mapped[str] = mapped_column(String(40))
+    risk_class: Mapped[str] = mapped_column(String(30), index=True)
+    arguments: Mapped[dict] = mapped_column(JSONB, default=dict)
+    result: Mapped[dict] = mapped_column(JSONB, default=dict)
+    status: Mapped[str] = mapped_column(String(30), default="RUNNING", index=True)
+    error_code: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    call_fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+
+
+class AiDraft(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_drafts"
+
+    owner_user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("ai_conversations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    run_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("ai_runs.id", ondelete="SET NULL"), nullable=True)
+    draft_type: Mapped[str] = mapped_column(String(60), index=True)
+    status: Mapped[str] = mapped_column(String(30), default="EDITABLE", index=True)
+    authority_mode: Mapped[str] = mapped_column(String(30))
+    google_environment: Mapped[str] = mapped_column(String(24))
+    scope: Mapped[dict] = mapped_column(JSONB, default=dict)
+    payload: Mapped[dict] = mapped_column(JSONB, default=dict)
+    source_snapshot: Mapped[dict] = mapped_column(JSONB, default=dict)
+    fingerprint: Mapped[str] = mapped_column(String(64), index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+    linked_entity_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    linked_entity_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    action_request_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("control_center_action_requests.id"), nullable=True, index=True
+    )
+    deployment_plan_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("deployment_plans.id"), nullable=True, index=True
+    )
+
+
+class AiSavedReport(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_saved_reports"
+
+    owner_user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    conversation_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("ai_conversations.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    run_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("ai_runs.id", ondelete="SET NULL"), nullable=True)
+    title: Mapped[str] = mapped_column(String(180))
+    report: Mapped[dict] = mapped_column(JSONB, default=dict)
+    scope: Mapped[dict] = mapped_column(JSONB, default=dict)
+    observed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+
+
+class AiUsageDaily(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_usage_daily"
+    __table_args__ = (UniqueConstraint("usage_date", "user_id", "model_id", name="uq_ai_usage_daily_user_model"),)
+
+    usage_date: Mapped[date] = mapped_column(Date, index=True)
+    user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    model_id: Mapped[str] = mapped_column(String(80), index=True)
+    requests: Mapped[int] = mapped_column(Integer, default=0)
+    input_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    output_tokens: Mapped[int] = mapped_column(Integer, default=0)
+    estimated_cost_usd: Mapped[Decimal] = mapped_column(Numeric(14, 8), default=0)
+    tool_calls: Mapped[int] = mapped_column(Integer, default=0)
+    errors: Mapped[int] = mapped_column(Integer, default=0)
+    latency_ms_total: Mapped[int] = mapped_column(BigInteger, default=0)
+
+
+class AiUserPreference(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_user_preferences"
+
+    user_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id", ondelete="CASCADE"), unique=True, index=True)
+    default_authority_mode: Mapped[str] = mapped_column(String(30), default=AiAuthorityMode.READ_ONLY.value)
+    default_environment: Mapped[str] = mapped_column(String(24), default=GoogleConnectionMode.SIMULATION.value)
+    default_model_profile: Mapped[str] = mapped_column(String(24), default="BALANCED")
+    default_scope: Mapped[dict] = mapped_column(JSONB, default=dict)
+    locale: Mapped[str] = mapped_column(String(12), default="ru")
+    time_zone: Mapped[str] = mapped_column(String(80), default="Europe/Moscow")
+
+
+class AiAdminSetting(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_admin_settings"
+
+    key: Mapped[str] = mapped_column(String(80), unique=True, index=True, default="global")
+    settings: Mapped[dict] = mapped_column(JSONB, default=dict)
+    openai_key_encrypted: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    openai_key_last_four: Mapped[str | None] = mapped_column(String(4), nullable=True)
+    updated_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
+
+
+class AiModelProfile(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "ai_model_profiles"
+
+    name: Mapped[str] = mapped_column(String(24), unique=True, index=True)
+    model_id: Mapped[str] = mapped_column(String(80), index=True)
+    reasoning_effort: Mapped[str] = mapped_column(String(20), default="medium")
+    verbosity: Mapped[str] = mapped_column(String(20), default="medium")
+    timeout_seconds: Mapped[int] = mapped_column(Integer, default=60)
+    max_input_tokens: Mapped[int] = mapped_column(Integer, default=32_000)
+    max_output_tokens: Mapped[int] = mapped_column(Integer, default=4_000)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    price_metadata: Mapped[dict] = mapped_column(JSONB, default=dict)
+    eval_version: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    eval_passed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class GeoAnalyticsProfile(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "geo_analytics_profiles"
+    __table_args__ = (
+        UniqueConstraint("scope_type", "scope_id", "version", name="uq_geo_analytics_profile_scope_version"),
+    )
+
+    scope_type: Mapped[str] = mapped_column(String(24), index=True)
+    scope_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True, index=True)
+    geo_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("geo_definitions.id"), nullable=True, index=True)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    effective_from: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    effective_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    time_zone: Mapped[str] = mapped_column(String(80), default="UTC")
+    expected_currencies: Mapped[list] = mapped_column(JSONB, default=list)
+    default_reporting_period: Mapped[str] = mapped_column(String(30), default="7d")
+    primary_metric_source: Mapped[str] = mapped_column(String(40), default="GOOGLE_ADS")
+    target_cpl: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    target_registration_cpa: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    target_deposit_cpa: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    target_roas: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    max_spend_without_lead: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    max_spend_without_registration: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    max_spend_without_deposit: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    minimum_clicks: Mapped[int] = mapped_column(Integer, default=0)
+    minimum_impressions: Mapped[int] = mapped_column(Integer, default=0)
+    minimum_spend: Mapped[Decimal] = mapped_column(Numeric(18, 6), default=0)
+    conversion_lag_hours: Mapped[int] = mapped_column(Integer, default=24)
+    alert_thresholds: Mapped[dict] = mapped_column(JSONB, default=dict)
+    owner_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_by_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+
+
+class GeoAnalyticsProfileHistory(UuidPrimaryKeyMixin, Base):
+    __tablename__ = "geo_analytics_profile_history"
+
+    profile_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("geo_analytics_profiles.id", ondelete="CASCADE"), index=True
+    )
+    version: Mapped[int] = mapped_column(Integer, index=True)
+    snapshot: Mapped[dict] = mapped_column(JSONB, default=dict)
+    changed_by_id: Mapped[UUID | None] = mapped_column(Uuid, ForeignKey("users.id"), nullable=True)
+    changed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
+
+
+class GeoAnalyticsOverride(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "geo_analytics_overrides"
+    __table_args__ = (UniqueConstraint("scope_type", "scope_id", name="uq_geo_analytics_override_scope"),)
+
+    scope_type: Mapped[str] = mapped_column(String(24), index=True)
+    scope_id: Mapped[UUID] = mapped_column(Uuid, index=True)
+    profile_id: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("geo_analytics_profiles.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    override_values: Mapped[dict] = mapped_column(JSONB, default=dict)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    updated_by_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+
+
+class MetricSourceMapping(UuidPrimaryKeyMixin, TimestampMixin, Base):
+    __tablename__ = "metric_source_mappings"
+    __table_args__ = (
+        UniqueConstraint(
+            "scope_type",
+            "scope_id",
+            "semantic_metric",
+            "provider",
+            "source_id",
+            name="uq_metric_source_mapping",
+        ),
+    )
+
+    scope_type: Mapped[str] = mapped_column(String(24), index=True)
+    scope_id: Mapped[UUID | None] = mapped_column(Uuid, nullable=True, index=True)
+    semantic_metric: Mapped[str] = mapped_column(String(40), index=True)
+    provider: Mapped[str] = mapped_column(String(40), index=True)
+    source_id: Mapped[str] = mapped_column(String(255))
+    source_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    attribution_model: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, index=True)
+    metadata_json: Mapped[dict] = mapped_column(JSONB, default=dict)
+    created_by_id: Mapped[UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
 
 
 class OAuthAuthorization(UuidPrimaryKeyMixin, TimestampMixin, Base):
