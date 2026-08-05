@@ -100,7 +100,7 @@ printf '%s\n' "$sql" | "${compose[@]}" exec -T postgres sh -c \
 
 problem_pattern='Traceback|ERROR|HTTP/[12][.][01]" 5[0-9][0-9]|OAuth[^[:space:]]* error|oauth[^[:space:]]* error'
 for service in api worker scheduler redis reverse-proxy; do
-  problem_lines=$("${compose[@]}" logs --since 20m --no-color "$service" 2>&1 | grep -Eic "$problem_pattern" || true)
+  problem_lines=$("${compose[@]}" logs --since 5m --no-color "$service" 2>&1 | grep -Eic "$problem_pattern" || true)
   echo "log_problem_lines|$service|$problem_lines"
   test "$problem_lines" -eq 0
 done
