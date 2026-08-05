@@ -6,3 +6,8 @@ e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/en.ts:generic-api-key
 e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/ru.ts:generic-api-key:184
 e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/ru.ts:generic-api-key:403
 e96325c7fff231c32307c850f2e461da26b611b4:frontend/src/i18n/ru.ts:generic-api-key:453
+
+# False positives: required empty example variable and explicit test-only idempotency placeholders.
+7f0e02c48d884b14d5718f6d7876f2818947e0bf:.env.example:generic-api-key:30
+7f0e02c48d884b14d5718f6d7876f2818947e0bf:frontend/src/api/aiClient.test.ts:generic-api-key:39
+7f0e02c48d884b14d5718f6d7876f2818947e0bf:frontend/src/api/aiClient.test.ts:generic-api-key:54

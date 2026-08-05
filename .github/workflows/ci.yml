@@ -98,7 +98,7 @@ jobs:
         run: npm run typecheck
       - name: Frontend tests
         working-directory: frontend
-        run: npm test -- --pool=forks --maxWorkers=1 --minWorkers=1
+        run: npm test
       - name: Production frontend build
         working-directory: frontend
         run: npm run build

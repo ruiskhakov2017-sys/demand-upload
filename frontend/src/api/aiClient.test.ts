@@ -36,7 +36,7 @@ describe("AI streaming client", () => {
 
     await streamAiMessage(
       "conversation-1",
-      { content: "test", model_profile: "FAST", idempotency_key: "1234567890abcdef" },
+      { content: "test", model_profile: "FAST", idempotency_key: "idem" },
       (event, data) => events.push([event, data])
     );
 
@@ -51,7 +51,7 @@ describe("AI streaming client", () => {
     })));
     await expect(streamAiMessage(
       "conversation-1",
-      { content: "test", model_profile: "FAST", idempotency_key: "1234567890abcdef" },
+      { content: "test", model_profile: "FAST", idempotency_key: "idem" },
       () => undefined
     )).rejects.toThrow("OPENAI_NOT_CONFIGURED");
   });
