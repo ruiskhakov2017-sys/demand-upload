@@ -49,3 +49,25 @@ jobs:
           set -euo pipefail
           ssh -i ~/.ssh/timeweb_deploy -o IdentitiesOnly=yes "$USER@$HOST" \
             'sudo bash /tmp/production-readonly-audit.sh; status=$?; rm -f /tmp/production-readonly-audit.sh; exit $status'
+      - name: Inspect failed release candidate without data access
+        shell: bash
+        env:
+          HOST: ${{ secrets.TIMEWEB_HOST }}
+          USER: ${{ secrets.TIMEWEB_USER }}
+          CANDIDATE_SHA: 4bf2cc8897018b714957e3f0ac36d89c402bb083
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/timeweb_deploy -o IdentitiesOnly=yes "$USER@$HOST" \
+            "sudo bash -s -- '$CANDIDATE_SHA'" <<'REMOTE'
+          set -euo pipefail
+          sha=$1
+          release_dir="/opt/demand-gen-uploader-releases/$sha"
+          migration="backend/migrations/versions/202608040012_action_second_approval.py"
+          image="dgu-api:$sha"
+          test -f "$release_dir/$migration"
+          docker image inspect "$image" >/dev/null
+          echo "candidate_release|$sha|migration=present"
+          echo "candidate_release_hash|$(sha256sum "$release_dir/$migration" | awk '{print $1}')"
+          docker run --rm --entrypoint sh "$image" -c \
+            'test -f /app/migrations/versions/202608040012_action_second_approval.py; echo "candidate_image|migration=present"; sha256sum /app/migrations/versions/202608040012_action_second_approval.py | awk '\''{print "candidate_image_hash|" $1}'\'''
+          REMOTE
