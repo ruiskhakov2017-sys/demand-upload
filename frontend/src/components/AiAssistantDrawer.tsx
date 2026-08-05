@@ -45,6 +45,9 @@ export function AiAssistantDrawer({ path, navigate }: { path: string; navigate: 
   const capabilities = useQuery({ queryKey: ["ai-capabilities"], queryFn: api.aiCapabilities, enabled: open, retry: false });
   const conversations = useQuery({ queryKey: ["ai-conversations"], queryFn: () => api.aiConversations(false), enabled: open });
   const detail = useQuery({ queryKey: ["ai-conversation", conversationId], queryFn: () => api.getAiConversation(conversationId!), enabled: open && Boolean(conversationId) });
+  const interactionDisabled = !capabilities.data?.enabled
+    || capabilities.data.kill_switch
+    || capabilities.data.provider.configured === false;
 
   useEffect(() => {
     if (!open || conversations.isLoading || !conversations.data) return;
@@ -65,7 +68,7 @@ export function AiAssistantDrawer({ path, navigate }: { path: string; navigate: 
 
   const send = async (text = prompt) => {
     const content = text.trim();
-    if (!content || sending) return;
+    if (!content || sending || interactionDisabled) return;
     setError(null);
     setLastPrompt(content);
     let id = conversationId;
@@ -151,10 +154,13 @@ export function AiAssistantDrawer({ path, navigate }: { path: string; navigate: 
               {!detail.isLoading && !detail.data?.messages?.length && <Typography color="text.secondary">{ai("ai.emptyText")}</Typography>}
             </Stack>
           </Box>
+          {capabilities.data?.provider.configured === false && <Alert severity="warning">{ai("ai.providerMissing")}</Alert>}
+          {capabilities.data?.kill_switch && <Alert severity="error">{ai("ai.killSwitch")}</Alert>}
+          {capabilities.data?.enabled === false && <Alert severity="error">{ai("ai.disabled")}</Alert>}
           {error && <Alert severity="error" onClose={() => setError(null)} action={lastPrompt && !sending ? <Button color="inherit" size="small" startIcon={<RefreshIcon />} onClick={() => void send(lastPrompt)}>{ai("ai.retry")}</Button> : undefined}>{error}</Alert>}
           <Box sx={{ p: 1.5, borderTop: 1, borderColor: "divider" }}>
-            <TextField fullWidth multiline minRows={2} maxRows={5} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder={ai("ai.askPlaceholder")} disabled={sending} inputProps={{ maxLength: 20_000 }} />
-            <Button fullWidth sx={{ mt: 1 }} variant="contained" endIcon={<SendIcon />} disabled={!prompt.trim() || sending || !capabilities.data?.enabled || capabilities.data?.kill_switch || capabilities.data?.provider.configured === false} onClick={() => void send()}>{ai("ai.send")}</Button>
+            <TextField fullWidth multiline minRows={2} maxRows={5} value={prompt} onChange={(event) => setPrompt(event.target.value)} placeholder={ai("ai.askPlaceholder")} disabled={sending || interactionDisabled} inputProps={{ maxLength: 20_000 }} />
+            <Button fullWidth sx={{ mt: 1 }} variant="contained" endIcon={<SendIcon />} disabled={!prompt.trim() || sending || interactionDisabled} onClick={() => void send()}>{ai("ai.send")}</Button>
           </Box>
         </Stack>
       </Drawer>

@@ -56,7 +56,10 @@ describe("AI Analyst UI contract", () => {
     expect(block.match(/ai\.quick\.\d/g)).toHaveLength(9);
     expect(page).toContain("disabled={disabled}");
     expect(page).toContain("capabilities.data?.provider.configured === false");
-    expect(drawer).toContain("capabilities.data?.provider.configured === false");
+    expect(drawer).toContain("const interactionDisabled = !capabilities.data?.enabled");
+    expect(drawer).toContain("disabled={sending || interactionDisabled}");
+    expect(drawer).toContain("if (!content || sending || interactionDisabled) return;");
+    expect(drawer).toContain('ai("ai.providerMissing")');
   });
 
   it("shows personal cost and supports archive restore", () => {
