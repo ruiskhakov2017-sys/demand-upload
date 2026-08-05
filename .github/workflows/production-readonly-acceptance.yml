@@ -1,0 +1,51 @@
+name: Production read-only acceptance
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "ops/production-acceptance-*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-read-only-acceptance
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure SSH
+        shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.TIMEWEB_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.TIMEWEB_SSH_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 ~/.ssh
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/timeweb_deploy
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/timeweb_deploy ~/.ssh/known_hosts
+      - name: Upload read-only audit
+        shell: bash
+        env:
+          HOST: ${{ secrets.TIMEWEB_HOST }}
+          USER: ${{ secrets.TIMEWEB_USER }}
+        run: |
+          set -euo pipefail
+          scp -i ~/.ssh/timeweb_deploy -o IdentitiesOnly=yes \
+            infrastructure/scripts/production-readonly-audit.sh \
+            "$USER@$HOST:/tmp/production-readonly-audit.sh"
+      - name: Verify production without mutations
+        shell: bash
+        env:
+          HOST: ${{ secrets.TIMEWEB_HOST }}
+          USER: ${{ secrets.TIMEWEB_USER }}
+        run: |
+          set -euo pipefail
+          ssh -i ~/.ssh/timeweb_deploy -o IdentitiesOnly=yes "$USER@$HOST" \
+            'sudo bash /tmp/production-readonly-audit.sh; status=$?; rm -f /tmp/production-readonly-audit.sh; exit $status'
