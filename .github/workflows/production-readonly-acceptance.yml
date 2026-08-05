@@ -65,9 +65,26 @@ jobs:
           migration="backend/migrations/versions/202608040012_action_second_approval.py"
           image="dgu-api:$sha"
           test -f "$release_dir/$migration"
-          docker image inspect "$image" >/dev/null
           echo "candidate_release|$sha|migration=present"
           echo "candidate_release_hash|$(sha256sum "$release_dir/$migration" | awk '{print $1}')"
-          docker run --rm --entrypoint sh "$image" -c \
-            'test -f /app/migrations/versions/202608040012_action_second_approval.py; echo "candidate_image|migration=present"; sha256sum /app/migrations/versions/202608040012_action_second_approval.py | awk '\''{print "candidate_image_hash|" $1}'\'''
+          current_api=$(docker ps -q \
+            --filter 'label=com.docker.compose.project=demand-gen-uploader' \
+            --filter 'label=com.docker.compose.service=api' | head -n 1)
+          docker inspect --format 'current_api_image|{{.Config.Image}}|{{.Image}}' "$current_api"
+          docker image ls --format 'server_image|{{.Repository}}|{{.Tag}}|{{.ID}}' \
+            | grep '^server_image|dgu-' | sort
+          export DGU_API_IMAGE="dgu-api:$sha"
+          export DGU_WORKER_IMAGE="dgu-worker:$sha"
+          export DGU_SCHEDULER_IMAGE="dgu-scheduler:$sha"
+          export DGU_FRONTEND_IMAGE="dgu-frontend:$sha"
+          docker compose -p demand-gen-uploader \
+            -f "$release_dir/docker-compose.yml" \
+            -f "$release_dir/docker-compose.prod.yml" \
+            config --images | sort | sed 's/^/resolved_image|/'
+          if docker image inspect "$image" >/dev/null 2>&1; then
+            docker run --rm --entrypoint sh "$image" -c \
+              'test -f /app/migrations/versions/202608040012_action_second_approval.py; echo "candidate_image|migration=present"; sha256sum /app/migrations/versions/202608040012_action_second_approval.py | awk '\''{print "candidate_image_hash|" $1}'\'''
+          else
+            echo "candidate_image|missing"
+          fi
           REMOTE
