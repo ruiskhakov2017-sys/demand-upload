@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api.routes import (
     accounts,
+    ai_analyst,
     audit,
     auth,
     batches,
@@ -27,6 +28,7 @@ from app.api.routes import (
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(ai_analyst.router)
 api_router.include_router(setup.router)
 api_router.include_router(auth.router)
 api_router.include_router(batches.router)

@@ -10,6 +10,150 @@ export type User = {
 
 export type Session = { user: User; csrf_token: string };
 export type ExecutionMode = "SIMULATION" | "GOOGLE_TEST" | "PRODUCTION";
+export type AiAuthorityMode = "READ_ONLY" | "DRAFT_ONLY" | "CONFIRM_REQUIRED";
+
+export type AiScope = {
+  connection_ids: string[];
+  mcc_ids: string[];
+  geo_ids: string[];
+  account_ids: string[];
+  campaign_ids: string[];
+  period: "today" | "yesterday" | "3d" | "7d" | "30d" | "custom";
+  start_date: string | null;
+  end_date: string | null;
+  metric_source: string;
+  currency: string | null;
+};
+
+export type AiConversation = {
+  id: string;
+  title: string;
+  authority_mode: AiAuthorityMode;
+  google_environment: ExecutionMode;
+  scope: AiScope;
+  locale: "ru" | "en";
+  time_zone: string;
+  last_message_at: string | null;
+  archived_at: string | null;
+  retention_until: string | null;
+  created_at: string;
+  updated_at: string;
+  messages?: AiMessage[];
+};
+
+export type AiToolTimelineItem = {
+  id: string;
+  tool_name: string;
+  tool_version: string;
+  risk_class: string;
+  status: string;
+  error_code: string | null;
+  duration_ms: number | null;
+  job_id: string | null;
+  job_status: string | null;
+  job_path: string | null;
+  created_at: string;
+};
+
+export type AiStructuredAnswer = {
+  answer: string;
+  resolved_scope: Record<string, any>;
+  period: Record<string, any>;
+  timezones: string[];
+  sources: Array<Record<string, any>>;
+  freshness: string;
+  completeness: string;
+  currency_groups: Array<{ currency_code: string; cost_micros: number | null; conversion_value: number | null; accounts: number }>;
+  findings: Array<{ title: string; detail: string; severity: "INFO" | "SUCCESS" | "WARNING" | "ERROR"; condition: string; conclusion: string; confidence: number; evidence_indexes: number[] }>;
+  evidence: Array<Record<string, any>>;
+  exact_backend_condition: string;
+  conclusion: string;
+  confidence: number;
+  caveats: string[];
+  warnings: string[];
+  tables: Array<{ title: string; columns: Array<{ key: string; label: string; format: string }>; rows: Array<{ object_type: string | null; object_id: string | null; cells: Array<{ key: string; value: string; numeric_value: number | null; currency_code: string | null }> }> }>;
+  charts: Array<{ title: string; kind: "BAR" | "LINE"; unit: string; series: Array<{ name: string; color: string; points: Array<{ label: string; value: number }> }> }>;
+  object_links: Array<{ label: string; path: string; object_type: string; object_id: string }>;
+  draft: Record<string, any> | null;
+};
+
+export type AiMessage = {
+  id: string;
+  role: "USER" | "ASSISTANT";
+  content: string;
+  structured_content: Partial<AiStructuredAnswer>;
+  status: string;
+  run_id: string | null;
+  tool_timeline: AiToolTimelineItem[];
+  created_at: string;
+};
+
+export type AiDraft = {
+  id: string;
+  conversation_id: string | null;
+  draft_type: string;
+  status: string;
+  authority_mode: AiAuthorityMode;
+  google_environment: ExecutionMode;
+  scope: Record<string, any>;
+  payload: Record<string, any>;
+  source_snapshot: Record<string, any>;
+  fingerprint: string;
+  version: number;
+  expires_at: string;
+  linked_entity_type: string | null;
+  linked_entity_id: string | null;
+  action_request_id: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiReport = {
+  id: string;
+  conversation_id: string | null;
+  run_id: string | null;
+  title: string;
+  report: Record<string, any>;
+  scope: Record<string, any>;
+  observed_at: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AiCapabilities = {
+  enabled: boolean;
+  kill_switch: boolean;
+  provider: { name: string; configured: boolean; key_source: string; store: boolean; live_model_access_verified: boolean };
+  role: User["role"];
+  authority_modes: AiAuthorityMode[];
+  environments: ExecutionMode[];
+  production: Record<string, boolean>;
+  models: Array<Record<string, any>>;
+  tools: Array<{ name: string; risk: string; version: string }>;
+  limits: Record<string, number>;
+};
+
+export type AiSourceRegistryItem = {
+  capabilities: {
+    provider_id: string;
+    label: string;
+    data_kinds: string[];
+    semantic_metrics: string[];
+    supports_read: boolean;
+    supports_refresh: boolean;
+    provenance_version: string;
+  };
+  status: {
+    provider_id: string;
+    configured: boolean;
+    enabled: boolean;
+    live_verified: boolean;
+    setup_status: string;
+    explanation: string;
+    active_mappings: number;
+  };
+};
 
 export type GoogleConnection = {
   id: string;
@@ -121,11 +265,14 @@ export type ControlCenterAccount = {
   geo_override_id: string | null;
   google_status: string;
   google_status_label: string;
-  work_status: "UNCLASSIFIED" | "PREPARATION" | "WORKING" | "PAUSED" | "ARCHIVED";
+  work_status: "PREPARATION" | "READY" | "WORKING" | "MANUAL_PAUSE" | "PROBLEM" | "APPEAL" | "ARCHIVED" | "DO_NOT_USE";
   work_status_label: string;
   current_note: string | null;
   note_updated_at: string | null;
   note_updated_by_id: string | null;
+  pinned_note: string | null;
+  pinned_note_updated_at: string | null;
+  pinned_note_updated_by_id: string | null;
   tags: ControlCenterTag[];
   is_pinned: boolean;
   is_test_account: boolean;
@@ -667,7 +814,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     headers.set("Content-Type", "application/json");
   }
   const csrf = getCsrfToken();
-  if (csrf && ["POST", "PATCH", "DELETE"].includes((init.method || "GET").toUpperCase())) {
+  if (csrf && ["POST", "PUT", "PATCH", "DELETE"].includes((init.method || "GET").toUpperCase())) {
     headers.set("X-CSRF-Token", csrf);
   }
   const response = await fetch(`/api${path}`, { ...init, headers, credentials: "include" });
@@ -896,6 +1043,10 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ confirmation_token: confirmationToken })
     }),
+  secondApproveControlCenterAction: (id: string) =>
+    request<Record<string, any>>(`/control-center/actions/${encodeURIComponent(id)}/second-approve`, {
+      method: "POST"
+    }),
   getControlCenterAction: (id: string) =>
     request<Record<string, any>>(`/control-center/actions/${encodeURIComponent(id)}`),
   controlCenterRules: () => request<ControlCenterRule[]>("/control-center/rules"),
@@ -1082,8 +1233,111 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify({ read })
     }),
-  getSettings: () => request<Record<string, any>>("/operations/settings")
+  getSettings: () => request<Record<string, any>>("/operations/settings"),
+  aiCapabilities: () => request<AiCapabilities>("/ai/capabilities"),
+  aiSourceRegistry: () => request<AiSourceRegistryItem[]>("/ai/source-registry"),
+  aiConversations: (archived = false) => request<AiConversation[]>(`/ai/conversations?archived=${archived}`),
+  createAiConversation: (payload: Record<string, unknown>) =>
+    request<AiConversation>("/ai/conversations", { method: "POST", body: JSON.stringify(payload) }),
+  getAiConversation: (id: string) => request<AiConversation>(`/ai/conversations/${encodeURIComponent(id)}`),
+  patchAiConversation: (id: string, payload: Record<string, unknown>) =>
+    request<AiConversation>(`/ai/conversations/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  deleteAiConversation: (id: string) =>
+    request<void>(`/ai/conversations/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  aiConversationExportUrl: (id: string) => `/api/ai/conversations/${encodeURIComponent(id)}/export`,
+  cancelAiRun: (id: string) => request<Record<string, any>>(`/ai/runs/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
+  aiDrafts: (status?: string) => request<AiDraft[]>(`/ai/drafts?${queryString({ status })}`),
+  patchAiDraft: (id: string, payload: Record<string, unknown>) =>
+    request<AiDraft>(`/ai/drafts/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  applyAiDraft: (id: string, version: number, fingerprint: string) =>
+    request<AiDraft & { result: Record<string, any> }>(`/ai/drafts/${encodeURIComponent(id)}/apply`, {
+      method: "POST", body: JSON.stringify({ expected_version: version, fingerprint })
+    }),
+  previewAiDraft: (id: string, version: number, fingerprint: string) =>
+    request<{ draft: AiDraft; preview: Record<string, any> }>(`/ai/drafts/${encodeURIComponent(id)}/preview`, {
+      method: "POST", body: JSON.stringify({ expected_version: version, fingerprint })
+    }),
+  deleteAiDraft: (id: string) => request<void>(`/ai/drafts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  aiReports: () => request<AiReport[]>("/ai/reports"),
+  aiReportExportUrl: (id: string) => `/api/ai/reports/${encodeURIComponent(id)}/export`,
+  deleteAiReport: (id: string) => request<void>(`/ai/reports/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  aiPreferences: () => request<Record<string, any>>("/ai/preferences"),
+  patchAiPreferences: (payload: Record<string, unknown>) =>
+    request<Record<string, any>>("/ai/preferences", { method: "PATCH", body: JSON.stringify(payload) }),
+  aiAdminSettings: () => request<Record<string, any>>("/ai/admin/settings"),
+  patchAiAdminSettings: (payload: Record<string, unknown>) =>
+    request<Record<string, any>>("/ai/admin/settings", { method: "PATCH", body: JSON.stringify(payload) }),
+  patchAiModelProfile: (name: string, payload: Record<string, unknown>) =>
+    request<Record<string, any>>(`/ai/admin/model-profiles/${encodeURIComponent(name)}`, {
+      method: "PATCH", body: JSON.stringify(payload)
+    }),
+  aiMyUsage: (days = 30) => request<Record<string, any>>(`/ai/usage?days=${days}`),
+  aiUsage: (days = 30) => request<Record<string, any>>(`/ai/admin/usage?days=${days}`),
+  aiGeoProfiles: () => request<Array<Record<string, any>>>("/ai/geo-profiles"),
+  aiGeoOverrides: () => request<Array<Record<string, any>>>("/ai/geo-overrides"),
+  createAiGeoProfile: (payload: Record<string, unknown>) =>
+    request<Record<string, any>>("/ai/geo-profiles", { method: "POST", body: JSON.stringify(payload) }),
+  aiGeoProfileHistory: (id: string) =>
+    request<Array<Record<string, any>>>(`/ai/geo-profiles/${encodeURIComponent(id)}/history`),
+  putAiGeoOverride: (scopeType: string, scopeId: string, payload: Record<string, unknown>) =>
+    request<Record<string, any>>(`/ai/geo-overrides/${encodeURIComponent(scopeType)}/${encodeURIComponent(scopeId)}`, {
+      method: "PUT", body: JSON.stringify(payload)
+    }),
+  aiMetricMappings: () => request<Array<Record<string, any>>>("/ai/metric-source-mappings"),
+  createAiMetricMapping: (payload: Record<string, unknown>) =>
+    request<Record<string, any>>("/ai/metric-source-mappings", { method: "POST", body: JSON.stringify(payload) }),
+  deleteAiMetricMapping: (id: string) =>
+    request<void>(`/ai/metric-source-mappings/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  transcribeAiAudio: (blob: Blob) => {
+    const body = new FormData();
+    body.append("file", blob, "voice.webm");
+    return request<{ transcript: string; duration_seconds: number; editable: boolean; sent_automatically: boolean }>(
+      "/ai/transcribe", { method: "POST", body }
+    );
+  }
 };
+
+export async function streamAiMessage(
+  conversationId: string,
+  payload: { content: string; model_profile: "FAST" | "BALANCED" | "DEEP"; idempotency_key: string },
+  onEvent: (event: string, data: any) => void,
+  signal?: AbortSignal
+) {
+  const headers = new Headers({ "Content-Type": "application/json" });
+  const csrf = getCsrfToken();
+  if (csrf) headers.set("X-CSRF-Token", csrf);
+  const response = await fetch(`/api/ai/conversations/${encodeURIComponent(conversationId)}/messages/stream`, {
+    method: "POST",
+    headers,
+    credentials: "include",
+    body: JSON.stringify(payload),
+    signal
+  });
+  if (!response.ok || !response.body) {
+    let detail = `HTTP ${response.status}`;
+    try { detail = (await response.json()).detail || detail; } catch { /* Keep status. */ }
+    throw new Error(detail);
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const frames = buffer.split("\n\n");
+    buffer = frames.pop() || "";
+    for (const frame of frames) {
+      let event = "message";
+      const dataLines: string[] = [];
+      for (const line of frame.split("\n")) {
+        if (line.startsWith("event:")) event = line.slice(6).trim();
+        if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+      }
+      if (dataLines.length) onEvent(event, JSON.parse(dataLines.join("\n")));
+    }
+    if (done) break;
+  }
+}
 
 function queryString(params: QueryParams) {
   const query = new URLSearchParams();

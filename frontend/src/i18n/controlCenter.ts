@@ -3,6 +3,16 @@ import { en as commonEn } from "./en";
 import { ru as commonRu } from "./ru";
 
 const ru: Record<string, string> = {
+  "controlCenter.status.ready": "Готов к работе",
+  "controlCenter.status.manualPause": "Ручная пауза",
+  "controlCenter.status.problem": "Проблема",
+  "controlCenter.status.appeal": "Апелляция",
+  "controlCenter.status.doNotUse": "Не использовать",
+  "controlCenter.pinnedNote": "Важная заметка",
+  "controlCenter.pinnedNoteHelp": "Всегда показывается отдельно от обычной заметки",
+  "controlCenter.secondApprovalRequired": "Требуется второе подтверждение",
+  "controlCenter.secondApprovalExplanation": "После подтверждения автора действие должен одобрить другой администратор до истечения preview.",
+  "controlCenter.secondApprovalPending": "Первое подтверждение принято. Действие ждёт другого администратора.",
   "controlCenter.auto.001": "Не разобран",
   "controlCenter.auto.002": "Подготовка",
   "controlCenter.auto.003": "В работе",
@@ -450,6 +460,16 @@ const ru: Record<string, string> = {
 };
 
 const manualEn: Record<string, string> = {
+  "controlCenter.status.ready": "Ready",
+  "controlCenter.status.manualPause": "Manual pause",
+  "controlCenter.status.problem": "Problem",
+  "controlCenter.status.appeal": "Appeal",
+  "controlCenter.status.doNotUse": "Do not use",
+  "controlCenter.pinnedNote": "Important note",
+  "controlCenter.pinnedNoteHelp": "Always shown separately from the regular note",
+  "controlCenter.secondApprovalRequired": "Second approval required",
+  "controlCenter.secondApprovalExplanation": "After the author confirms, another administrator must approve before the preview expires.",
+  "controlCenter.secondApprovalPending": "First approval recorded. The action is waiting for another administrator.",
   "controlCenter.auto.001": "Unclassified",
   "controlCenter.auto.002": "Preparation",
   "controlCenter.auto.003": "Working",

@@ -30,6 +30,7 @@ import LogoutIcon from "@mui/icons-material/Logout";
 import MenuIcon from "@mui/icons-material/Menu";
 import MonitorHeartOutlinedIcon from "@mui/icons-material/MonitorHeartOutlined";
 import NotificationsNoneIcon from "@mui/icons-material/NotificationsNone";
+import AutoAwesomeOutlinedIcon from "@mui/icons-material/AutoAwesomeOutlined";
 import PaletteOutlinedIcon from "@mui/icons-material/PaletteOutlined";
 import CheckIcon from "@mui/icons-material/Check";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
@@ -42,14 +43,17 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
 import { api, setCsrfToken } from "../api/client";
+import { AiAssistantDrawer } from "../components/AiAssistantDrawer";
 import { LoginPage } from "../pages/LoginPage";
 import { SetupPage } from "../pages/SetupPage";
 import { useThemePreference } from "./ThemePreference";
 import { themeChoices } from "./theme";
 import { t, useLocale } from "../i18n";
+import { ai } from "../i18n/aiAnalyst";
 
 const AccountsPage = lazy(() => import("../pages/AccountsPage").then((module) => ({ default: module.AccountsPage })));
 const AuditPage = lazy(() => import("../pages/AuditPage").then((module) => ({ default: module.AuditPage })));
+const AiAnalystPage = lazy(() => import("../pages/AiAnalystPage").then((module) => ({ default: module.AiAnalystPage })));
 const ConnectionsPage = lazy(() => import("../pages/ConnectionsPage").then((module) => ({ default: module.ConnectionsPage })));
 const ControlCenterPage = lazy(() => import("../pages/ControlCenterPage").then((module) => ({ default: module.ControlCenterPage })));
 const DashboardPage = lazy(() => import("../pages/DashboardPage").then((module) => ({ default: module.DashboardPage })));
@@ -80,6 +84,7 @@ function getNavGroups(): NavGroup[] {
   {
     label: t("nav.analytics"),
     items: [
+      { path: "/ai-analyst", label: ai("ai.title"), icon: <AutoAwesomeOutlinedIcon /> },
       { path: "/control-center", label: t("controlCenter.nav"), icon: <MonitorHeartOutlinedIcon /> },
       { path: "/dashboard", label: t("nav.systemOverview"), icon: <DashboardOutlinedIcon /> },
       { path: "/statistics", label: t("ui.a77d7f6c0d"), icon: <AssessmentOutlinedIcon /> },
@@ -319,6 +324,7 @@ export function App() {
           </Suspense>
         </Box>
       </Box>
+      <AiAssistantDrawer path={path} navigate={navigate} />
     </Box>
   );
 }
@@ -351,6 +357,8 @@ function renderRoute(path: string, navigate: Navigate) {
       return <ModerationPage />;
     case "/control-center":
       return <ControlCenterPage />;
+    case "/ai-analyst":
+      return <AiAnalystPage />;
     case "/statistics":
       return <StatisticsPage />;
     case "/finance":

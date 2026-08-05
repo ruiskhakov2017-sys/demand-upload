@@ -8,7 +8,7 @@
     "typecheck": "tsc -b --pretty false",
     "build": "tsc -b && vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "vitest run"
+    "test": "vitest run --pool=threads --poolOptions.threads.minThreads=1 --poolOptions.threads.maxThreads=1"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",

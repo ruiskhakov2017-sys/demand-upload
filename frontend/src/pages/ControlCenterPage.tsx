@@ -54,11 +54,14 @@ const WORK_STATUS: Array<{
     label: string;
     color: string;
 }> = [
-    workStatusOption("UNCLASSIFIED", "controlCenter.auto.001", "#64748b"),
     workStatusOption("PREPARATION", "controlCenter.auto.002", "#2563a8"),
+    workStatusOption("READY", "controlCenter.status.ready", "#0f766e"),
     workStatusOption("WORKING", "controlCenter.auto.003", "#2e7d52"),
-    workStatusOption("PAUSED", "controlCenter.auto.004", "#b7791f"),
-    workStatusOption("ARCHIVED", "controlCenter.auto.005", "#6b7280")
+    workStatusOption("MANUAL_PAUSE", "controlCenter.status.manualPause", "#b7791f"),
+    workStatusOption("PROBLEM", "controlCenter.status.problem", "#c62828"),
+    workStatusOption("APPEAL", "controlCenter.status.appeal", "#8e24aa"),
+    workStatusOption("ARCHIVED", "controlCenter.auto.005", "#6b7280"),
+    workStatusOption("DO_NOT_USE", "controlCenter.status.doNotUse", "#374151")
 ];
 export const QUICK_FILTERS: Array<{
     value: QuickFilter;
@@ -1237,7 +1240,8 @@ function AccountEditDialog({ account, tags, geos, saving, canEdit, onClose, onSa
     const queryClient = useQueryClient();
     const [localName, setLocalName] = useState("");
     const [note, setNote] = useState("");
-    const [workStatus, setWorkStatus] = useState<WorkStatus>("UNCLASSIFIED");
+    const [workStatus, setWorkStatus] = useState<WorkStatus>("PREPARATION");
+    const [pinnedNote, setPinnedNote] = useState("");
     const [pinned, setPinned] = useState(false);
     const [geoOverride, setGeoOverride] = useState("INHERIT");
     const [selectedTag, setSelectedTag] = useState("");
@@ -1248,6 +1252,7 @@ function AccountEditDialog({ account, tags, geos, saving, canEdit, onClose, onSa
             return;
         setLocalName(account.local_name || "");
         setNote(account.current_note || "");
+        setPinnedNote(account.pinned_note || "");
         setWorkStatus(account.work_status);
         setPinned(account.is_pinned);
         setGeoOverride(account.geo_override_id || "INHERIT");
@@ -1306,6 +1311,7 @@ function AccountEditDialog({ account, tags, geos, saving, canEdit, onClose, onSa
               <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5 }}>{geoOverride === "INHERIT" ? cc("controlCenter.full.065") : cc("controlCenter.full.066")}</Typography>
             </FormControl>
             <TextField label={cc("controlCenter.auto.029")} value={note} disabled={!canEdit} onChange={(event) => setNote(event.target.value)} multiline minRows={4} maxRows={10} inputProps={{ maxLength: 20000 }} helperText={cc("controlCenter.auto.096")}/>
+            <TextField label={cc("controlCenter.pinnedNote")} value={pinnedNote} disabled={!canEdit} onChange={(event) => setPinnedNote(event.target.value)} multiline minRows={2} maxRows={6} inputProps={{ maxLength: 20000 }} helperText={cc("controlCenter.pinnedNoteHelp")}/>
             <FormControlLabel control={<Switch checked={pinned} disabled={!canEdit} onChange={(e) => setPinned(e.target.checked)}/>} label={cc("controlCenter.auto.097")}/>
             <Divider />
             <Typography fontWeight={700}>{cc("controlCenter.auto.030")}</Typography>
@@ -1339,6 +1345,7 @@ function AccountEditDialog({ account, tags, geos, saving, canEdit, onClose, onSa
         <Button variant="contained" startIcon={<SaveOutlinedIcon />} disabled={!canEdit || saving} onClick={() => onSave({
             local_name: localName.trim() || null,
             current_note: note.trim() || null,
+            pinned_note: pinnedNote.trim() || null,
             work_status: workStatus,
             is_pinned: pinned,
             geo_override_id: geoOverride === "INHERIT" ? null : geoOverride
@@ -1457,6 +1464,7 @@ function AccountDetailDrawer({ accountId, canEdit, period, timezoneMode, onClose
               </Box>)}
             </Section>
             <Section title={cc("controlCenter.auto.111")}>
+              {account.pinned_note && <Alert severity="warning" icon={<PushPinIcon />} sx={{ mb: 1, whiteSpace: "pre-wrap" }}>{account.pinned_note}</Alert>}
               <Typography sx={{ whiteSpace: "pre-wrap" }}>{account.current_note || cc("controlCenter.auto.112")}</Typography>
               {account.note_updated_at && (<Typography variant="caption" color="text.secondary">{cc("controlCenter.auto.113")}{formatDate(account.note_updated_at)}
                 </Typography>)}
@@ -1515,6 +1523,7 @@ function AccountDetailDrawer({ accountId, canEdit, period, timezoneMode, onClose
             <Section title={cc("controlCenter.auto.129") + (detail.data?.note_history?.length || 0)}>
               <Stack spacing={1}>
                 {(detail.data?.note_history || []).map((item: Record<string, any>) => (<Box key={item.id} sx={{ py: 1, borderBottom: 1, borderColor: "divider" }}>
+                    <Typography variant="caption" color="text.secondary">{item.note_kind === "PINNED" ? cc("controlCenter.pinnedNote") : cc("controlCenter.auto.029")}</Typography>
                     <Typography sx={{ whiteSpace: "pre-wrap" }}>{item.note || cc("controlCenter.auto.130")}</Typography>
                     <Typography variant="caption" color="text.secondary">{formatDate(item.changed_at)}</Typography>
                   </Box>))}
@@ -1708,6 +1717,12 @@ function CampaignsWorkspace({ canEdit, accountId, onClearAccount }: {
         onSuccess: (result) => {
             setPreview(null);
             setSelected(new Set());
+            if (result.status === "PENDING_SECOND_APPROVAL") {
+                setCompletedAction(result);
+                setActionId(null);
+                setMessage(cc("controlCenter.secondApprovalPending"));
+                return;
+            }
             if (result.execution_mode === "SIMULATION") {
                 setCompletedAction(result);
                 setMessage(cc("controlCenter.auto.145"));
@@ -1952,6 +1967,12 @@ function ActionPreviewDialog({ preview, confirming, onClose, onConfirm }: {
                 ? t("googleMode.previewFresh")
                 : preview.validation?.ok ? t("googleMode.simulationPreviewReady") : t("googleMode.simulationPreviewError")}
             </Alert>
+            {preview.second_approval_required && (
+              <Alert severity="warning">
+                <Typography fontWeight={800}>{cc("controlCenter.secondApprovalRequired")}</Typography>
+                <Typography variant="body2">{cc("controlCenter.secondApprovalExplanation")}</Typography>
+              </Alert>
+            )}
             <Box>
               <Typography fontWeight={800} gutterBottom>{cc("controlCenter.auto.168")}</Typography>
               {(preview.preview?.changes || []).map((change: Record<string, any>) => (<Box key={`${change.campaign_id}-${change.field}`} sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1, py: 0.75, borderBottom: 1, borderColor: "divider" }}>

@@ -1,4 +1,5 @@
-import { ArrowBack, Login } from "@mui/icons-material";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import Login from "@mui/icons-material/Login";
 import {
   AppBar,
   Box,

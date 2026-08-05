@@ -11,6 +11,7 @@ from sqlalchemy import desc, func, or_, select
 from app.control_center.rule_engine import evaluate_rules
 from app.control_center.rules import RuleExecutionBlocked, require_rules_enabled
 from app.control_center.service import quota_summary
+from app.core.config import settings
 from app.core.database import SessionLocal
 from app.core.security import utcnow
 from app.db.models import (
@@ -48,10 +49,13 @@ from app.jobs.celery_app import celery_app
 
 SYNC_INTERVAL_MINUTES = {
     "WORKING": 15,
+    "READY": 30,
     "PREPARATION": 60,
-    "UNCLASSIFIED": 120,
-    "PAUSED": 240,
+    "MANUAL_PAUSE": 240,
+    "PROBLEM": 30,
+    "APPEAL": 60,
     "ARCHIVED": 1440,
+    "DO_NOT_USE": 1440,
 }
 
 
@@ -1505,6 +1509,15 @@ def execute_control_center_action(action_id: str) -> dict:
             return {
                 "ok": False,
                 "error": "action is not a queued GOOGLE_TEST action",
+            }
+        if not settings.control_center_live_actions_enabled:
+            action.status = "BLOCKED"
+            action.error_message = "CONTROL_CENTER_LIVE_ACTIONS_DISABLED"
+            db.commit()
+            return {
+                "ok": False,
+                "status": action.status,
+                "error": "CONTROL_CENTER_LIVE_ACTIONS_DISABLED",
             }
         rule_evaluation = db.scalar(
             select(ControlCenterRuleEvaluation).where(

@@ -14,6 +14,7 @@ from sqlalchemy import and_, case, desc, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.ai.policy import effective_ai_settings
 from app.api.deps import get_current_user, require_csrf, require_role
 from app.control_center.query import (
     apply_account_filters,
@@ -54,6 +55,7 @@ from app.control_center.service import (
     quota_summary,
     tag_map_for_accounts,
 )
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import generate_token, hash_token, utcnow
 from app.db.models import (
@@ -62,6 +64,7 @@ from app.db.models import (
     AccountNoteHistory,
     AccountTag,
     AccountTagHistory,
+    AccountWorkStatusHistory,
     ApplicationSetting,
     ControlCenterActionItem,
     ControlCenterActionRequest,
@@ -640,6 +643,14 @@ def get_control_center_account(
             .limit(200)
         ).all()
     )
+    status_history = list(
+        db.scalars(
+            select(AccountWorkStatusHistory)
+            .where(AccountWorkStatusHistory.account_id == account.id)
+            .order_by(desc(AccountWorkStatusHistory.changed_at))
+            .limit(200)
+        ).all()
+    )
     tag_history = list(
         db.scalars(
             select(AccountTagHistory)
@@ -727,10 +738,22 @@ def get_control_center_account(
                 "id": str(item.id),
                 "previous_note": item.previous_note,
                 "note": item.note,
+                "note_kind": item.note_kind,
                 "changed_by_id": str(item.changed_by_id) if item.changed_by_id else None,
                 "changed_at": item.changed_at,
             }
             for item in note_history
+        ],
+        "status_history": [
+            {
+                "id": str(item.id),
+                "previous_status": item.previous_status,
+                "status": item.status,
+                "source": item.source,
+                "changed_by_id": str(item.changed_by_id) if item.changed_by_id else None,
+                "changed_at": item.changed_at,
+            }
+            for item in status_history
         ],
         "tag_history": [
             {
@@ -792,6 +815,7 @@ def patch_control_center_account(
                 account_id=account.id,
                 previous_note=account.current_note,
                 note=changes["current_note"],
+                note_kind="REGULAR",
                 changed_by_id=user.id,
                 changed_at=utcnow(),
             )
@@ -806,9 +830,42 @@ def patch_control_center_account(
             user.id,
             {"has_note": bool(changes["current_note"])},
         )
+    if "pinned_note" in changes and changes["pinned_note"] != account.pinned_note:
+        db.add(
+            AccountNoteHistory(
+                account_id=account.id,
+                previous_note=account.pinned_note,
+                note=changes["pinned_note"],
+                note_kind="PINNED",
+                changed_by_id=user.id,
+                changed_at=utcnow(),
+            )
+        )
+        account.pinned_note_updated_at = utcnow()
+        account.pinned_note_updated_by_id = user.id
+        _event(
+            db,
+            account.id,
+            "PINNED_NOTE_CHANGED",
+            "Важная заметка аккаунта изменена",
+            user.id,
+            {"has_pinned_note": bool(changes["pinned_note"])},
+        )
+    previous_work_status = account.work_status
     for field, value in changes.items():
         setattr(account, field, value.value if hasattr(value, "value") else value)
     if "work_status" in changes:
+        if previous_work_status != account.work_status:
+            db.add(
+                AccountWorkStatusHistory(
+                    account_id=account.id,
+                    previous_status=previous_work_status,
+                    status=account.work_status,
+                    changed_by_id=user.id,
+                    source="LOCAL",
+                    changed_at=utcnow(),
+                )
+            )
         _event(
             db,
             account.id,
@@ -869,6 +926,16 @@ def bulk_work_status(
         previous = account.work_status
         account.work_status = payload.work_status.value
         if previous != account.work_status:
+            db.add(
+                AccountWorkStatusHistory(
+                    account_id=account.id,
+                    previous_status=previous,
+                    status=account.work_status,
+                    changed_by_id=user.id,
+                    source="LOCAL_BULK",
+                    changed_at=now,
+                )
+            )
             db.add(
                 ControlCenterEvent(
                     account_id=account.id,
@@ -1529,6 +1596,18 @@ def preview_action(
         "google_contacted": False,
         "errors": [],
     }
+    approval_threshold = effective_ai_settings(db).get("second_approval_threshold_micros")
+    second_approval_required = bool(
+        payload.execution_mode != "SIMULATION"
+        and payload.action_type == "SET_BUDGET"
+        and approval_threshold is not None
+        and payload.amount_micros is not None
+        and payload.amount_micros >= int(approval_threshold)
+    )
+    validation["second_approval_required"] = second_approval_required
+    validation["second_approval_threshold_micros"] = (
+        int(approval_threshold) if second_approval_required else None
+    )
     fresh_states: dict[UUID, dict] = {}
     if payload.execution_mode == "GOOGLE_TEST":
         try:
@@ -1614,6 +1693,7 @@ def preview_action(
         readback={},
         confirmation_token_hash=hash_token(confirmation_token),
         confirmation_expires_at=now + timedelta(minutes=15),
+        second_approval_required=second_approval_required,
         idempotency_key=hashlib.sha256(f"{user.id}:{payload.model_dump_json()}:{now.isoformat()}".encode()).hexdigest(),
         request_ids=list(dict.fromkeys(request_ids)),
     )
@@ -1654,6 +1734,7 @@ def preview_action(
         "validation": action.validation,
         "confirmation_token": confirmation_token,
         "confirmation_expires_at": action.confirmation_expires_at,
+        "second_approval_required": action.second_approval_required,
         "request_ids": action.request_ids,
     }
 
@@ -1681,6 +1762,68 @@ def confirm_action(
     if hash_token(payload.confirmation_token) != action.confirmation_token_hash:
         raise HTTPException(status_code=403, detail="Код подтверждения не совпадает")
     action.confirmed_at = utcnow()
+    if action.second_approval_required:
+        action.status = "PENDING_SECOND_APPROVAL"
+        record_audit(
+            db,
+            request,
+            user,
+            "control_center.action.first_approval",
+            "control_center_action_request",
+            str(action.id),
+            {"action_type": action.action_type, "execution_mode": action.execution_mode},
+        )
+        db.commit()
+        return {
+            "id": str(action.id),
+            "status": action.status,
+            "execution_mode": action.execution_mode,
+            "second_approval_required": True,
+            "readback": action.readback,
+            "request_ids": action.request_ids,
+        }
+    return _finalize_control_center_action(db, action, user, request)
+
+
+@router.post("/actions/{action_id}/second-approve", status_code=status.HTTP_202_ACCEPTED)
+def second_approve_action(
+    action_id: UUID,
+    request: Request,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_role(UserRole.ADMIN)),
+    _: User = Depends(require_csrf),
+) -> dict:
+    action = db.get(ControlCenterActionRequest, action_id)
+    if not action:
+        raise HTTPException(status_code=404, detail="Предварительный просмотр не найден")
+    if not action.second_approval_required or action.status != "PENDING_SECOND_APPROVAL":
+        raise HTTPException(status_code=409, detail=f"Второе подтверждение не ожидается: {action.status}")
+    if action.requested_by_id == user.id:
+        raise HTTPException(status_code=403, detail="Второе подтверждение должен выполнить другой администратор")
+    if action.confirmation_expires_at < utcnow():
+        action.status = "EXPIRED"
+        db.commit()
+        raise HTTPException(status_code=409, detail="Срок подтверждения истёк. Создайте новый preview.")
+    action.second_approved_at = utcnow()
+    action.second_approved_by_id = user.id
+    record_audit(
+        db,
+        request,
+        user,
+        "control_center.action.second_approval",
+        "control_center_action_request",
+        str(action.id),
+        {"action_type": action.action_type, "execution_mode": action.execution_mode},
+    )
+    return _finalize_control_center_action(db, action, user, request)
+
+
+def _finalize_control_center_action(
+    db: Session,
+    action: ControlCenterActionRequest,
+    user: User,
+    request: Request,
+) -> dict:
     if action.execution_mode == "SIMULATION":
         action.status = "SUCCEEDED_SIMULATION"
         action.completed_at = utcnow()
@@ -1723,6 +1866,11 @@ def confirm_action(
                 status_code=409,
                 detail="PRODUCTION_MUTATE_BLOCKED: Production mutate полностью заблокирован.",
             )
+        if not settings.control_center_live_actions_enabled:
+            raise HTTPException(
+                status_code=409,
+                detail="CONTROL_CENTER_LIVE_ACTIONS_DISABLED: действия Google Test отключены runtime gate.",
+            )
         action.status = "QUEUED"
         audit_action = "control_center.action.google_test.confirm"
     record_audit(
@@ -1743,6 +1891,8 @@ def confirm_action(
         "id": str(action.id),
         "status": action.status,
         "execution_mode": action.execution_mode,
+        "second_approval_required": action.second_approval_required,
+        "second_approved_at": action.second_approved_at,
         "readback": action.readback,
         "request_ids": action.request_ids,
     }
@@ -1754,9 +1904,10 @@ def get_action(
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
-    del user
     action = db.get(ControlCenterActionRequest, action_id)
     if not action:
+        raise HTTPException(status_code=404, detail="Действие не найдено")
+    if action.requested_by_id != user.id and user.role != UserRole.ADMIN.value:
         raise HTTPException(status_code=404, detail="Действие не найдено")
     items = list(
         db.scalars(select(ControlCenterActionItem).where(ControlCenterActionItem.action_request_id == action.id)).all()
@@ -1766,6 +1917,10 @@ def get_action(
         "action_type": action.action_type,
         "execution_mode": action.execution_mode,
         "status": action.status,
+        "requested_by_id": str(action.requested_by_id),
+        "second_approval_required": action.second_approval_required,
+        "second_approved_at": action.second_approved_at,
+        "second_approved_by_id": str(action.second_approved_by_id) if action.second_approved_by_id else None,
         "preview": action.preview,
         "validation": action.validation,
         "readback": action.readback,
@@ -2088,7 +2243,7 @@ def _apply_quick_filter(query, quick_filter: str):
     if value == "working":
         return query.where(CustomerAccount.work_status == "WORKING")
     if value == "paused":
-        return query.where(CustomerAccount.work_status == "PAUSED")
+        return query.where(CustomerAccount.work_status == "MANUAL_PAUSE")
     if value == "archive":
         return query.where(CustomerAccount.work_status == "ARCHIVED")
     if value == "verification":

@@ -6,7 +6,9 @@ from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
+from fastapi import HTTPException
 
+from app.api.routes import control_center as control_center_routes
 from app.api.routes.control_center import _action_pre_state, _problem_display_description
 from app.control_center.query import (
     apply_account_filters,
@@ -15,6 +17,8 @@ from app.control_center.query import (
     sort_groups,
 )
 from app.control_center.rule_engine import (
+    _leaf_conditions,
+    _matches_condition_node,
     _plan_actions,
     _rule_schedule_due,
     _scope_matches,
@@ -67,6 +71,9 @@ def _account(**overrides):
         "current_note": "Keep budget",
         "note_updated_at": None,
         "note_updated_by_id": None,
+        "pinned_note": None,
+        "pinned_note_updated_at": None,
+        "pinned_note_updated_by_id": None,
         "is_pinned": False,
         "is_test_account": False,
         "is_hidden": False,
@@ -95,11 +102,14 @@ def test_work_status_is_independent_from_google_status() -> None:
 
 def test_account_work_status_contract_is_complete() -> None:
     assert {item.value for item in AccountWorkStatus} == {
-        "UNCLASSIFIED",
         "PREPARATION",
+        "READY",
         "WORKING",
-        "PAUSED",
+        "MANUAL_PAUSE",
+        "PROBLEM",
+        "APPEAL",
         "ARCHIVED",
+        "DO_NOT_USE",
     }
 
 
@@ -501,6 +511,30 @@ def test_rule_conditions_are_local_and_deterministic() -> None:
     )
 
 
+def test_nested_rule_condition_groups_are_deterministic() -> None:
+    payload = {"campaign": {"metrics": {"cost_micros": 100_000_000}, "status": "ENABLED"}}
+    tree = {
+        "logic": "AND",
+        "conditions": [
+            {"field": "campaign.status", "operator": "eq", "value": "ENABLED"},
+            {
+                "logic": "OR",
+                "conditions": [
+                    {"field": "campaign.metrics.cost_micros", "operator": "gte", "value": 90_000_000},
+                    {"field": "campaign.status", "operator": "eq", "value": "PAUSED"},
+                ],
+            },
+        ],
+    }
+
+    assert _matches_condition_node(payload, tree)
+    assert [item["field"] for item in _leaf_conditions([tree])] == [
+        "campaign.status",
+        "campaign.metrics.cost_micros",
+        "campaign.status",
+    ]
+
+
 def test_rules_reject_live_mode() -> None:
     with pytest.raises(ValueError):
         RuleCreateIn(name="Unsafe", mode="LIVE")
@@ -513,6 +547,46 @@ def test_live_mode_requires_the_exact_explicit_confirmation() -> None:
     )
     with pytest.raises(ValueError):
         RuleLiveModeIn(confirmation="yes")
+
+
+def test_second_approval_requires_a_different_administrator(monkeypatch: pytest.MonkeyPatch) -> None:
+    owner_id = uuid4()
+    action = SimpleNamespace(
+        id=uuid4(),
+        requested_by_id=owner_id,
+        second_approval_required=True,
+        status="PENDING_SECOND_APPROVAL",
+        confirmation_expires_at=datetime.now(UTC) + timedelta(minutes=5),
+        second_approved_at=None,
+        second_approved_by_id=None,
+        action_type="SET_BUDGET",
+        execution_mode="GOOGLE_TEST",
+    )
+
+    class Db:
+        def get(self, _model, _id):
+            return action
+
+        def commit(self):
+            return None
+
+    monkeypatch.setattr(control_center_routes, "record_audit", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        control_center_routes,
+        "_finalize_control_center_action",
+        lambda _db, current, _user, _request: {"id": str(current.id), "status": "QUEUED"},
+    )
+    owner = SimpleNamespace(id=owner_id, role="ADMIN")
+    with pytest.raises(HTTPException, match="другой администратор"):
+        control_center_routes.second_approve_action(action.id, SimpleNamespace(), Db(), owner, owner)
+
+    approver = SimpleNamespace(id=uuid4(), role="ADMIN")
+    result = control_center_routes.second_approve_action(
+        action.id, SimpleNamespace(), Db(), approver, approver
+    )
+    assert result["status"] == "QUEUED"
+    assert action.second_approved_by_id == approver.id
+    assert action.second_approved_at is not None
 
 
 def test_rule_budget_limit_and_manual_pause_guard_are_enforced() -> None:

@@ -10,6 +10,8 @@ class GoogleAdsV25Adapter(GoogleAdsV242Adapter):
     types into services or persistence models.
     """
 
+    contract_version = "v25"
+
     def __init__(self, config: GoogleAdsConnectionConfig) -> None:
         if not config.api_version.lower().startswith("v25"):
             raise ValueError("GoogleAdsV25Adapter принимает только конфигурацию API v25")

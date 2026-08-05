@@ -7,6 +7,7 @@ from app.google_ads.capability_registry import (
     get_demand_gen_capabilities,
     get_demand_gen_capability_registry,
 )
+from app.google_ads.method_capabilities import get_adapter_method_capabilities
 
 router = APIRouter(prefix="/google-ads/capabilities", tags=["google-ads"])
 
@@ -19,4 +20,6 @@ def get_capabilities(
     return {
         "summary": get_demand_gen_capabilities(api_version).__dict__,
         "fields": get_demand_gen_capability_registry(api_version),
+        "methods": get_adapter_method_capabilities(api_version),
+        "production_major_auto_upgrade": False,
     }
