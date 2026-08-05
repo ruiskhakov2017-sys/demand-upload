@@ -74,7 +74,7 @@ if [[ -L "$CURRENT_LINK" ]]; then
 fi
 
 APP_DIR="$previous_root" COMPOSE_PROJECT_NAME="$PROJECT_NAME" \
-  "$previous_root/infrastructure/scripts/production-backup.sh"
+  "$release_dir/infrastructure/scripts/production-backup.sh"
 
 old_image() {
   local service=$1
