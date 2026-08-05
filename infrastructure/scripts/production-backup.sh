@@ -36,7 +36,7 @@ $COMPOSE exec -T redis redis-cli SAVE >/dev/null
 redis_container=$($COMPOSE ps -q redis)
 docker cp "$redis_container:/data/dump.rdb" "$TMP_DIR/redis-dump.rdb" >/dev/null
 
-$COMPOSE run --rm -T api alembic current > "$TMP_DIR/alembic-current.txt"
+$COMPOSE exec -T api alembic current > "$TMP_DIR/alembic-current.txt"
 cp docker-compose.yml docker-compose.prod.yml infrastructure/caddy/Caddyfile "$TMP_DIR/"
 (
   cd "$TMP_DIR"
