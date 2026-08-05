@@ -1,9 +1,9 @@
 # Полный отчёт по реализации AI-аналитика Axyro
 
-Дата финальной проверки: 2026-08-05  
-Публичный адрес: <https://axyro.tech>  
-Работающий production commit: `6ca275f718eec64aab62886c339c381dfb428114`  
-Финальный annotated release tag: `ai-analyst-full-20260805.3`
+- Дата финальной проверки: 2026-08-05.
+- Публичный адрес: <https://axyro.tech>.
+- Работающий production commit: `6ca275f718eec64aab62886c339c381dfb428114`.
+- Финальный annotated release tag: `ai-analyst-full-20260805.3`.
 
 ## 1. Итог
 
