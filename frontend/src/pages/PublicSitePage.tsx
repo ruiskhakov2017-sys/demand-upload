@@ -1,1 +1,1 @@
-export { PUBLIC_COPY, PublicSitePage } from "../i18n/publicSite";
+export { PUBLIC_COPY, PUBLIC_SITE_TITLE, PublicSitePage } from "../i18n/publicSite";

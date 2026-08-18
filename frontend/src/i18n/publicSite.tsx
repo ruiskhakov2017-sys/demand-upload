@@ -72,6 +72,8 @@ type PublicCopy = {
   footerProduct: string;
 };
 
+export const PUBLIC_SITE_TITLE = "Axyro Analytics | Private Google Ads Analytics & Control Center";
+
 export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
   en: {
     nav: {
@@ -293,7 +295,7 @@ export function PublicSitePage() {
   const copy = PUBLIC_COPY[locale];
 
   useEffect(() => {
-    document.title = "Axyro Analytics | Internal Google Ads Analytics & Control Center";
+    document.title = PUBLIC_SITE_TITLE;
   }, []);
 
   return (

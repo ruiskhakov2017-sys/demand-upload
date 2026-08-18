@@ -4,13 +4,15 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { PRIVACY_COPY, TERMS_COPY } from "./LegalPage";
-import { PUBLIC_COPY } from "./PublicSitePage";
+import { PUBLIC_COPY, PUBLIC_SITE_TITLE } from "./PublicSitePage";
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 
 describe("Axyro Analytics public positioning", () => {
   it("keeps analytics primary and campaign deployment secondary", () => {
     expect(PUBLIC_COPY.en.productParagraphs[0]).toContain("independent Google Ads analytics and operations software project");
+    expect(PUBLIC_COPY.en.subtitle).toBe("Private Google Ads Analytics & Control Center");
+    expect(PUBLIC_SITE_TITLE).toBe("Axyro Analytics | Private Google Ads Analytics & Control Center");
     expect(PUBLIC_COPY.en.productParagraphs[2]).toContain("primary purpose");
     expect(PUBLIC_COPY.en.deploymentEyebrow).toBe("Secondary module");
     expect(PUBLIC_COPY.en.deploymentTitle).toBe("Validated campaign deployment");
