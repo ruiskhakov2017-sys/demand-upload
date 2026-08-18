@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from shutil import copyfile
 
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
@@ -28,6 +29,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DOCS_DIR = REPO_ROOT / "docs"
 SCREENSHOT_DIR = DOCS_DIR / "screenshots"
 OUTPUT_PATH = DOCS_DIR / "google-ads-api-basic-access-application.pdf"
+PUBLIC_OUTPUT_PATH = REPO_ROOT / "frontend" / "public" / "docs" / OUTPUT_PATH.name
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
 LEFT = 18 * mm
@@ -659,7 +661,10 @@ def main() -> None:
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     document = AxyroDocTemplate(str(OUTPUT_PATH))
     document.build(build_story())
+    PUBLIC_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    copyfile(OUTPUT_PATH, PUBLIC_OUTPUT_PATH)
     print(f"Created {OUTPUT_PATH}")
+    print(f"Published source copy {PUBLIC_OUTPUT_PATH}")
 
 
 if __name__ == "__main__":

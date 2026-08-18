@@ -1,7 +1,12 @@
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { PRIVACY_COPY, TERMS_COPY } from "./LegalPage";
 import { PUBLIC_COPY } from "./PublicSitePage";
+
+const testDirectory = dirname(fileURLToPath(import.meta.url));
 
 describe("Axyro Analytics public positioning", () => {
   it("keeps analytics primary and campaign deployment secondary", () => {
@@ -47,5 +52,12 @@ describe("Axyro Analytics public positioning", () => {
     expect(legalText).toContain("Google API Services User Data Policy");
     expect(legalText).toContain("14-day rotation");
     expect(legalText).toContain("14-\u0434\u043d\u0435\u0432\u043d\u043e\u0439 \u0440\u043e\u0442\u0430\u0446\u0438\u0438");
+  });
+
+  it("keeps the public Basic Access PDF identical to the reviewed document", () => {
+    const reviewedPdf = readFileSync(resolve(testDirectory, "../../../docs/google-ads-api-basic-access-application.pdf"));
+    const publicPdf = readFileSync(resolve(testDirectory, "../../public/docs/google-ads-api-basic-access-application.pdf"));
+
+    expect(publicPdf).toEqual(reviewedPdf);
   });
 });
