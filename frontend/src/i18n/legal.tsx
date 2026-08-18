@@ -23,20 +23,20 @@ type LegalDocument = { title: string; updated: string; introduction: string; sec
 export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
   en: {
     title: "Privacy Policy",
-    updated: "Last updated: August 2, 2026",
+    updated: "Last updated: August 18, 2026",
     introduction:
-      "This Privacy Policy explains how Axyro Analytics, an independently operated internal Google Ads analytics and operations platform, processes information in its public website and restricted workspace.",
+      "This Privacy Policy explains how Axyro Analytics, an independent Google Ads analytics and operations software project operated by Iskhakov Ruslan, processes information on its public website and in its restricted workspace.",
     sections: [
       {
         title: "1. Controller and contact",
         paragraphs: [
-          "Axyro Analytics is operated by an individual owner for an authorized internal team. Privacy, Google Ads API, access, and deletion requests may be sent to support@axyro.tech."
+          "The controller and sole operator is Iskhakov Ruslan, an individual. Axyro Analytics is a project name, not a registered company or separate legal entity. Privacy, Google Ads API, access, and deletion requests may be sent to support@axyro.tech."
         ]
       },
       {
         title: "2. Scope and intended users",
         paragraphs: [
-          "The public website provides product and legal information. The workspace is not a public advertising service and is available only to authenticated internal users assigned the ADMIN, OPERATOR, or VIEWER role."
+          "The public website provides product and legal information. The workspace is not a public advertising service and is currently available only to Iskhakov Ruslan through the protected owner account. No employee, contractor, client, or member of the public has access."
         ]
       },
       {
@@ -55,7 +55,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
         title: "4. Google user data and API use",
         paragraphs: [
           "Axyro Analytics requests the Google Ads OAuth scope only after an authorized user starts the connection flow. The application uses Google Ads API data primarily for reporting, analytics, monitoring, and account control, and secondarily for explicitly confirmed campaign management operations.",
-          "The application reads accessible customers, MCC hierarchy, account and campaign configuration, supported performance and conversion metrics, policy and verification states, and supported budget or billing information. Authorized users may also initiate validated Demand Gen creation, campaign pause or enable actions, and budget updates. New campaigns are created PAUSED by default.",
+          "The application reads accessible customers, MCC hierarchy, account and campaign configuration, supported performance and conversion metrics, policy and verification states, and supported budget or billing information. The owner may also initiate validated Demand Gen creation, campaign pause or enable actions, and budget updates. New campaigns are created PAUSED by default.",
           "Google user data is not sold, used for advertising, or made available as a third-party self-service product. Use and transfer of information received from Google APIs complies with the Google API Services User Data Policy, including the Limited Use requirements."
         ]
       },
@@ -83,7 +83,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "7. Sharing and processors",
         paragraphs: [
-          "Information is disclosed only as needed to operate the service: to Google when an authorized API request is made, and to infrastructure providers that host or transmit the application and its encrypted data. It is not sold or shared for independent marketing. Access is limited to the owner and authorized internal users."
+          "Information is disclosed only as needed to operate the service: to Google when the owner makes an authorized API request, and to infrastructure providers that host or transmit the application and its encrypted data. It is not sold or shared for independent marketing. Application access is limited to Iskhakov Ruslan."
         ]
       },
       {
@@ -96,7 +96,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "9. Revoking Google access",
         paragraphs: [
-          "An authorized user can disconnect OAuth in Axyro Analytics. Google access may also be revoked from the Google Account security permissions page. Revocation prevents new API access but does not automatically erase audit records that must be retained for security or compliance."
+          "The owner can disconnect OAuth in Axyro Analytics. Google access may also be revoked from the Google Account security permissions page. Revocation prevents new API access but does not automatically erase audit records that must be retained for security or compliance."
         ]
       },
       {
@@ -109,20 +109,20 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
   },
   ru: {
     title: "Политика конфиденциальности",
-    updated: "Последнее обновление: 2 августа 2026 года",
+    updated: "Последнее обновление: 18 августа 2026 года",
     introduction:
-      "Эта политика объясняет, как Axyro Analytics, независимо управляемая внутренняя платформа аналитики и операций Google Ads, обрабатывает информацию на публичном сайте и в закрытом рабочем кабинете.",
+      "Эта политика объясняет, как Axyro Analytics, независимый программный проект аналитики и управления Google Ads физического лица Iskhakov Ruslan, обрабатывает информацию на публичном сайте и в закрытом рабочем кабинете.",
     sections: [
       {
         title: "1. Оператор и контакт",
         paragraphs: [
-          "Axyro Analytics управляется индивидуальным владельцем для авторизованной внутренней команды. Запросы о конфиденциальности, Google Ads API, доступе и удалении данных можно направлять на support@axyro.tech."
+          "Оператором и единственным пользователем является физическое лицо Iskhakov Ruslan. Axyro Analytics — название проекта, а не зарегистрированная компания или отдельное юридическое лицо. Запросы о конфиденциальности, Google Ads API, доступе и удалении данных можно направлять на support@axyro.tech."
         ]
       },
       {
         title: "2. Область действия и пользователи",
         paragraphs: [
-          "Публичный сайт содержит информацию о продукте и юридические документы. Рабочий кабинет не является публичным рекламным сервисом и доступен только авторизованным внутренним пользователям с ролью ADMIN, OPERATOR или VIEWER."
+          "Публичный сайт содержит информацию о продукте и юридические документы. Рабочий кабинет не является публичным рекламным сервисом и сейчас доступен только Iskhakov Ruslan через защищённую учётную запись владельца. Доступа нет у сотрудников, подрядчиков, клиентов или посторонних лиц."
         ]
       },
       {
@@ -169,7 +169,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "7. Передача и обработчики",
         paragraphs: [
-          "Информация передаётся только для работы сервиса: Google при выполнении авторизованного API-запроса и инфраструктурным провайдерам, которые размещают или передают приложение и его зашифрованные данные. Информация не продаётся и не передаётся для независимого маркетинга. Доступ ограничен владельцем и авторизованными внутренними пользователями."
+          "Информация передаётся только для работы сервиса: Google при выполнении владельцем авторизованного API-запроса и инфраструктурным провайдерам, которые размещают или передают приложение и его зашифрованные данные. Информация не продаётся и не передаётся для независимого маркетинга. Доступ к приложению имеет только Iskhakov Ruslan."
         ]
       },
       {
@@ -182,7 +182,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "9. Отзыв доступа Google",
         paragraphs: [
-          "Авторизованный пользователь может отключить OAuth в Axyro Analytics. Доступ также можно отозвать на странице разрешений безопасности Google Account. Отзыв прекращает новый доступ к API, но не удаляет автоматически записи аудита, которые необходимо хранить для безопасности или соответствия требованиям."
+          "Владелец может отключить OAuth в Axyro Analytics. Доступ также можно отозвать на странице разрешений безопасности Google Account. Отзыв прекращает новый доступ к API, но не удаляет автоматически записи аудита, которые необходимо хранить для безопасности или соответствия требованиям."
         ]
       },
       {
@@ -198,20 +198,20 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
 export const TERMS_COPY: Record<Locale, LegalDocument> = {
   en: {
     title: "Terms of Use",
-    updated: "Last updated: August 2, 2026",
+    updated: "Last updated: August 18, 2026",
     introduction:
       "These Terms govern authorized internal use of Axyro Analytics and its protected Google Ads analytics and operations workspace.",
     sections: [
       {
         title: "1. Product and operator",
         paragraphs: [
-          "Axyro Analytics is an independently operated internal Google Ads Analytics & Control Center. It is not affiliated with, endorsed by, or sponsored by Google. Google Ads and related marks belong to Google LLC."
+          "Axyro Analytics is an independent software project operated by Iskhakov Ruslan, an individual. It is not a registered company or separate legal entity and is not affiliated with, endorsed by, or sponsored by Google. Google Ads and related marks belong to Google LLC."
         ]
       },
       {
         title: "2. Restricted audience",
         paragraphs: [
-          "The workspace is intended only for the owner and explicitly authorized internal users. It is not a public self-service advertising platform, agency marketplace, API resale product, or service for unrelated third parties."
+          "The workspace is currently intended and available only for Iskhakov Ruslan. No employee, contractor, external client, or member of the public has access. It is not a public self-service advertising platform, agency marketplace, API resale product, or service for unrelated third parties."
         ]
       },
       {
@@ -220,7 +220,7 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
           "Analyze and compare Google Ads account and campaign performance.",
           "Monitor MCC hierarchy, account state, policy issues, advertiser verification, alerts, and change history.",
           "Maintain internal notes, tags, saved views, and reports.",
-          "Initiate permitted campaign actions only for accounts managed by the internal team and connected through its manager accounts."
+          "Initiate permitted campaign actions only for accounts that Iskhakov Ruslan is authorized to manage and that are connected through his manager account."
         ]
       },
       {
@@ -271,20 +271,20 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
   },
   ru: {
     title: "Условия использования",
-    updated: "Последнее обновление: 2 августа 2026 года",
+    updated: "Последнее обновление: 18 августа 2026 года",
     introduction:
       "Эти условия регулируют авторизованное внутреннее использование Axyro Analytics и защищённого кабинета аналитики и операций Google Ads.",
     sections: [
       {
         title: "1. Продукт и оператор",
         paragraphs: [
-          "Axyro Analytics — независимо управляемый внутренний Google Ads Analytics & Control Center. Продукт не связан с Google и не одобрен или спонсируется Google. Google Ads и связанные обозначения принадлежат Google LLC."
+          "Axyro Analytics — независимый программный проект физического лица Iskhakov Ruslan. Это не зарегистрированная компания и не отдельное юридическое лицо; проект не связан с Google и не одобрен или спонсируется Google. Google Ads и связанные обозначения принадлежат Google LLC."
         ]
       },
       {
         title: "2. Ограниченная аудитория",
         paragraphs: [
-          "Рабочий кабинет предназначен только для владельца и явно авторизованных внутренних пользователей. Это не публичная рекламная платформа самообслуживания, не маркетплейс агентств, не продукт перепродажи API и не сервис для несвязанных третьих лиц."
+          "Рабочий кабинет сейчас предназначен и доступен только Iskhakov Ruslan. Доступа нет у сотрудников, подрядчиков, внешних клиентов или посторонних лиц. Это не публичная рекламная платформа самообслуживания, не маркетплейс агентств, не продукт перепродажи API и не сервис для несвязанных третьих лиц."
         ]
       },
       {
@@ -293,7 +293,7 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
           "Анализ и сравнение эффективности аккаунтов и кампаний Google Ads.",
           "Мониторинг иерархии MCC, состояния аккаунтов, policy issues, advertiser verification, уведомлений и истории изменений.",
           "Ведение внутренних заметок, тегов, сохранённых представлений и отчётов.",
-          "Запуск разрешённых действий с кампаниями только в аккаунтах, которыми управляет внутренняя команда и которые подключены через её MCC."
+          "Запуск разрешённых действий с кампаниями только в аккаунтах, которыми Iskhakov Ruslan вправе управлять и которые подключены через его MCC."
         ]
       },
       {

@@ -1,6 +1,6 @@
 # Google Ads API Basic Access — prepared answers
 
-Prepared on August 2, 2026. These answers match the current 11-question form at
+Prepared on August 18, 2026. These answers match the current Basic Access form at
 `https://support.google.com/adspolicy/contact/new_token_application?hl=en`.
 
 The application is **not submitted**. The three confirmation checkboxes remain
@@ -52,70 +52,71 @@ has been identified for this application.
 
 **English / form answer:**
 
-Axyro Analytics is an internally developed Google Ads analytics and operations
-platform used by an individual advertiser and a small authorized internal team
-to manage advertising accounts linked to our own manager account. Our business
-model is internal advertising operations; we do not resell Google Ads API
-access, provide a public self-service advertising product, or give unrelated
-clients access to the tool.
+I am Iskhakov Ruslan, an individual developer and advertiser. I do not
+represent a registered company. Axyro Analytics is the name of my independently
+developed and privately operated Google Ads analytics and operations software
+project; it is not a separate legal entity, advertising agency, public SaaS
+product, or API resale service.
 
-The platform's primary purpose is centralized reporting, performance analysis,
-and monitoring across multiple MCC and advertising accounts. It synchronizes
+I am the project's sole user. No employee, contractor, external client, or
+member of the public has access. The tool is used only for Google Ads accounts
+that I am authorized to access through my own manager account.
+
+The tool's primary purpose is centralized reporting, performance analysis, and
+monitoring across connected manager and advertising accounts. It synchronizes
 account hierarchy, cost, impressions, clicks, CTR, CPC, mapped registration and
 deposit conversions, CPA, campaign status, policy and advertiser verification
-status, operational issues, and change history. Internal users can compare
-markets, use filters and saved views, maintain notes and tags, review alerts,
-and export reports.
+status, operational issues, and change history. I can compare markets, use
+filters and saved views, maintain notes and tags, review alerts, and export
+reports.
 
-The platform also has secondary campaign-management functions. Authorized users
-can create validated Demand Gen campaigns, pause or enable selected campaigns,
-and update budgets. Every write action is initiated by a user, previewed,
-validated locally and with Google Ads `validate_only`, explicitly confirmed,
-recorded in AuditLog with Google Request IDs, and verified by readback. New
-campaigns are created PAUSED and are never enabled automatically. Production
-write operations are currently blocked while Basic Access is pending.
+The tool also has secondary campaign-management functions. I can create
+validated Demand Gen campaigns, pause or enable selected campaigns, and update
+budgets. Every write action is initiated by me, previewed, validated locally and
+with Google Ads `validate_only`, explicitly confirmed, recorded in AuditLog with
+Google Request IDs, and verified by readback. New campaigns are created PAUSED
+and are never enabled automatically. Production write operations are currently
+blocked while Basic Access is pending.
 
 Basic Access is required because test accounts do not serve ads and cannot
 provide the real delivery metrics, conversion data, policy statuses,
 verification states, account activity, and operational history needed to
-validate the platform's primary analytics and monitoring functions. Access will
-be used only for accounts managed by our internal team and linked to our MCC.
+validate the tool's primary analytics and monitoring functions.
 
 **Русский перевод:**
 
-Axyro Analytics — разработанная внутри компании платформа аналитики и
-операционного управления Google Ads. Индивидуальный рекламодатель и небольшая
-авторизованная внутренняя команда используют её для работы с рекламными
-аккаунтами, связанными с собственным MCC. Наша бизнес-модель — внутренние
-рекламные операции; мы не перепродаём доступ к Google Ads API, не предоставляем
-публичный рекламный сервис самообслуживания и не даём несвязанным клиентам
-доступ к инструменту.
+Я, Iskhakov Ruslan, являюсь физическим лицом, разработчиком и рекламодателем. Я
+не представляю зарегистрированную компанию. Axyro Analytics — название моего
+самостоятельно разработанного и лично управляемого программного проекта для
+аналитики и операций Google Ads; это не отдельное юридическое лицо, не рекламное
+агентство, не публичный SaaS-продукт и не сервис перепродажи API.
 
-Основное назначение платформы — централизованная отчётность, анализ
-эффективности и мониторинг нескольких MCC и рекламных аккаунтов. Она
+Я являюсь единственным пользователем проекта. Доступа нет ни у сотрудников, ни
+у подрядчиков, ни у внешних клиентов, ни у посторонних лиц. Инструмент
+используется только для Google Ads аккаунтов, к которым у меня есть разрешённый
+доступ через мой собственный управляющий аккаунт.
+
+Основное назначение инструмента — централизованная отчётность, анализ
+эффективности и мониторинг подключённых управляющих и рекламных аккаунтов. Он
 синхронизирует иерархию аккаунтов, расходы, показы, клики, CTR, CPC,
 сопоставленные регистрации и депозиты, CPA, статусы кампаний, policy и
-advertiser verification, операционные проблемы и историю изменений. Внутренние
-пользователи могут сравнивать рынки, применять фильтры и сохранённые
-представления, вести заметки и теги, просматривать уведомления и выгружать
-отчёты.
+advertiser verification, операционные проблемы и историю изменений. Я могу
+сравнивать рынки, применять фильтры и сохранённые представления, вести заметки и
+теги, просматривать уведомления и выгружать отчёты.
 
-Платформа также содержит вторичные функции управления кампаниями.
-Авторизованные пользователи могут создавать проверенные Demand Gen кампании,
-приостанавливать или включать выбранные кампании и изменять бюджеты. Каждое
-изменяющее действие запускается пользователем, показывается в preview,
-проверяется локально и через Google Ads `validate_only`, явно подтверждается,
-записывается в AuditLog с Google Request ID и проверяется повторным чтением.
-Новые кампании создаются в PAUSED и никогда не включаются автоматически.
-Изменяющие операции в production сейчас заблокированы, пока ожидается Basic
-Access.
+Инструмент также содержит вторичные функции управления кампаниями. Я могу
+создавать проверенные Demand Gen кампании, приостанавливать или включать
+выбранные кампании и изменять бюджеты. Каждое изменяющее действие запускается
+мной, показывается в preview, проверяется локально и через Google Ads
+`validate_only`, явно подтверждается, записывается в AuditLog с Google Request
+ID и проверяется повторным чтением. Новые кампании создаются в PAUSED и никогда
+не включаются автоматически. Изменяющие операции в production сейчас
+заблокированы, пока ожидается Basic Access.
 
 Basic Access необходим, потому что тестовые аккаунты не показывают рекламу и не
 могут предоставить реальные метрики, данные конверсий, policy statuses,
 verification states, активность аккаунта и операционную историю, необходимые
-для проверки основной аналитики и мониторинга. Доступ будет использоваться
-только для аккаунтов, которыми управляет наша внутренняя команда и которые
-связаны с нашим MCC.
+для проверки основной аналитики и мониторинга.
 
 ## 8. Tool documentation
 
@@ -133,22 +134,27 @@ verification states, активность аккаунта и операцион
 **English / form value:**
 `Internal users - employees only (outsourcing, contractor included)`
 
-**Русский:** Только внутренние пользователи, включая при необходимости
-подрядчиков, которым владелец явно предоставил доступ.
+**English clarification:** This is the closest available category. The sole
+user is the individual applicant, Iskhakov Ruslan. There are no employees,
+contractors, external clients, or other users.
+
+**Русский:** Это наиболее близкий доступный вариант формы. Единственный
+пользователь — сам заявитель Iskhakov Ruslan. Сотрудников, подрядчиков, внешних
+клиентов и других пользователей нет.
 
 ## 10. Token used with a tool developed by someone else?
 
 **English / form value:** `No`
 
-**English explanation:** Axyro Analytics was developed internally for this
-owner. Open-source frameworks and official Google client libraries are used as
+**English explanation:** Axyro Analytics is custom-built for the applicant's own
+use. Open-source frameworks and official Google client libraries are used as
 implementation dependencies, but no third-party Google Ads management product
-uses the token.
+uses the token and the token is not disclosed to any third party.
 
-**Русский:** Нет. Axyro Analytics разработан внутри для этого владельца.
-Open-source фреймворки и официальный Google client library используются как
-зависимости, но Developer Token не передаётся стороннему продукту управления
-Google Ads.
+**Русский:** Нет. Axyro Analytics создан специально для личного использования
+заявителем. Open-source фреймворки и официальный Google client library
+используются как зависимости, но сторонний продукт управления Google Ads не
+использует Developer Token, и сам токен не передаётся третьим лицам.
 
 ## 11. App Conversion Tracking and Remarketing API
 
@@ -177,9 +183,12 @@ The following remain unchecked:
 
 ## Supplemental facts used in documentation
 
-- Owner: Individual.
-- Primary business country: Bulgaria.
-- Tool developed by: internal development for the owner.
+- Legal operator and sole user: Iskhakov Ruslan, individual.
+- Registered company or separate Axyro legal entity: none.
+- Audience: no employees, contractors, external clients, or public users.
+- Country is not asserted in this packet; the API Center value must be reviewed
+  separately for factual accuracy before the accuracy checkbox is selected.
+- Tool developed for: the individual applicant's own use.
 - Expected operation volume: typical use below 15,000 operations/day; internal
   planning limit 15,000/day with a 20% reserve for manual operations.
 - Security: HTTPS, server-side sessions, CSRF, roles, encrypted credentials,
@@ -188,4 +197,3 @@ The following remain unchecked:
 - Data retention: active operational need; OAuth disconnect clears the refresh
   token; production backups rotate after 14 days; deletion requests use
   support@axyro.tech.
-

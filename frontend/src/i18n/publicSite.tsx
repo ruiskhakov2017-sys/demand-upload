@@ -82,8 +82,8 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
       terms: "Terms",
       workspace: "Secure workspace"
     },
-    eyebrow: "Internal analytics and operations platform",
-    subtitle: "Internal Google Ads Analytics & Control Center",
+    eyebrow: "Independent analytics and operations project",
+    subtitle: "Private Google Ads Analytics & Control Center",
     heroBody:
       "Centralized reporting, performance analysis, account monitoring, and controlled operations across multiple Google Ads manager and advertising accounts.",
     primaryAction: "View product",
@@ -93,7 +93,7 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
       "The interface consolidates MCC hierarchy, account state, performance, conversion, policy, verification, issue, and audit data. Demonstration data is used in this public screenshot.",
     overviewTitle: "One operational view across Google Ads accounts",
     overviewLead:
-      "Axyro Analytics normalizes account and campaign data from connected MCC hierarchies so an authorized internal team can compare markets, find issues, and document decisions in one place.",
+      "Axyro Analytics normalizes account and campaign data from connected MCC hierarchies so its sole operator can compare markets, find issues, and document decisions in one place.",
     features: [
       { title: "MCC and GEO structure", body: "Group and filter advertising accounts by manager hierarchy and geographic market." },
       { title: "Account analytics", body: "Review cost, impressions, clicks, CTR, CPC, registrations, deposits, and CPA." },
@@ -106,11 +106,11 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
     ],
     productTitle: "Product purpose",
     productParagraphs: [
-      "Axyro Analytics is an internal Google Ads analytics and operations platform designed to consolidate data from multiple manager and advertising accounts into a single control center.",
-      "The platform synchronizes account hierarchy, campaign performance metrics, conversion data, policy and verification statuses, operational issues, and change history. Authorized internal users can analyze accounts across different geographic markets, apply filters and saved views, compare performance, review alerts, maintain internal notes, and export reports.",
+      "Axyro Analytics is an independent Google Ads analytics and operations software project operated by Iskhakov Ruslan, an individual. It is not a registered company or a separate legal entity.",
+      "The private tool consolidates connected manager and advertising accounts and synchronizes account hierarchy, campaign performance metrics, conversion data, policy and verification statuses, operational issues, and change history for its sole user.",
       "The primary purpose of the tool is centralized reporting, performance analysis, account monitoring, and operational control.",
       "The platform also includes secondary campaign management functions. Authorized users can create validated Demand Gen campaigns, pause or enable selected campaigns, and update budgets. All write operations are explicitly initiated by a user, validated before execution, confirmed in the interface, recorded in an audit log, and protected by production safety controls. Newly created campaigns are created in a paused state by default.",
-      "The platform is intended only for authorized internal users and is not offered as a public self-service advertising product."
+      "Only Iskhakov Ruslan currently has access to the workspace. There are no employees, contractors, external clients, or public users, and the project is not offered as a public self-service advertising product."
     ],
     metricsTitle: "Metrics with explicit data semantics",
     metricsBody:
@@ -166,13 +166,13 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
     architectureBody:
       "The browser communicates only with the protected application API. OAuth refresh tokens and Google Ads credentials stay encrypted on the backend and are never returned to frontend code.",
     architecture: ["React frontend", "FastAPI backend", "PostgreSQL", "Redis", "Worker", "Scheduler", "Google Ads API"],
-    audienceTitle: "Restricted internal access",
+    audienceTitle: "Sole-operator access",
     audienceBody:
-      "The workspace is available only to authenticated ADMIN, OPERATOR, and VIEWER users authorized by the owner. Axyro Analytics is not offered to external customers and does not provide third-party self-service advertising access.",
-    affiliation: "Axyro Analytics is an independent internal tool and is not affiliated with, endorsed by, or sponsored by Google.",
+      "The workspace is currently used only by Iskhakov Ruslan through the protected owner account. No employee, contractor, client, or member of the public has access.",
+    affiliation: "Axyro Analytics is the name of an independent software project operated by Iskhakov Ruslan, an individual. It is not a registered company or separate legal entity and is not affiliated with, endorsed by, or sponsored by Google.",
     contactTitle: "Product and privacy contact",
     contactBody: "Questions about the product, Google Ads API use, privacy, or data deletion can be sent to:",
-    footerProduct: "Axyro Analytics · Internal Google Ads Analytics & Control Center"
+    footerProduct: "Axyro Analytics · Operated by Iskhakov Ruslan (individual)"
   },
   ru: {
     nav: {
@@ -183,8 +183,8 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
       terms: "Условия",
       workspace: "Защищённый кабинет"
     },
-    eyebrow: "Внутренняя платформа аналитики и управления",
-    subtitle: "Внутренняя аналитика Google Ads и центр контроля",
+    eyebrow: "Независимый проект аналитики и управления",
+    subtitle: "Личный центр аналитики и контроля Google Ads",
     heroBody:
       "Централизованная отчётность, анализ эффективности, мониторинг аккаунтов и контролируемые операции в нескольких управляющих и рекламных аккаунтах Google Ads.",
     primaryAction: "Посмотреть продукт",
@@ -194,7 +194,7 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
       "Интерфейс объединяет структуру MCC, состояния аккаунтов, эффективность, конверсии, policy и verification statuses, проблемы и аудит. На публичном скриншоте используются демонстрационные данные.",
     overviewTitle: "Единый операционный экран для Google Ads",
     overviewLead:
-      "Axyro Analytics нормализует данные аккаунтов и кампаний из подключённых MCC, чтобы авторизованная внутренняя команда могла сравнивать рынки, находить проблемы и фиксировать решения в одном месте.",
+      "Axyro Analytics нормализует данные аккаунтов и кампаний из подключённых MCC, чтобы единственный оператор мог сравнивать рынки, находить проблемы и фиксировать решения в одном месте.",
     features: [
       { title: "Структура MCC и GEO", body: "Группировка и фильтрация рекламных аккаунтов по иерархии MCC и географическому рынку." },
       { title: "Аналитика аккаунтов", body: "Расходы, показы, клики, CTR, CPC, регистрации, депозиты и CPA." },
@@ -207,11 +207,11 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
     ],
     productTitle: "Назначение продукта",
     productParagraphs: [
-      "Axyro Analytics — это внутренняя платформа аналитики и операционного управления Google Ads, предназначенная для объединения данных из нескольких управляющих и рекламных аккаунтов в одном центре контроля.",
-      "Платформа синхронизирует структуру аккаунтов, статистику кампаний, данные о конверсиях, статусы правил и верификации, операционные проблемы и историю изменений. Авторизованные внутренние пользователи могут анализировать аккаунты разных географических рынков, применять фильтры и сохранённые представления, сравнивать эффективность, просматривать уведомления, вести внутренние заметки и выгружать отчёты.",
+      "Axyro Analytics — независимый программный проект аналитики и управления Google Ads, которым управляет физическое лицо Iskhakov Ruslan. Это не зарегистрированная компания и не отдельное юридическое лицо.",
+      "Личный инструмент объединяет подключённые управляющие и рекламные аккаунты и синхронизирует их структуру, статистику кампаний, данные о конверсиях, статусы правил и верификации, операционные проблемы и историю изменений для единственного пользователя.",
       "Основное назначение инструмента — централизованная отчётность, анализ эффективности, мониторинг аккаунтов и операционный контроль.",
       "Платформа также содержит второстепенные функции управления кампаниями. Авторизованные пользователи могут создавать проверенные Demand Gen кампании, приостанавливать или включать выбранные кампании и изменять бюджеты. Все изменяющие операции явно запускаются пользователем, проверяются до выполнения, подтверждаются в интерфейсе, записываются в журнал аудита и защищены предохранителями production-режима. Новые кампании по умолчанию создаются приостановленными.",
-      "Платформа предназначена только для авторизованных внутренних пользователей и не предлагается как публичный рекламный сервис самообслуживания."
+      "Доступ к рабочему кабинету сейчас есть только у Iskhakov Ruslan. Сотрудников, подрядчиков, внешних клиентов и публичных пользователей нет; проект не предлагается как публичный рекламный сервис самообслуживания."
     ],
     metricsTitle: "Метрики с однозначной семантикой данных",
     metricsBody:
@@ -267,13 +267,13 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
     architectureBody:
       "Браузер обращается только к защищённому API приложения. OAuth refresh tokens и реквизиты Google Ads остаются зашифрованными на backend и никогда не возвращаются frontend-коду.",
     architecture: ["React frontend", "FastAPI backend", "PostgreSQL", "Redis", "Worker", "Scheduler", "Google Ads API"],
-    audienceTitle: "Закрытый внутренний доступ",
+    audienceTitle: "Доступ только владельца",
     audienceBody:
-      "Рабочий кабинет доступен только пользователям ADMIN, OPERATOR и VIEWER, которых авторизовал владелец. Axyro Analytics не предлагается внешним клиентам и не предоставляет сторонним пользователям рекламный сервис самообслуживания.",
-    affiliation: "Axyro Analytics — независимый внутренний инструмент, не связанный с Google и не одобренный или спонсируемый Google.",
+      "Рабочим кабинетом сейчас пользуется только Iskhakov Ruslan через защищённую учётную запись владельца. Доступа нет ни у сотрудников, ни у подрядчиков, ни у клиентов, ни у посторонних лиц.",
+    affiliation: "Axyro Analytics — название независимого программного проекта физического лица Iskhakov Ruslan. Это не зарегистрированная компания и не отдельное юридическое лицо; проект не связан с Google и не одобрен или спонсируется Google.",
     contactTitle: "Контакт по продукту и конфиденциальности",
     contactBody: "Вопросы о продукте, использовании Google Ads API, конфиденциальности или удалении данных можно направить на:",
-    footerProduct: "Axyro Analytics · Внутренняя аналитика Google Ads и центр контроля"
+    footerProduct: "Axyro Analytics · Оператор: Iskhakov Ruslan (физическое лицо)"
   }
 };
 

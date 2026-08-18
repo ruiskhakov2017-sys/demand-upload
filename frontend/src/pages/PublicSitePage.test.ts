@@ -5,10 +5,22 @@ import { PUBLIC_COPY } from "./PublicSitePage";
 
 describe("Axyro Analytics public positioning", () => {
   it("keeps analytics primary and campaign deployment secondary", () => {
-    expect(PUBLIC_COPY.en.productParagraphs[0]).toContain("internal Google Ads analytics and operations platform");
+    expect(PUBLIC_COPY.en.productParagraphs[0]).toContain("independent Google Ads analytics and operations software project");
     expect(PUBLIC_COPY.en.productParagraphs[2]).toContain("primary purpose");
     expect(PUBLIC_COPY.en.deploymentEyebrow).toBe("Secondary module");
     expect(PUBLIC_COPY.en.deploymentTitle).toBe("Validated campaign deployment");
+  });
+
+  it("identifies the individual operator and sole-user access consistently", () => {
+    const publicText = JSON.stringify(PUBLIC_COPY);
+    const legalText = JSON.stringify({ privacy: PRIVACY_COPY, terms: TERMS_COPY });
+
+    expect(publicText).toContain("Iskhakov Ruslan");
+    expect(publicText).toContain("not a registered company");
+    expect(publicText).toContain("No employee, contractor, client, or member of the public has access");
+    expect(legalText).toContain("Iskhakov Ruslan");
+    expect(legalText).toContain("not a registered company or separate legal entity");
+    expect(PRIVACY_COPY.ru.sections[0].paragraphs?.[0]).toContain("Iskhakov Ruslan");
   });
 
   it("describes write operations and their safeguards truthfully", () => {

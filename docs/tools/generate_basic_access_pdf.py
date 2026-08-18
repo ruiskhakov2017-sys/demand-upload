@@ -74,7 +74,7 @@ class AxyroDocTemplate(BaseDocTemplate):
             topMargin=TOP,
             bottomMargin=BOTTOM,
             title="Axyro Analytics - Google Ads API Basic Access Application",
-            author="Axyro Analytics",
+            author="Iskhakov Ruslan",
             subject="Google Ads API Basic Access design and safety documentation",
         )
         frame = Frame(LEFT, BOTTOM, CONTENT_WIDTH, PAGE_HEIGHT - TOP - BOTTOM, id="normal")
@@ -345,7 +345,7 @@ def build_story() -> list[Flowable]:
         [
             [p("GOOGLE ADS API BASIC ACCESS", "CoverEyebrow")],
             [p("Axyro Analytics", "CoverTitle")],
-            [p("Internal Google Ads Analytics &amp; Control Center", "CoverSubtitle")],
+            [p("Private Google Ads Analytics &amp; Control Center", "CoverSubtitle")],
             [Spacer(1, 13 * mm)],
             [p("Design, security, workflow, and interface evidence", "CoverSubtitle")],
         ],
@@ -369,13 +369,14 @@ def build_story() -> list[Flowable]:
     story.append(
         facts_table(
             [
-                ("Owner type", "Individual"),
-                ("Primary business country", "Bulgaria"),
+                ("Operator", "Iskhakov Ruslan"),
+                ("Legal status", "Individual; no registered company"),
+                ("Product status", "Independent software project; not a separate legal entity"),
                 ("Website", '<link href="https://axyro.tech" color="#1F6FEB">https://axyro.tech</link>'),
                 ("Developer-token MCC", "558-933-5362"),
                 ("Google Cloud Project Number", "1044664056304"),
                 ("Contact", "support@axyro.tech"),
-                ("Document date", "August 2, 2026"),
+                ("Document date", "August 18, 2026"),
             ]
         )
     )
@@ -390,11 +391,11 @@ def build_story() -> list[Flowable]:
     story.append(PageBreak())
     story.extend(section("1. Executive summary"))
     for text in [
-        "Axyro Analytics is an internal Google Ads analytics and operations platform designed to consolidate data from multiple manager and advertising accounts into a single control center.",
-        "The platform synchronizes account hierarchy, campaign performance metrics, conversion data, policy and verification statuses, operational issues, and change history. Authorized internal users can analyze accounts across different geographic markets, apply filters and saved views, compare performance, review alerts, maintain internal notes, and export reports.",
+        "Axyro Analytics is an independent Google Ads analytics and operations software project operated by Iskhakov Ruslan, an individual. Axyro Analytics is the project name, not a registered company or separate legal entity. The private tool consolidates connected manager and advertising accounts into a single control center.",
+        "The platform synchronizes account hierarchy, campaign performance metrics, conversion data, policy and verification statuses, operational issues, and change history. Its sole user can analyze accounts across different geographic markets, apply filters and saved views, compare performance, review alerts, maintain notes, and export reports.",
         "The primary purpose of the tool is centralized reporting, performance analysis, account monitoring, and operational control.",
         "The platform also includes secondary campaign management functions. Authorized users can create validated Demand Gen campaigns, pause or enable selected campaigns, and update budgets. All write operations are explicitly initiated by a user, validated before execution, confirmed in the interface, recorded in an audit log, and protected by production safety controls. Newly created campaigns are created in a paused state by default.",
-        "The platform is intended only for authorized internal users and is not offered as a public self-service advertising product.",
+        "Only Iskhakov Ruslan currently has access. There are no employees, contractors, external clients, or public users, and the platform is not offered as a public self-service advertising product.",
     ]:
         story.append(p(text))
     story.append(Spacer(1, 3 * mm))
@@ -403,17 +404,18 @@ def build_story() -> list[Flowable]:
     story.extend(section("2. Why Basic Access is required"))
     story.append(
         p(
-            "Basic Access is required to analyze and manage production Google Ads accounts linked to our manager account. Test accounts do not serve ads and therefore cannot provide the real performance metrics, conversion data, policy statuses, verification states, account activity, and operational history required to validate the analytics and monitoring functions of the platform."
+            "Basic Access is required to analyze and manage production Google Ads accounts that Iskhakov Ruslan is authorized to access through his manager account. Test accounts do not serve ads and therefore cannot provide the real performance metrics, conversion data, policy statuses, verification states, account activity, and operational history required to validate the analytics and monitoring functions of the platform."
         )
     )
-    story.append(p("The requested access will be used only for accounts managed by our internal team and linked to our Google Ads manager account."))
+    story.append(p("The requested access will be used only for accounts that Iskhakov Ruslan is authorized to manage and that are linked to his Google Ads manager account."))
 
     story.extend(section("3. Ownership, business model, and audience"))
     story.append(
         p(
-            "API Center identifies the owner as <b>Individual</b>, the company type as <b>Advertiser</b>, and the primary country as <b>Bulgaria</b>. Axyro Analytics supports the owner's internal advertising operations and does not resell API access, offer a public self-service product, or provide unrelated clients with tool access."
+            "The applicant and operator is <b>Iskhakov Ruslan</b>, an individual developer and advertiser who does not represent a registered company. Axyro Analytics is a project name used for his privately operated software; it is not a separate legal entity, advertising agency, public SaaS product, or API resale service."
         )
     )
+    story.append(p("The current deployment is used only by Iskhakov Ruslan through the owner ADMIN account. No employee, contractor, external client, or other person has access. The role types below are technical authorization boundaries and do not imply that a team currently uses the application."))
     story.append(Spacer(1, 2 * mm))
     story.extend(
         bullets(
@@ -551,7 +553,7 @@ def build_story() -> list[Flowable]:
             ]
         )
     )
-    story.append(p("Axyro Analytics is an independent internal tool and is not affiliated with, endorsed by, or sponsored by Google."))
+    story.append(p("Axyro Analytics is an independent software project operated by Iskhakov Ruslan, an individual. It is not a registered company or separate legal entity and is not affiliated with, endorsed by, or sponsored by Google."))
 
     screenshot_page(
         story,
@@ -637,14 +639,14 @@ def build_story() -> list[Flowable]:
     story.append(PageBreak())
     story.extend(section("12. Application readiness checklist"))
     checklist_rows = [
-        ("Public product identity", "Axyro Analytics - consistent across website, interface, legal pages, PDF, and prepared form answers"),
+        ("Public identity", "Iskhakov Ruslan - individual operator; Axyro Analytics is a project, not a company or legal entity"),
         ("Website", "Publicly accessible without authentication"),
         ("Privacy and Terms", "Public English/Russian pages with Google Ads API use and deletion contact"),
         ("API Center", "Developer-token MCC 558-933-5362; Test Account Access; Basic Access application available"),
         ("Google Cloud", "Project Number 1044664056304; OAuth callback uses https://axyro.tech"),
         ("Write disclosure", "Demand Gen creation, PAUSE, ENABLE, and budget update are explicitly documented"),
         ("Production state", "Mutations blocked; zero production mutations"),
-        ("Form", "Prepared through the final step; three confirmation checkboxes and Submit intentionally untouched"),
+        ("Form", "Answers prepared for sole individual use; confirmation checkboxes and Submit intentionally untouched"),
     ]
     story.append(facts_table(checklist_rows, (49 * mm, CONTENT_WIDTH - 49 * mm)))
     story.append(Spacer(1, 7 * mm))

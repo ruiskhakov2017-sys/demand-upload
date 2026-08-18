@@ -3,28 +3,34 @@
 ## Google Ads API Basic Access Application Design Document
 
 **Product:** Axyro Analytics  
-**Subtitle:** Internal Google Ads Analytics & Control Center  
-**Owner type:** Individual  
-**Primary business country:** Bulgaria  
+**Subtitle:** Private Google Ads Analytics & Control Center
+
+**Operator:** Iskhakov Ruslan
+
+**Legal status:** Individual; no registered company
+
+**Product status:** Independent software project; not a separate legal entity
 **Website:** https://axyro.tech  
 **Privacy Policy:** https://axyro.tech/privacy  
 **Terms of Use:** https://axyro.tech/terms  
 **Contact:** support@axyro.tech  
 **Developer-token MCC:** 558-933-5362  
 **Google Cloud Project Number:** 1044664056304  
-**Document date:** August 2, 2026
+**Document date:** August 18, 2026
 
 ## 1. Executive summary
 
-Axyro Analytics is an internal Google Ads analytics and operations platform
-designed to consolidate data from multiple manager and advertising accounts into
-a single control center.
+Axyro Analytics is an independent Google Ads analytics and operations software
+project operated by Iskhakov Ruslan, an individual. Axyro Analytics is the name
+of the project, not a registered company or separate legal entity. The private
+tool consolidates connected manager and advertising accounts into a single
+control center.
 
 The platform synchronizes account hierarchy, campaign performance metrics,
 conversion data, policy and verification statuses, operational issues, and
-change history. Authorized internal users can analyze accounts across different
-geographic markets, apply filters and saved views, compare performance, review
-alerts, maintain internal notes, and export reports.
+change history. The sole user can analyze accounts across different geographic
+markets, apply filters and saved views, compare performance, review alerts,
+maintain notes, and export reports.
 
 The primary purpose of the tool is centralized reporting, performance analysis,
 account monitoring, and operational control.
@@ -36,33 +42,39 @@ a user, validated before execution, confirmed in the interface, recorded in an
 audit log, and protected by production safety controls. Newly created campaigns
 are created in a paused state by default.
 
-The platform is intended only for authorized internal users and is not offered
-as a public self-service advertising product.
+Only Iskhakov Ruslan currently has access to the platform. There are no
+employees, contractors, external clients, or public users. The platform is not
+offered as a public self-service advertising product.
 
 ## 2. Why Basic Access is required
 
 Basic Access is required to analyze and manage production Google Ads accounts
-linked to our manager account. Test accounts do not serve ads and therefore
+that Iskhakov Ruslan is authorized to access through his manager account. Test
+accounts do not serve ads and therefore
 cannot provide the real performance metrics, conversion data, policy statuses,
 verification states, account activity, and operational history required to
 validate the analytics and monitoring functions of the platform.
 
-The requested access will be used only for accounts managed by our internal
-team and linked to our Google Ads manager account.
+The requested access will be used only for accounts that Iskhakov Ruslan is
+authorized to manage and that are linked to his Google Ads manager account.
 
 **Primary use:** reporting, analytics and monitoring.  
 **Secondary use:** explicitly confirmed campaign management operations.
 
 ## 3. Ownership, business model, and audience
 
-The API Center identifies the owner as an Individual and the company type as
-Advertiser. Axyro Analytics supports the owner's internal advertising
-operations; it does not resell Google Ads API access, manage unrelated public
-customers, provide a white-label API, or expose Google Ads operations to
-anonymous users.
+The applicant and operator is **Iskhakov Ruslan**, an individual developer and
+advertiser. He does not represent a registered company. Axyro Analytics is a
+project name used for his privately operated software; it is not a separate
+legal entity, advertising agency, public SaaS product, or API resale service.
+The project does not resell Google Ads API access, manage unrelated public
+customers, provide a white-label API, or expose Google Ads operations to other
+people.
 
-Only authenticated internal users can enter the workspace. The implemented
-roles are:
+The current deployment is used only by Iskhakov Ruslan through the owner ADMIN
+account. No employee, contractor, external client, or other user has access.
+The software implements the following role types as technical authorization
+boundaries, but they do not imply that a team currently uses the application:
 
 - **ADMIN** — manages connections and protected settings, confirms permitted
   operations, and reviews audit evidence.
@@ -144,9 +156,9 @@ The tool truthfully includes these secondary write capabilities:
 - enable selected campaigns;
 - update selected campaign budgets.
 
-Every write operation must be started by an authorized internal user. The
-current production build rejects production mutations while Basic Access is
-pending. No production mutation has been performed.
+Every write operation must be started by the authenticated owner. The current
+production build rejects production mutations while Basic Access is pending.
+No production mutation has been performed.
 
 ## 8. Validated Demand Gen deployment workflow
 
@@ -274,6 +286,6 @@ zero.
 - Documentation PDF: https://axyro.tech/docs/google-ads-api-basic-access-application.pdf
 - Contact: support@axyro.tech
 
-Axyro Analytics is an independent internal tool and is not affiliated with,
-endorsed by, or sponsored by Google.
-
+Axyro Analytics is an independent software project operated by Iskhakov Ruslan,
+an individual. It is not a registered company or separate legal entity and is
+not affiliated with, endorsed by, or sponsored by Google.

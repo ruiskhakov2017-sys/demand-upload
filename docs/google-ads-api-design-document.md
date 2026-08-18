@@ -2,15 +2,16 @@
 
 ## 1. Product purpose
 
-Axyro Analytics is an internal Google Ads analytics and operations platform
-designed to consolidate data from multiple manager and advertising accounts into
-a single control center.
+Axyro Analytics is an independent Google Ads analytics and operations software
+project operated by Iskhakov Ruslan, an individual. It is not a registered
+company or separate legal entity. The private tool consolidates connected
+manager and advertising accounts into a single control center.
 
 The platform synchronizes account hierarchy, campaign performance metrics,
 conversion data, policy and verification statuses, operational issues, and
-change history. Authorized internal users can analyze accounts across different
-geographic markets, apply filters and saved views, compare performance, review
-alerts, maintain internal notes, and export reports.
+change history. Its sole user can analyze accounts across different geographic
+markets, apply filters and saved views, compare performance, review alerts,
+maintain notes, and export reports.
 
 The primary purpose of the tool is centralized reporting, performance analysis,
 account monitoring, and operational control.
@@ -23,9 +24,9 @@ audit log, and protected by production safety controls. Newly created campaigns
 are created in a paused state by default.
 
 The tool is not a public advertising platform, does not resell Google Ads API
-access, and does not allow anonymous users to submit Google Ads operations. It
-is intended only for authorized internal users and is not offered as a public
-self-service advertising product.
+access, and does not allow anonymous users to submit Google Ads operations. Only
+Iskhakov Ruslan currently has access; there are no employees, contractors,
+external clients, or public users.
 
 `Demand Gen Uploader` remains the internal technical name of the repository and
 the secondary **Validated campaign deployment** module. It is not the public
@@ -34,13 +35,14 @@ product name or the primary use case.
 ## 1.1 Why Basic Access is required
 
 Basic Access is required to analyze and manage production Google Ads accounts
-linked to our manager account. Test accounts do not serve ads and therefore
+that Iskhakov Ruslan is authorized to access through his manager account. Test
+accounts do not serve ads and therefore
 cannot provide the real performance metrics, conversion data, policy statuses,
 verification states, account activity, and operational history required to
 validate the analytics and monitoring functions of the platform.
 
-The requested access will be used only for accounts managed by our internal
-team and linked to our Google Ads manager account.
+The requested access will be used only for accounts that Iskhakov Ruslan is
+authorized to manage and that are linked to his Google Ads manager account.
 
 **Primary use:** reporting, analytics and monitoring.
 
@@ -48,8 +50,10 @@ team and linked to our Google Ads manager account.
 
 ## 2. Owner and users
 
-The tool is owned and operated by the repository owner and is intended for a
-small authenticated internal team. Supported roles are:
+The tool is owned and operated by Iskhakov Ruslan and is currently used only by
+him through the owner ADMIN account. The following roles are technical
+authorization boundaries implemented by the software; they do not represent a
+currently existing team:
 
 - `ADMIN`: manages protected connections, confirms changes, and reviews audit
   records.
