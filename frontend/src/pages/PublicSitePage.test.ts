@@ -38,7 +38,7 @@ describe("Axyro Analytics public positioning", () => {
     expect(publicText).toContain("explicit user confirmation");
     expect(publicText).toContain("PAUSED");
     expect(publicText).toContain("AuditLog");
-    expect(publicText).toContain("Production write operations are currently disabled");
+    expect(publicText).toContain("Google Ads API Explorer access permits supported production operations");
   });
 
   it("does not use prohibited mass-uploader positioning", () => {

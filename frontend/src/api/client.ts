@@ -10,6 +10,16 @@ export type User = {
 
 export type Session = { user: User; csrf_token: string };
 export type ExecutionMode = "SIMULATION" | "GOOGLE_TEST" | "PRODUCTION";
+export type GoogleAdsAccessInfo = {
+  level: "TEST" | "EXPLORER" | "BASIC" | "STANDARD" | string;
+  production_read_enabled: boolean;
+  production_mutate_enabled: boolean;
+  test_mutate_enabled: boolean;
+  production_operation_limit: number | null;
+  test_operation_limit: number;
+  basic_access_status: string;
+  unsupported_operations: string[];
+};
 export type AiAuthorityMode = "READ_ONLY" | "DRAFT_ONLY" | "CONFIRM_REQUIRED";
 
 export type AiScope = {
@@ -128,7 +138,12 @@ export type AiCapabilities = {
   role: User["role"];
   authority_modes: AiAuthorityMode[];
   environments: ExecutionMode[];
-  production: Record<string, boolean>;
+  production: {
+    read_enabled: boolean;
+    actions_enabled: boolean;
+    control_center_live_actions_enabled: boolean;
+    access_level: string;
+  };
   models: Array<Record<string, any>>;
   tools: Array<{ name: string; risk: string; version: string }>;
   limits: Record<string, number>;
@@ -1136,7 +1151,7 @@ export const api = {
   copyTemplate: (id: string, payload: unknown) =>
     request<CampaignTemplate>(`/templates/${id}/copy`, { method: "POST", body: JSON.stringify(payload) }),
 
-  getCapabilities: () => request<{ summary: Record<string, any>; fields: Array<Record<string, any>> }>(
+  getCapabilities: () => request<{ summary: Record<string, any>; fields: Array<Record<string, any>>; access: GoogleAdsAccessInfo }>(
     "/google-ads/capabilities"
   ),
   listLaunchBatches: () => request<LaunchBatch[]>("/launch-batches"),

@@ -116,7 +116,7 @@ def test_google_test_credential_source_is_json_serializable_for_audit() -> None:
     json.dumps(summary)
 
 
-def test_production_and_vcc2_mutate_are_blocked_before_google(monkeypatch) -> None:
+def test_test_access_blocks_production_mutate_before_google(monkeypatch) -> None:
     entered_google_client = False
 
     def forbidden_client(config):
@@ -140,7 +140,7 @@ def test_production_and_vcc2_mutate_are_blocked_before_google(monkeypatch) -> No
             "refresh_token": "refresh",
         },
     )
-    with pytest.raises(GoogleAdsAdapterError, match="PRODUCTION_MUTATE_BLOCKED"):
+    with pytest.raises(GoogleAdsAdapterError, match="PRODUCTION_MUTATE_ACCESS_DENIED"):
         GoogleAdsV242Adapter(config).validate_campaign_status(
             "1234567890",
             [{"resource_name": "customers/1234567890/campaigns/1"}],
@@ -151,10 +151,11 @@ def test_production_and_vcc2_mutate_are_blocked_before_google(monkeypatch) -> No
     vcc2 = _connection("PRODUCTION")
     with pytest.raises(GoogleAdsSafetyError) as error:
         require_google_test_connection_target(vcc2, None, "1234567890")
-    assert error.value.code == "GOOGLE_TEST_TARGET_NOT_FOUND"
+    assert error.value.code == "GOOGLE_ADS_TARGET_NOT_FOUND"
     with pytest.raises(GoogleAdsSafetyError) as error:
-        require_execution_mode_for_connection(vcc2, "PRODUCTION")
-    assert error.value.code == "PRODUCTION_MUTATE_BLOCKED"
+        require_execution_mode_for_connection(vcc2, "PRODUCTION", "TEST")
+    assert error.value.code == "PRODUCTION_MUTATE_ACCESS_DENIED"
+    require_execution_mode_for_connection(vcc2, "PRODUCTION", "EXPLORER")
 
 
 def test_test_account_membership_freshness_and_confirmation_are_required() -> None:
@@ -187,7 +188,7 @@ def test_test_account_membership_freshness_and_confirmation_are_required() -> No
         require_google_test_connection_target(
             connection, account, account.customer_id
         )
-    assert wrong_hierarchy.value.code == "TEST_HIERARCHY_MEMBERSHIP_FAILED"
+    assert wrong_hierarchy.value.code == "HIERARCHY_MEMBERSHIP_FAILED"
 
 
 def test_stale_and_manager_test_targets_are_rejected() -> None:
@@ -208,7 +209,7 @@ def test_stale_and_manager_test_targets_are_rejected() -> None:
             },
             confirmed_at=utcnow(),
         )
-    assert stale_error.value.code == "STALE_TEST_ACCOUNT_STATE"
+    assert stale_error.value.code == "STALE_ACCOUNT_STATE"
 
     manager = _account(
         connection,

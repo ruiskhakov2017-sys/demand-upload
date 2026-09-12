@@ -43,7 +43,7 @@ from app.domain_validation.service import (
     filter_blocked_campaigns,
     merge_domain_skips,
 )
-from app.google_ads.execution_guard import refresh_google_test_target
+from app.google_ads.execution_guard import refresh_google_ads_target
 from app.google_ads.interface import PlanExecutionResult
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
 from app.google_ads.safety import require_execution_mode_for_connection
@@ -459,7 +459,7 @@ def _adapter_for_run(
     try:
         require_execution_mode_for_connection(connection, plan.execution_mode)
         adapter = build_google_ads_adapter(db, connection)
-        _, _, request_ids = refresh_google_test_target(
+        _, _, request_ids = refresh_google_ads_target(
             db,
             connection,
             adapter,

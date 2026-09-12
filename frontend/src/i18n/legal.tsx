@@ -77,7 +77,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
           "Refresh tokens and other protected credentials are encrypted at rest with a server-side key.",
           "Credentials and sensitive URL parameters are excluded from frontend responses and application logs.",
           "Server-side sessions, secure cookies, CSRF checks, role checks, and an AuditLog protect workspace actions.",
-          "Production write operations remain disabled by a safety guard while Google Ads API Basic Access is pending."
+          "Supported production write operations are available with Google Ads API Explorer access and remain protected by preview, explicit confirmation, idempotency, audit logging, and readback."
         ]
       },
       {
@@ -163,7 +163,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
           "Refresh tokens и другие защищённые реквизиты шифруются серверным ключом.",
           "Реквизиты и чувствительные URL-параметры исключены из frontend-ответов и журналов приложения.",
           "Серверные сессии, secure cookies, CSRF, проверка ролей и AuditLog защищают действия в кабинете.",
-          "Изменяющие операции в production остаются отключёнными предохранителем, пока ожидается Google Ads API Basic Access."
+          "Поддерживаемые изменяющие операции в production доступны при Google Ads API Explorer и защищены preview, явным подтверждением, idempotency, аудитом и readback."
         ]
       },
       {
@@ -227,7 +227,7 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
         title: "4. Campaign operations",
         paragraphs: [
           "The platform includes secondary write functions for validated Demand Gen creation, pausing or enabling selected campaigns, and updating selected budgets. Every write action must be initiated by an authorized user, reviewed in a preview, validated, explicitly confirmed, recorded in AuditLog, and checked by readback when supported. New campaigns are created PAUSED and are not enabled automatically.",
-          "Production write operations are currently blocked until Google Ads API Basic Access is granted and the application safety controls are deliberately enabled. Users must not attempt to bypass those controls."
+          "Supported production write operations are available at Explorer, Basic, or Standard access. Users must not bypass preview, confirmation, idempotency, audit, or readback controls."
         ]
       },
       {
@@ -300,7 +300,7 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
         title: "4. Операции с кампаниями",
         paragraphs: [
           "Платформа включает вторичные write-функции: проверенное создание Demand Gen, приостановка или включение выбранных кампаний и изменение выбранных бюджетов. Каждое изменяющее действие запускается авторизованным пользователем, просматривается в preview, проверяется, явно подтверждается, записывается в AuditLog и, где возможно, проверяется повторным чтением. Новые кампании создаются в PAUSED и не включаются автоматически.",
-          "Изменяющие операции в production сейчас заблокированы до получения Google Ads API Basic Access и осознанного включения предохранителей приложения. Пользователь не должен пытаться обходить эти ограничения."
+          "Поддерживаемые изменяющие операции в production доступны при Explorer, Basic или Standard Access. Пользователь не должен обходить preview, подтверждение, idempotency, аудит и readback."
         ]
       },
       {

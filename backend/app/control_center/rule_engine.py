@@ -30,6 +30,7 @@ from app.db.models import (
     GoogleConnection,
     Notification,
 )
+from app.google_ads.safety import GoogleAdsSafetyError, require_execution_mode_for_connection
 
 MUTATING_RULE_ACTIONS = {
     "PAUSE": "PAUSE",
@@ -349,11 +350,17 @@ def evaluate_rules(
                     actions_today += 1
                     continue
                 connection = db.get(GoogleConnection, account.connection_id)
-                if not connection or connection.connection_mode != "GOOGLE_TEST":
-                    evaluation.status = "SKIPPED_PRODUCTION_GUARD"
-                    evaluation.skip_reason = "PRODUCTION_MUTATE_BLOCKED"
-                    result.add_skip("PRODUCTION_MUTATE_BLOCKED")
+                try:
+                    require_execution_mode_for_connection(
+                        connection,
+                        connection.connection_mode if connection else "UNKNOWN",
+                    )
+                except GoogleAdsSafetyError as exc:
+                    evaluation.status = "SKIPPED_ACCESS_GUARD"
+                    evaluation.skip_reason = exc.code
+                    result.add_skip(exc.code)
                     continue
+                assert connection is not None
                 action_request = _create_rule_action_request(
                     db,
                     rule,
@@ -362,6 +369,7 @@ def evaluate_rules(
                     campaign,
                     planned,
                     evaluated_at,
+                    connection.connection_mode,
                 )
                 result.action_request_ids.append(action_request.id)
                 result.queued_actions += 1
@@ -758,6 +766,7 @@ def _create_rule_action_request(
     campaign: ControlCenterCampaign,
     planned: PlannedRuleAction,
     now: datetime,
+    execution_mode: str,
 ) -> ControlCenterActionRequest:
     db.flush()
     previous_state = {
@@ -778,7 +787,7 @@ def _create_rule_action_request(
     payload: dict[str, Any] = {
         "campaign_ids": [str(campaign.id)],
         "action_type": planned.action_type,
-        "execution_mode": "GOOGLE_TEST",
+        "execution_mode": execution_mode,
         "rule_id": str(rule.id),
     }
     if planned.action_type == "SET_BUDGET":
@@ -791,7 +800,7 @@ def _create_rule_action_request(
         campaign_id=campaign.id,
         requested_by_id=rule.live_confirmed_by_id or rule.created_by_id,
         action_type=planned.action_type,
-        execution_mode="GOOGLE_TEST",
+        execution_mode=execution_mode,
         status="QUEUED",
         requested_payload=payload,
         pre_state={"campaigns": [previous_state]},
@@ -819,7 +828,7 @@ def _create_rule_action_request(
             "ok": True,
             "validate_only": False,
             "validate_only_pending_worker": True,
-            "execution_mode": "GOOGLE_TEST",
+            "execution_mode": execution_mode,
             "automated_rule": True,
             "rule_id": str(rule.id),
         },

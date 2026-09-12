@@ -89,7 +89,7 @@ from app.db.models import (
     UserRole,
 )
 from app.domain.audit import record_audit
-from app.google_ads.execution_guard import refresh_google_test_target
+from app.google_ads.execution_guard import refresh_google_ads_target
 from app.google_ads.safety import (
     GoogleAdsSafetyError,
     require_execution_mode_for_connection,
@@ -1566,11 +1566,6 @@ def preview_action(
     user: User = Depends(require_role(UserRole.ADMIN, UserRole.OPERATOR)),
     _: User = Depends(require_csrf),
 ) -> dict:
-    if payload.execution_mode == "PRODUCTION":
-        raise HTTPException(
-            status_code=409,
-            detail="PRODUCTION_MUTATE_BLOCKED: Production mutate полностью заблокирован.",
-        )
     campaigns = list(
         db.scalars(select(ControlCenterCampaign).where(ControlCenterCampaign.id.in_(payload.campaign_ids))).all()
     )
@@ -1591,7 +1586,7 @@ def preview_action(
     validation = {
         "ok": True,
         "validate_only": False,
-        "validate_only_pending_confirmation": payload.execution_mode == "GOOGLE_TEST",
+        "validate_only_pending_confirmation": payload.execution_mode != "SIMULATION",
         "execution_mode": payload.execution_mode,
         "google_contacted": False,
         "errors": [],
@@ -1609,7 +1604,7 @@ def preview_action(
         int(approval_threshold) if second_approval_required else None
     )
     fresh_states: dict[UUID, dict] = {}
-    if payload.execution_mode == "GOOGLE_TEST":
+    if payload.execution_mode != "SIMULATION":
         try:
             adapters = {}
             for account in accounts.values():
@@ -1619,7 +1614,7 @@ def preview_action(
                 require_execution_mode_for_connection(connection, payload.execution_mode)
                 adapter = build_google_ads_adapter(db, connection)
                 adapters[account.id] = adapter
-                _, _, account_request_ids = refresh_google_test_target(
+                _, _, account_request_ids = refresh_google_ads_target(
                     db,
                     connection,
                     adapter,
@@ -1861,18 +1856,18 @@ def _finalize_control_center_action(
         action.readback = {"items": simulated_readback}
         audit_action = "control_center.action.simulation.complete"
     else:
-        if action.execution_mode != "GOOGLE_TEST":
+        if action.execution_mode not in {"GOOGLE_TEST", "PRODUCTION"}:
             raise HTTPException(
                 status_code=409,
-                detail="PRODUCTION_MUTATE_BLOCKED: Production mutate полностью заблокирован.",
+                detail=f"UNKNOWN_EXECUTION_MODE: {action.execution_mode}",
             )
         if not settings.control_center_live_actions_enabled:
             raise HTTPException(
                 status_code=409,
-                detail="CONTROL_CENTER_LIVE_ACTIONS_DISABLED: действия Google Test отключены runtime gate.",
+                detail="CONTROL_CENTER_LIVE_ACTIONS_DISABLED: изменяющие действия Google Ads отключены runtime gate.",
             )
         action.status = "QUEUED"
-        audit_action = "control_center.action.google_test.confirm"
+        audit_action = "control_center.action.google.confirm"
     record_audit(
         db,
         request,
@@ -1883,7 +1878,7 @@ def _finalize_control_center_action(
         {"action_type": action.action_type, "execution_mode": action.execution_mode},
     )
     db.commit()
-    if action.execution_mode == "GOOGLE_TEST":
+    if action.execution_mode in {"GOOGLE_TEST", "PRODUCTION"}:
         from app.jobs.control_center_tasks import execute_control_center_action
 
         execute_control_center_action.delay(str(action.id))

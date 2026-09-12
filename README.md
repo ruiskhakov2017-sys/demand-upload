@@ -53,7 +53,7 @@ Iskhakov Ruslan как единственный владелец и операт
 - Медиатека с проверкой размеров/пропорций, SHA-256-дедупликацией, защищенным предпросмотром и YouTube upload polling.
 - Шаблоны, планы, задания, модерация, статистика, Brocard, уведомления, журнал и настройки, связанные с API и PostgreSQL.
 - Brocard API v2: фоновая синхронизация счетов и карт с сохранением баланса, статусов и request IDs.
-- Три изолированных режима: `SIMULATION`, `GOOGLE_TEST` и `PRODUCTION`. Только `GOOGLE_TEST` допускает реальные запросы mutate после проверки `test_account`; production mutate жёстко заблокирован.
+- Три изолированных режима: `SIMULATION`, `GOOGLE_TEST` и `PRODUCTION`. `TEST` разрешает mutate только подтверждённых тестовых аккаунтов; `EXPLORER`, `BASIC` и `STANDARD` разрешают поддерживаемые production-операции после preview, явного подтверждения и повторного чтения.
 - Session cookies, CSRF, роли `ADMIN`/`OPERATOR`/`VIEWER`, аудит и зашифрованные внешние реквизиты.
 - Семь Docker-сервисов: `frontend`, `api`, `worker`, `scheduler`, `postgres`, `redis`, `reverse-proxy`.
 

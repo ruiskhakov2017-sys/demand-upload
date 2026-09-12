@@ -41,8 +41,8 @@ from app.domain_validation.service import (
     merge_domain_skips,
 )
 from app.google_ads.execution_guard import (
-    refresh_google_test_snapshot_targets,
-    refresh_google_test_target,
+    refresh_google_ads_snapshot_targets,
+    refresh_google_ads_target,
 )
 from app.google_ads.interface import PlanExecutionResult
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
@@ -193,7 +193,7 @@ def deploy_plan(plan_id: str, job_id: str) -> dict:
                     raise ValueError("Активное подключение Google недоступно")
                 require_execution_mode_for_connection(connection, plan.execution_mode)
                 adapter = build_google_ads_adapter(db, connection)
-                guard_request_ids = refresh_google_test_snapshot_targets(
+                guard_request_ids = refresh_google_ads_snapshot_targets(
                     db,
                     connection,
                     adapter,
@@ -413,9 +413,9 @@ def apply_campaign_status_action(action_id: str, job_id: str) -> dict:
         db.commit()
         try:
             adapter = _status_adapter(db, batch, action.execution_mode)
-            if action.execution_mode == "GOOGLE_TEST":
+            if action.execution_mode in {"GOOGLE_TEST", "PRODUCTION"}:
                 connection = db.get(GoogleConnection, batch.connection_id)
-                _, _, guard_request_ids = refresh_google_test_target(
+                _, _, guard_request_ids = refresh_google_ads_target(
                     db,
                     connection,
                     adapter,
@@ -586,6 +586,7 @@ def _status_adapter(db, batch: LaunchBatch | None, execution_mode: str):
     connection = db.get(GoogleConnection, batch.connection_id) if batch and batch.connection_id else None
     if not is_google_connection_active(connection):
         raise ValueError("Активное подключение Google недоступно")
+    require_execution_mode_for_connection(connection, execution_mode)
     return build_google_ads_adapter(db, connection)
 
 
@@ -643,7 +644,7 @@ def upload_youtube_video(job_id: str) -> dict:
                     raise ValueError("Активное подключение Google недоступно")
                 adapter = build_google_ads_adapter(db, connection)
                 confirmed_at = datetime.fromisoformat(job.payload["confirmed_at"])
-                refresh_google_test_target(
+                refresh_google_ads_target(
                     db,
                     connection,
                     adapter,

@@ -33,12 +33,13 @@ type Notice = { message: string; severity: "success" | "error" | "info" };
 export function ConnectionsPage() {
   const queryClient = useQueryClient();
   const connections = useQuery({ queryKey: ["connections"], queryFn: api.listConnections });
+  const capabilities = useQuery({ queryKey: ["capabilities"], queryFn: api.getCapabilities });
   const params = new URLSearchParams(window.location.search);
   const [form, setForm] = useState({
     name: "",
     login_customer_id: "",
     auth_type: "OAUTH_WEB" as AuthType,
-    environment: "TEST" as Environment,
+    environment: "PRODUCTION" as Environment,
     connection_mode: "PRODUCTION" as ConnectionMode,
     credential_source_connection_id: "",
     developer_token: "",
@@ -95,11 +96,20 @@ export function ConnectionsPage() {
   const test = useMutation({ mutationFn: api.testConnection, onSuccess: (result) => { setNotice({ message: result.message, severity: result.ok ? "success" : "error" }); queryClient.invalidateQueries({ queryKey: ["connections"] }); } });
   const sync = useMutation({ mutationFn: api.syncAccounts, onSuccess: (result) => { setNotice({ message: t("connections.syncedAccounts", { count: result.synced }), severity: "success" }); queryClient.invalidateQueries({ queryKey: ["accounts"] }); } });
   const disconnect = useMutation({ mutationFn: api.disconnectOauth, onSuccess: () => { setNotice({ message: t("ui.2bed1afe2b"), severity: "success" }); queryClient.invalidateQueries({ queryKey: ["connections"] }); } });
-  const error = connections.error || create.error || oauth.error || test.error || sync.error || disconnect.error;
+  const error = connections.error || capabilities.error || create.error || oauth.error || test.error || sync.error || disconnect.error;
+  const access = capabilities.data?.access;
 
   return (
     <Stack spacing={3}>
       <Box><Typography variant="h4">{t("ui.451c32c81d")}</Typography><Typography color="text.secondary">{t("ui.014714f9ac")}</Typography></Box>
+      {access && <Alert severity={access.production_mutate_enabled ? "success" : "warning"}>
+        {t("googleAccess.summary", { level: access.level })}{" "}
+        {t("googleAccess.limits", {
+          production: access.production_operation_limit ?? "∞",
+          test: access.test_operation_limit
+        })}{" "}
+        {access.basic_access_status === "PENDING_BRAND_VERIFICATION" && t("googleAccess.basicPending")}
+      </Alert>}
       {error && <Alert severity="error">{error.message}</Alert>}
       {notice && <Alert severity={notice.severity} onClose={() => setNotice(null)}>{notice.message}</Alert>}
       <Paper variant="outlined" sx={{ p: 3 }}>
@@ -119,7 +129,11 @@ export function ConnectionsPage() {
                     ...form,
                     connection_mode,
                     auth_type: connection_mode === "GOOGLE_TEST" ? "OAUTH_WEB" : form.auth_type,
-                    environment: connection_mode === "GOOGLE_TEST" ? "TEST" : form.environment
+                    environment: connection_mode === "GOOGLE_TEST"
+                      ? "TEST"
+                      : connection_mode === "PRODUCTION"
+                        ? "PRODUCTION"
+                        : form.environment
                   });
                 }}
               >

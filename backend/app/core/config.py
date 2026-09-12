@@ -26,19 +26,20 @@ class Settings(BaseSettings):
     setup_token: str | None = Field(default=None, alias="SETUP_TOKEN")
     app_encryption_key: str = Field(alias="APP_ENCRYPTION_KEY")
     google_ads_api_version: str = Field(default="v24.2", alias="GOOGLE_ADS_API_VERSION")
-    control_center_live_actions_enabled: bool = Field(default=False, alias="CONTROL_CENTER_LIVE_ACTIONS_ENABLED")
+    google_ads_access_level: str = Field(default="EXPLORER", alias="GOOGLE_ADS_ACCESS_LEVEL")
+    control_center_live_actions_enabled: bool = Field(default=True, alias="CONTROL_CENTER_LIVE_ACTIONS_ENABLED")
     control_center_daily_operation_limit: int = Field(
         default=15_000, ge=100, alias="CONTROL_CENTER_DAILY_OPERATION_LIMIT"
     )
     openai_api_key: SecretStr | None = Field(default=None, alias="OPENAI_API_KEY")
     ai_enabled: bool = Field(default=True, alias="AI_ENABLED")
     ai_kill_switch: bool = Field(default=False, alias="AI_KILL_SWITCH")
-    ai_production_read_enabled: bool = Field(default=False, alias="AI_PRODUCTION_READ_ENABLED")
-    ai_production_actions_enabled: bool = Field(default=False, alias="AI_PRODUCTION_ACTIONS_ENABLED")
-    ai_pause_actions_enabled: bool = Field(default=False, alias="AI_PAUSE_ACTIONS_ENABLED")
-    ai_enable_actions_enabled: bool = Field(default=False, alias="AI_ENABLE_ACTIONS_ENABLED")
-    ai_budget_actions_enabled: bool = Field(default=False, alias="AI_BUDGET_ACTIONS_ENABLED")
-    ai_demand_gen_actions_enabled: bool = Field(default=False, alias="AI_DEMAND_GEN_ACTIONS_ENABLED")
+    ai_production_read_enabled: bool = Field(default=True, alias="AI_PRODUCTION_READ_ENABLED")
+    ai_production_actions_enabled: bool = Field(default=True, alias="AI_PRODUCTION_ACTIONS_ENABLED")
+    ai_pause_actions_enabled: bool = Field(default=True, alias="AI_PAUSE_ACTIONS_ENABLED")
+    ai_enable_actions_enabled: bool = Field(default=True, alias="AI_ENABLE_ACTIONS_ENABLED")
+    ai_budget_actions_enabled: bool = Field(default=True, alias="AI_BUDGET_ACTIONS_ENABLED")
+    ai_demand_gen_actions_enabled: bool = Field(default=True, alias="AI_DEMAND_GEN_ACTIONS_ENABLED")
     ai_live_rules_enabled: bool = Field(default=False, alias="AI_LIVE_RULES_ENABLED")
     ai_max_model_turns: int = Field(default=4, ge=1, le=8, alias="AI_MAX_MODEL_TURNS")
     ai_max_read_tool_calls: int = Field(default=6, ge=1, le=20, alias="AI_MAX_READ_TOOL_CALLS")
@@ -100,6 +101,14 @@ class Settings(BaseSettings):
         normalized = value.strip().lower()
         if normalized not in {"monitor", "block"}:
             raise ValueError("DOMAIN_REPUTATION_ENFORCEMENT must be monitor or block")
+        return normalized
+
+    @field_validator("google_ads_access_level")
+    @classmethod
+    def validate_google_ads_access_level(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if normalized not in {"TEST", "EXPLORER", "BASIC", "STANDARD"}:
+            raise ValueError("GOOGLE_ADS_ACCESS_LEVEL must be TEST, EXPLORER, BASIC or STANDARD")
         return normalized
 
     @property
