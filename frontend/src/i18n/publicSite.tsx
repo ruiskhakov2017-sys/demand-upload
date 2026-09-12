@@ -148,7 +148,7 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
       "Record the requested and actual result in AuditLog"
     ],
     productionNotice:
-      "Production write operations are currently disabled by an application safety guard while Google Ads API Basic Access is pending. Test-account operations remain isolated from production accounts.",
+      "Google Ads API Explorer access permits supported production operations with preview, explicit confirmation, idempotency safeguards, audit logging, and readback. Test-account operations remain isolated from production accounts.",
     deploymentEyebrow: "Secondary module",
     deploymentTitle: "Validated campaign deployment",
     deploymentBody:
@@ -249,7 +249,7 @@ export const PUBLIC_COPY: Record<Locale, PublicCopy> = {
       "Запись запрошенного и фактического результата в AuditLog"
     ],
     productionNotice:
-      "Изменяющие операции в production сейчас отключены предохранителем приложения, пока ожидается Google Ads API Basic Access. Операции тестовых аккаунтов изолированы от рабочих аккаунтов.",
+      "Google Ads API Explorer разрешает поддерживаемые production-операции с preview, явным подтверждением, idempotency-защитой, аудитом и readback. Операции тестовых аккаунтов изолированы от рабочих аккаунтов.",
     deploymentEyebrow: "Дополнительный модуль",
     deploymentTitle: "Validated campaign deployment",
     deploymentBody:

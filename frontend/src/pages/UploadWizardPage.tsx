@@ -264,7 +264,7 @@ export function NewUploadPage({ navigate }: { navigate: Navigate }) {
             <ToggleButton value="GOOGLE_TEST">Google Test</ToggleButton>
             <ToggleButton value="PRODUCTION">Production</ToggleButton>
           </ToggleButtonGroup>
-          <Alert severity={mode === "PRODUCTION" ? "error" : mode === "GOOGLE_TEST" ? "success" : "info"}>
+          <Alert severity={mode === "PRODUCTION" ? "success" : mode === "GOOGLE_TEST" ? "success" : "info"}>
             {executionModeDescription(mode)}
           </Alert>
           <Box>
@@ -1048,7 +1048,7 @@ function GoogleValidationStep(props: BuilderStepProps) {
   const result = props.plan?.google_validation;
   return (
     <StepSection title={t("builder.step.googleValidation")}>
-      <Alert severity={props.form.execution_mode === "PRODUCTION" ? "error" : props.form.execution_mode === "GOOGLE_TEST" ? "warning" : "info"}>{props.form.execution_mode === "SIMULATION" ? t("ui.a8558225b1") : props.form.execution_mode === "GOOGLE_TEST" ? t("googleMode.validateTest") : t("googleMode.validateProductionBlocked")}</Alert>
+      <Alert severity={props.form.execution_mode === "PRODUCTION" ? "success" : props.form.execution_mode === "GOOGLE_TEST" ? "warning" : "info"}>{props.form.execution_mode === "SIMULATION" ? t("ui.a8558225b1") : props.form.execution_mode === "GOOGLE_TEST" ? t("googleMode.validateTest") : t("googleMode.validateProduction")}</Alert>
       <Button variant="contained" startIcon={<FactCheckOutlinedIcon />} disabled={!props.plan?.local_validation.valid || props.busy} onClick={props.onValidate}>{t("ui.34f3cdcfdb")}</Button>
       {props.plan?.validated_at && <><Alert severity={result?.ok ? "success" : "error"}>{result?.ok ? t("ui.cfff2f91e4") : t("ui.fa25f1de8e")}</Alert><IssueList severity="error" title={t("ui.681b5ae3d2")} items={result?.errors || []} /><Typography variant="body2">{t("common.requestIds")} {props.plan.request_ids.length ? props.plan.request_ids.join(", ") : t("ui.0d691505ba")}</Typography></>}
     </StepSection>
@@ -1063,8 +1063,8 @@ function CreationStep(props: BuilderStepProps) {
   const plan = props.plan;
   return (
     <StepSection title={t("builder.step.creation")}>
-      <Alert severity={props.form.execution_mode === "PRODUCTION" ? "error" : props.form.execution_mode === "GOOGLE_TEST" ? "warning" : "info"}>{props.form.execution_mode === "SIMULATION" ? t("ui.9c49d94bbc") : props.form.execution_mode === "GOOGLE_TEST" ? t("googleMode.createTest") : t("googleMode.productionMutateBlocked")}</Alert>
-      <Button variant="contained" color="warning" startIcon={<PlayArrowIcon />} disabled={!props.confirmed || plan?.status !== "VALIDATED" || props.busy || props.form.execution_mode === "PRODUCTION"} onClick={props.onConfirm}>{t("ui.318f6d31be")}</Button>
+      <Alert severity={props.form.execution_mode === "PRODUCTION" ? "warning" : props.form.execution_mode === "GOOGLE_TEST" ? "warning" : "info"}>{props.form.execution_mode === "SIMULATION" ? t("ui.9c49d94bbc") : props.form.execution_mode === "GOOGLE_TEST" ? t("googleMode.createTest") : t("googleMode.productionMutate")}</Alert>
+      <Button variant="contained" color="warning" startIcon={<PlayArrowIcon />} disabled={!props.confirmed || plan?.status !== "VALIDATED" || props.busy} onClick={props.onConfirm}>{t("ui.318f6d31be")}</Button>
       {plan && <Stack direction="row" spacing={1}><StatusBadge value={plan.status} /><Chip label={t("common.resourceCount", { count: plan.resource_names.length })} /></Stack>}
     </StepSection>
   );

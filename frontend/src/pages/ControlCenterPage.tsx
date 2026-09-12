@@ -896,7 +896,7 @@ function SummaryStrip({ data, loading }: {
         {
             label: cc("controlCenter.auto.083"),
             value: data?.quota?.used_today,
-            detail: cc("controlCenter.auto.084") + (data?.quota?.manual_reserve ?? "—")
+            detail: `${data?.quota?.access?.level ?? "—"} · ${data?.quota?.production?.used_today ?? 0}/${data?.quota?.production?.operation_limit ?? "∞"}`
         }
     ];
     return (<Box sx={{
@@ -920,7 +920,11 @@ function SummaryStrip({ data, loading }: {
           <Typography variant="caption" color="text.secondary">{item.detail}</Typography>
         </Box>))}
       {data?.quota && (<Typography variant="caption" color="text.secondary" sx={{ gridColumn: "1 / -1", px: 2, py: 0.75, borderTop: 1, borderColor: "divider" }}>
-          {cc("controlCenter.full.165")}{cc("controlCenter.auto.085")}{data.quota.forecast_end_of_day}{cc("controlCenter.auto.086")}{" "}{data.quota.internal_remaining}.
+          {t("googleAccess.controlCenter", {
+            level: data.quota.access?.level,
+            production: data.quota.access?.production_operation_limit ?? "∞",
+            test: data.quota.access?.test_operation_limit
+          })}{" "}{data.quota.disclaimer}
         </Typography>)}
       {data?.metrics?.mixed_currencies && (<Alert severity="warning" sx={{ gridColumn: "1 / -1", borderRadius: 0 }}>{cc("controlCenter.full.052")}</Alert>)}
     </Box>);
@@ -1782,12 +1786,12 @@ function CampaignsWorkspace({ canEdit, accountId, onClearAccount }: {
     }
     return (<Stack spacing={2}>
       {accountId && <Alert severity="info" action={<Button color="inherit" size="small" onClick={onClearAccount}>{cc("controlCenter.full.163")}</Button>}>{cc("controlCenter.full.164")}</Alert>}
-      <Alert severity={executionMode === "PRODUCTION" ? "error" : executionMode === "GOOGLE_TEST" ? "warning" : "info"}>
+      <Alert severity={executionMode === "PRODUCTION" ? "warning" : executionMode === "GOOGLE_TEST" ? "warning" : "info"}>
         {executionMode === "SIMULATION"
             ? t("googleMode.simulationDescription")
             : executionMode === "GOOGLE_TEST"
                 ? t("googleMode.testDescription")
-                : t("googleMode.productionMutateBlocked")}
+                : t("googleMode.productionMutate")}
       </Alert>
       {(error || actionResult.error) && <Alert severity="error">{(error || actionResult.error)?.message}</Alert>}
       <Paper variant="outlined" sx={{ p: 2 }}>
@@ -1826,7 +1830,7 @@ function CampaignsWorkspace({ canEdit, accountId, onClearAccount }: {
             <Select value={executionMode} label={t("googleMode.actionLabel")} onChange={(event) => setExecutionMode(event.target.value as ExecutionMode)}>
               <MenuItem value="SIMULATION">Simulation</MenuItem>
               <MenuItem value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem>
-              <MenuItem value="PRODUCTION" disabled>{t("googleMode.productionShort")}</MenuItem>
+              <MenuItem value="PRODUCTION">{t("googleMode.productionShort")}</MenuItem>
             </Select>
           </FormControl>
           <Button size="small" startIcon={<PauseCircleOutlineIcon />} disabled={!canEdit || previewAction.isPending} onClick={() => requestAction("PAUSE")}>{cc("controlCenter.auto.154")}</Button>

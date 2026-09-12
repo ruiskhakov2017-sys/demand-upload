@@ -25,11 +25,7 @@ from app.db.models import (
 )
 from app.domain.audit import record_audit
 from app.domain.media import inspect_media
-from app.google_ads.safety import (
-    GoogleAdsSafetyError,
-    require_execution_mode_for_connection,
-    require_google_test_connection_target,
-)
+from app.google_ads.safety import GoogleAdsSafetyError, require_connection_target, require_execution_mode_for_connection
 from app.google_ads.service import is_google_connection_active
 from app.storage.filesystem import FilesystemStorage
 
@@ -205,8 +201,8 @@ def queue_youtube_upload(
         )
         try:
             require_execution_mode_for_connection(connection, payload.execution_mode)
-            require_google_test_connection_target(
-                connection, account, payload.customer_id
+            require_connection_target(
+                connection, account, payload.customer_id, payload.execution_mode
             )
         except GoogleAdsSafetyError as exc:
             raise HTTPException(status_code=409, detail=f"{exc.code}: {exc}") from exc

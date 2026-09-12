@@ -41,7 +41,7 @@ from app.domain.planner import build_batch_plan_snapshot, build_plan_snapshot, v
 from app.domain.scheduling import snapshot_fingerprint
 from app.domain_validation.persistence import validate_snapshot
 from app.domain_validation.service import filter_blocked_campaigns, merge_domain_skips
-from app.google_ads.execution_guard import refresh_google_test_snapshot_targets
+from app.google_ads.execution_guard import refresh_google_ads_snapshot_targets
 from app.google_ads.mock_adapter import MockGoogleAdsAdapter
 from app.google_ads.safety import (
     GoogleAdsSafetyError,
@@ -50,6 +50,12 @@ from app.google_ads.safety import (
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
 
 router = APIRouter(prefix="/plans", tags=["plans"])
+
+
+def deployment_idempotency_key(fingerprint: str, instance_ids: list[str]) -> str:
+    selection_material = ",".join(sorted(str(item) for item in instance_ids)) if instance_ids else "all"
+    selection_key = hashlib.sha256(selection_material.encode()).hexdigest()[:16]
+    return f"deploy-plan:{fingerprint}:{selection_key}"
 
 
 @router.get("", response_model=list[PlanOut])
@@ -227,7 +233,7 @@ def validate_plan(
         try:
             require_execution_mode_for_connection(connection, plan.execution_mode)
             adapter = build_google_ads_adapter(db, connection)
-            guard_request_ids = refresh_google_test_snapshot_targets(
+            guard_request_ids = refresh_google_ads_snapshot_targets(
                 db,
                 connection,
                 adapter,
@@ -318,9 +324,7 @@ def confirm_plan(
             )
         return _confirm_schedule(db, plan, schedule, payload, request, user)
     selected_instance_ids = valid_instance_ids if payload.allow_partial else []
-    selection_material = ",".join(sorted(selected_instance_ids)) if selected_instance_ids else "all"
-    selection_key = hashlib.sha256(selection_material.encode()).hexdigest()[:16]
-    key = f"deploy-plan:{plan.fingerprint}:{selection_key}"
+    key = deployment_idempotency_key(plan.fingerprint, selected_instance_ids)
     job = db.scalar(select(Job).where(Job.idempotency_key == key))
     if job and job.status in {JobStatus.QUEUED.value, JobStatus.RUNNING.value, JobStatus.SUCCEEDED.value}:
         return PlanConfirmOut(plan=PlanOut.model_validate(plan), job_id=job.id, reused=True)

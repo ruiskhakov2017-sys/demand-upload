@@ -15,6 +15,7 @@ class GoogleAdsConnectionConfig:
     developer_token: str
     auth_payload: dict
     connection_mode: str = "PRODUCTION"
+    access_level: str = "TEST"
     timeout_seconds: int = 60
     retry_count: int = 3
 

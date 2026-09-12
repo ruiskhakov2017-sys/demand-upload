@@ -42,7 +42,7 @@ from app.db.models import (
     JobStatus,
     Notification,
 )
-from app.google_ads.execution_guard import refresh_google_test_target
+from app.google_ads.execution_guard import refresh_google_ads_target
 from app.google_ads.safety import GoogleAdsSafetyError
 from app.google_ads.service import build_google_ads_adapter, is_google_connection_active
 from app.jobs.celery_app import celery_app
@@ -1505,10 +1505,10 @@ def execute_control_center_action(action_id: str) -> dict:
         )
         if not action:
             return {"ok": False, "error": "action not found or locked"}
-        if action.execution_mode != "GOOGLE_TEST" or action.status != "QUEUED":
+        if action.execution_mode not in {"GOOGLE_TEST", "PRODUCTION"} or action.status != "QUEUED":
             return {
                 "ok": False,
-                "error": "action is not a queued GOOGLE_TEST action",
+                "error": "action is not a queued Google Ads action",
             }
         if not settings.control_center_live_actions_enabled:
             action.status = "BLOCKED"
@@ -1579,7 +1579,7 @@ def execute_control_center_action(action_id: str) -> dict:
                 ).all()
             }
             try:
-                _, _, account_request_ids = refresh_google_test_target(
+                _, _, account_request_ids = refresh_google_ads_target(
                     db,
                     connection,
                     adapter,
@@ -1726,7 +1726,7 @@ def execute_control_center_action(action_id: str) -> dict:
                         "actual": actual_value,
                         "readback_verified": True,
                         "readback_at": utcnow().isoformat(),
-                        "google_test": True,
+                        "execution_mode": action.execution_mode,
                         "state": current,
                     }
                     item.request_id = (
@@ -1782,7 +1782,7 @@ def execute_control_center_action(action_id: str) -> dict:
         action.validation = {
             "ok": not any_failed,
             "validate_only": True,
-            "execution_mode": "GOOGLE_TEST",
+            "execution_mode": action.execution_mode,
             "google_contacted": True,
             "request_ids": list(dict.fromkeys(validation_request_ids)),
         }

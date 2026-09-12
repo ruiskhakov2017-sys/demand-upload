@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from app.core.config import settings
+from app.google_ads.access import get_access_profile, normalize_access_level
 from app.google_ads.client_factory import google_ads_client, normalize_customer_id
 from app.google_ads.errors import GoogleAdsAdapterError
 from app.google_ads.interface import (
@@ -392,7 +393,7 @@ class GoogleAdsV242Adapter:
         *,
         validate_only: bool,
     ) -> PlanExecutionResult:
-        self._require_google_test_mutate()
+        self._require_mutate_access()
         requested_status = status.upper()
         if requested_status not in {"ENABLED", "PAUSED"}:
             raise ValueError("Google Ads поддерживает только ENABLED или PAUSED для этого действия")
@@ -475,7 +476,7 @@ class GoogleAdsV242Adapter:
         amount_micros: int,
         validate_only: bool,
     ) -> PlanExecutionResult:
-        self._require_google_test_mutate()
+        self._require_mutate_access()
         if amount_micros <= 0:
             raise ValueError("Бюджет должен быть больше нуля")
         request_ids: list[str] = []
@@ -1517,7 +1518,7 @@ class GoogleAdsV242Adapter:
         }
 
     def _execute_plan(self, snapshot: dict, validate_only: bool) -> PlanExecutionResult:
-        self._require_google_test_mutate()
+        self._require_mutate_access()
         errors: list[dict] = []
         warnings: list[dict] = []
         request_ids: list[str] = []
@@ -1612,11 +1613,27 @@ class GoogleAdsV242Adapter:
             },
         )
 
-    def _require_google_test_mutate(self) -> None:
-        if self.config.connection_mode != "GOOGLE_TEST":
+    def _require_mutate_access(self) -> None:
+        profile = get_access_profile(self.config.access_level)
+        if profile is None:
             raise GoogleAdsAdapterError(
-                "PRODUCTION_MUTATE_BLOCKED: Google Ads mutate разрешён только для отдельного подключения GOOGLE_TEST."
+                "UNKNOWN_GOOGLE_ADS_ACCESS_LEVEL: "
+                f"{normalize_access_level(self.config.access_level) or 'UNKNOWN'}"
             )
+        mode = str(self.config.connection_mode or "").upper()
+        if mode == "GOOGLE_TEST" and profile.test_mutate_enabled:
+            return
+        if mode == "PRODUCTION" and profile.production_mutate_enabled:
+            return
+        if mode == "PRODUCTION":
+            raise GoogleAdsAdapterError(
+                f"PRODUCTION_MUTATE_ACCESS_DENIED: уровень {profile.level} "
+                "не разрешает production mutate."
+            )
+        raise GoogleAdsAdapterError(
+            f"GOOGLE_ADS_MUTATE_ACCESS_DENIED: режим {mode or 'UNKNOWN'} "
+            f"не разрешён для уровня {profile.level}."
+        )
 
     def _find_existing_campaign(self, client: Any, customer_id: str, campaign_name: str) -> str | None:
         escaped = campaign_name.replace("\\", "\\\\").replace("'", "\\'")
@@ -1949,7 +1966,7 @@ class GoogleAdsV242Adapter:
     def start_youtube_video_upload(
         self, customer_id: str, file_path: str, title: str, description: str
     ) -> YouTubeUploadResult:
-        self._require_google_test_mutate()
+        self._require_mutate_access()
         with google_ads_client(self.config) as client:
             service = client.get_service("YouTubeVideoUploadService")
             request = client.get_type("CreateYouTubeVideoUploadRequest")

@@ -487,7 +487,10 @@ def quick_filter_counts(db: Session, accounts: list[CustomerAccount]) -> dict[st
 
 
 def quota_summary(db: Session) -> dict:
-    today = datetime.now(UTC).date()
+    from app.google_ads.access import access_summary
+
+    now = datetime.now(UTC)
+    window_start = now - timedelta(hours=24)
     rows = db.execute(
         select(
             ControlCenterQuotaLedger.connection_id,
@@ -502,32 +505,91 @@ def quota_summary(db: Session) -> dict:
                 )
             ),
         )
-        .where(ControlCenterQuotaLedger.operation_date == today)
+        .where(ControlCenterQuotaLedger.created_at >= window_start)
         .group_by(ControlCenterQuotaLedger.connection_id)
     ).all()
-    connections = {connection.id: connection.name for connection in db.scalars(select(GoogleConnection)).all()}
+    category_rows = db.execute(
+        select(
+            ControlCenterQuotaLedger.category,
+            func.sum(ControlCenterQuotaLedger.operation_count),
+        )
+        .where(ControlCenterQuotaLedger.created_at >= window_start)
+        .group_by(ControlCenterQuotaLedger.category)
+    ).all()
+    connections = {connection.id: connection for connection in db.scalars(select(GoogleConnection)).all()}
     used = sum(int(row[1] or 0) for row in rows)
     failed = sum(int(row[2] or 0) for row in rows)
-    elapsed_minutes = max(1, datetime.now(UTC).hour * 60 + datetime.now(UTC).minute)
-    forecast = min(
-        settings.control_center_daily_operation_limit,
-        round(used * 1440 / elapsed_minutes),
+    production_used = sum(
+        int(row[1] or 0)
+        for row in rows
+        if connections.get(row[0])
+        and connections[row[0]].connection_mode == "PRODUCTION"
     )
-    reserve = round(settings.control_center_daily_operation_limit * 0.2)
-    internal_remaining = max(0, settings.control_center_daily_operation_limit - reserve - used)
+    test_used = sum(
+        int(row[1] or 0)
+        for row in rows
+        if connections.get(row[0])
+        and connections[row[0]].connection_mode == "GOOGLE_TEST"
+    )
+    access = access_summary(settings.google_ads_access_level)
+    production_limit = access["production_operation_limit"]
+    test_limit = access["test_operation_limit"]
+    forecast = used
+    production_remaining = (
+        max(0, production_limit - production_used)
+        if production_limit is not None
+        else None
+    )
+    test_remaining = max(0, test_limit - test_used)
+    production_exhausted = bool(
+        production_limit is not None and production_used >= production_limit
+    )
+    test_exhausted = test_used >= test_limit
     return {
         "used_today": used,
         "forecast_end_of_day": forecast,
-        "internal_remaining": internal_remaining,
-        "manual_reserve": reserve,
+        "internal_remaining": production_remaining,
+        "manual_reserve": 0,
         "failed_operations": failed,
-        "daily_planning_limit": settings.control_center_daily_operation_limit,
-        "background_throttled": used >= settings.control_center_daily_operation_limit - reserve,
-        "disclaimer": "Внутренняя оценка программы, а не официальный остаток Google.",
+        "window_hours": 24,
+        "daily_planning_limit": production_limit,
+        "background_throttled": production_exhausted or test_exhausted,
+        "disclaimer": (
+            "Внутренняя оценка за скользящие 24 часа, а не официальный остаток Google; "
+            "search-запросы и mutate учитываются разными категориями и не считаются взаимозаменяемыми."
+        ),
+        "access": access,
+        "production": {
+            "used_today": production_used,
+            "operation_limit": production_limit,
+            "estimated_remaining": production_remaining,
+        },
+        "test": {
+            "used_today": test_used,
+            "operation_limit": test_limit,
+            "estimated_remaining": test_remaining,
+        },
+        "by_category": [
+            {
+                "category": str(row[0]),
+                "request_kind": "MUTATE" if "MUTATE" in str(row[0]).upper() else "SEARCH_OR_READ",
+                "operations": int(row[1] or 0),
+            }
+            for row in category_rows
+        ],
         "by_connection": [
             {
                 "connection_id": str(row[0]) if row[0] else None,
-                "connection_name": connections.get(row[0], "Неизвестное подключение"),
+                "connection_name": (
+                    connections[row[0]].name
+                    if connections.get(row[0])
+                    else "Неизвестное подключение"
+                ),
+                "connection_mode": (
+                    connections[row[0]].connection_mode
+                    if connections.get(row[0])
+                    else None
+                ),
                 "operations": int(row[1] or 0),
             }
             for row in rows

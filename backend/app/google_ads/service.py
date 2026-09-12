@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import decrypt_json
 from app.db.models import ConnectionStatus, GoogleConnection
 from app.google_ads.client_factory import normalize_customer_id
@@ -47,6 +48,7 @@ def build_google_ads_adapter(
         auth_type=connection.auth_type,
         environment=connection.environment,
         connection_mode=connection.connection_mode,
+        access_level=settings.google_ads_access_level,
         developer_token=developer_token,
         auth_payload=auth_payload,
         timeout_seconds=connection.timeout_seconds,

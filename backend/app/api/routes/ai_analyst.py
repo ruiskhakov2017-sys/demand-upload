@@ -89,7 +89,10 @@ ALLOWED_AUDIO_TYPES = {
 
 @router.get("/capabilities")
 def ai_capabilities(db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> dict[str, Any]:
+    from app.google_ads.access import access_summary
+
     gates = effective_ai_settings(db)
+    google_access = access_summary(settings.google_ads_access_level)
     stored = db.scalar(select(AiAdminSetting).where(AiAdminSetting.key == "global"))
     profiles = list(db.scalars(select(AiModelProfile).order_by(AiModelProfile.name)).all())
     registry = ToolRegistry()
@@ -113,9 +116,16 @@ def ai_capabilities(db: Session = Depends(get_db), user: User = Depends(get_curr
         else ["READ_ONLY", "DRAFT_ONLY", "CONFIRM_REQUIRED"],
         "environments": ["SIMULATION", "GOOGLE_TEST", "PRODUCTION"],
         "production": {
-            "read_enabled": bool(gates["production_read_enabled"]),
-            "actions_enabled": bool(gates["production_actions_enabled"]),
+            "read_enabled": bool(
+                gates["production_read_enabled"]
+                and google_access["production_read_enabled"]
+            ),
+            "actions_enabled": bool(
+                gates["production_actions_enabled"]
+                and google_access["production_mutate_enabled"]
+            ),
             "control_center_live_actions_enabled": settings.control_center_live_actions_enabled,
+            "access_level": google_access["level"],
         },
         "models": [_model_profile_payload(item) for item in profiles],
         "tools": [{"name": item.name, "risk": item.risk.value, "version": item.version} for item in registry.specs],
