@@ -1,27 +1,27 @@
-# Architecture Review — Homework #2
+# Архитектурный разбор — Домашнее задание №2
 
-## Metadata
+## Метаданные
 
-- Homework: #2
-- Project: Project 0 — Axyro
-- Level: Level 2 — Application Structure
-- Tracks: Track B — Architecture; Track C — Domain Modelling
+- Домашнее задание: №2
+- Проект: Project 0 — Axyro
+- Уровень: Level 2 — Application Structure
+- Треки: Track B — Architecture; Track C — Domain Modelling
 - Checkpoint: CP2 — Structure checkpoint
-- Homework status: Активно
-- Artifact status: Draft — assembled from verified code, not yet committed to the required repository path
-- Repository: `ruiskhakov2017-sys/demand-upload`
-- Reviewed branch: `codex/explorer-production-access`
-- Required repository path: `docs/mentor-homework/homework-02/architecture-review.md`
+- Статус Homework: Проверяется
+- Статус артефакта: актуальный
+- Репозиторий: `ruiskhakov2017-sys/demand-upload`
+- Проверяемая ветка: `codex/explorer-production-access`
+- Обязательный путь: `docs/mentor-homework/homework-02/architecture-review.md`
 
-## Logical Areas
+## 1. Логические области Axyro
 
-### 1. Auto-upload / Campaign Launch
+### 1.1. Auto-upload / запуск кампаний
 
-**Responsibility**
+**Ответственность области**
 
-Turns user launch settings into concrete Demand Gen campaign instances, validates the launch plan, and after explicit confirmation sends creation requests to Google Ads.
+Эта область отвечает за подготовку и запуск рекламных кампаний: принимает настройки пользователя, формирует конкретные экземпляры кампаний, собирает план запуска, валидирует его и после явного подтверждения отправляет реальные запросы в Google Ads.
 
-**Main concepts and data**
+**Основные сущности и данные**
 
 - `CampaignUpload`
 - `LaunchBatch`
@@ -29,9 +29,10 @@ Turns user launch settings into concrete Demand Gen campaign instances, validate
 - `CampaignInstance`
 - `DeploymentPlan`
 - `MediaAsset`
-- Google Ads connection / target `customer_id`
+- Google Ads connection
+- целевой `customer_id`
 
-**Evidence in Axyro**
+**Подтверждение в коде**
 
 - `backend/app/api/routes/uploads.py` — `create_upload`, `update_upload`
 - `backend/app/api/routes/batches.py` — `generate_launch_batch`
@@ -40,56 +41,60 @@ Turns user launch settings into concrete Demand Gen campaign instances, validate
 - `backend/app/jobs/tasks.py` — `deploy_plan`
 - `backend/app/google_ads/versions/v24_2/adapter.py` — `validate_plan`, `deploy_plan`, `_execute_plan`
 
-**Boundary**
+**Граница области**
 
-The business area owns preparation and orchestration of a launch. Google Ads itself is an external infrastructure boundary. MCC/account connectivity is a supporting integration for this area, not a separate business area in this review.
+Область отвечает за бизнес-процесс подготовки и запуска кампаний. Сам Google Ads находится за внешней инфраструктурной границей. Подключение MCC и дочерних аккаунтов здесь рассматривается как инфраструктурная возможность, а не как отдельная бизнес-область.
 
 ---
 
-### 2. Analytics / Statistics
+### 1.2. Analytics / статистика
 
-**Responsibility**
+**Ответственность области**
 
-Collects advertising results and turns raw Google Ads data into metrics that can be viewed and used by other parts of Axyro.
+Эта область отвечает за получение рекламных результатов и превращение сырых данных Google Ads в статистику, которую можно показывать пользователю и использовать в других частях Axyro.
 
-**Main concepts and data**
+**Основные данные**
 
-- impressions
-- clicks
-- cost
-- conversions
-- registrations / deposits where mappings exist
-- metric snapshots
-- moderation/statistics snapshots
+- показы
+- клики
+- расходы
+- конверсии
+- регистрации / депозиты при наличии настроенного маппинга
+- статистические снимки
+- данные модерации
 
-**Evidence in Axyro**
+**Подтверждение в коде**
 
 - `backend/app/jobs/tasks.py` — `sync_google_data`, `sync_launch_group_metrics`
-- `backend/app/google_ads/versions/v24_2/adapter.py` — `fetch_statistics`, performance/metrics reads
-- database models such as metric/performance snapshots in `backend/app/db/models.py`
+- `backend/app/google_ads/versions/v24_2/adapter.py` — `fetch_statistics` и другие чтения метрик
+- модели статистики в `backend/app/db/models.py`
 
-**Boundary**
+**Граница области**
 
-Analytics answers mainly **“what happened?”** It collects and aggregates facts. It does not own the operational lifecycle of accounts and campaigns; that is the Control Center boundary.
+Analytics в первую очередь отвечает на вопрос: **«Что произошло?»**
+
+Она собирает и агрегирует факты. Операционное состояние аккаунтов и действия над ними относятся уже к Control Center.
 
 ---
 
-### 3. AI Contour
+### 1.3. AI-контур
 
-**Responsibility**
+**Ответственность области**
 
-Provides the AI layer: conversations, model runs, tool calls, drafts, policies and controlled AI actions over Axyro data.
+AI-контур отвечает за работу AI внутри Axyro: диалоги, обращения к моделям, tool calls, черновики, AI-настройки и контролируемые действия над данными Axyro.
 
-**Main concepts and data**
+**Основные сущности**
 
 - `AiConversation`
 - `AiRun`
 - `AiMessage`
 - `AiToolCall`
 - `AiDraft`
-- model profiles / authority modes / usage
+- профили моделей
+- настройки и ограничения AI
+- учёт использования
 
-**Evidence in Axyro**
+**Подтверждение в коде**
 
 - `backend/app/api/routes/ai_analyst.py`
 - `backend/app/ai/gateway.py`
@@ -97,32 +102,32 @@ Provides the AI layer: conversations, model runs, tool calls, drafts, policies a
 - `backend/app/ai/policy.py`
 - `backend/app/ai/providers.py`
 - `backend/app/ai/tools.py`
-- AI ORM models in `backend/app/db/models.py`
+- AI-модели в `backend/app/db/models.py`
 
-**Boundary**
+**Граница области**
 
-The AI contour can read data, use permitted tools and prepare or request actions, but it is not the owner of Google account state, campaign-launch generation or analytics storage.
+AI-контур может читать данные, использовать разрешённые инструменты и предлагать или инициировать действия в допустимых рамках, но он не является владельцем логики запуска кампаний, состояния Google Ads аккаунтов или хранения рекламной статистики.
 
 ---
 
-### 4. Control Center
+### 1.4. Control Center
 
-**Responsibility**
+**Ответственность области**
 
-Maintains and operates the current working state of Google Ads accounts and campaigns: statuses, problems, rules, notes, tags, actions, synchronization and operational monitoring.
+Control Center отвечает за текущее рабочее состояние Google Ads аккаунтов и кампаний: статусы, проблемы, правила, заметки, теги, действия, синхронизацию и операционный контроль.
 
-**Main concepts and data**
+**Основные сущности и данные**
 
 - `CustomerAccount`
 - `ControlCenterCampaign`
 - `ControlCenterProblem`
 - `ControlCenterRule`
-- action requests
-- work statuses
-- monitoring state
-- sync runs/items
+- запросы действий
+- рабочие статусы
+- события и история
+- результаты синхронизации
 
-**Evidence in Axyro**
+**Подтверждение в коде**
 
 - `backend/app/api/routes/control_center.py`
 - `backend/app/control_center/query.py`
@@ -131,219 +136,418 @@ Maintains and operates the current working state of Google Ads accounts and camp
 - `backend/app/control_center/service.py`
 - `backend/app/jobs/control_center_tasks.py`
 
-**Boundary**
+**Граница области**
 
-Control Center answers mainly **“what is the operational state and what should we do with it?”** It can consume metrics, but analytics is the source of measured results. It can operate campaigns created by Auto-upload, but it is not responsible for generating a launch matrix.
+Control Center в первую очередь отвечает на вопрос:
 
----
+**«В каком состоянии сейчас аккаунт или кампания и что с этим делать?»**
 
-## Scenario Trace
-
-### Scenario
-
-One MCC contains three child Google Ads accounts. The user wants Axyro to create **one Demand Gen campaign in each child account**.
-
-This scenario is primarily inside the **Auto-upload / Campaign Launch** business area and crosses an infrastructure boundary into **Google Ads**. It does not need to cross AI or Analytics to perform the launch.
-
-### Real path through Axyro
-
-1. **Create/update upload draft**
-   - `backend/app/api/routes/uploads.py`
-   - `create_upload()` creates a `CampaignUpload` in `DRAFT` state.
-   - `update_upload()` can attach the Google connection and launch configuration.
-
-2. **Generate a concrete launch batch**
-   - `backend/app/api/routes/batches.py`
-   - `generate_launch_batch()` validates the selected connection/accounts and calls `generate_batch_matrix()`.
-
-3. **Expand the request by account**
-   - `backend/app/domain/batch_generator.py`
-   - `generate_batch_matrix()` loops through selected accounts.
-   - With three selected accounts and `campaigns_per_account = 1`, the result is three account bundles and three campaign instances.
-   - Every generated campaign instance contains its own child account `customer_id`.
-
-4. **Persist launch entities**
-   - `generate_launch_batch()` stores `LaunchBatch`, `AccountTestBundle`, `CampaignInstance` and creative assignments.
-   - It also marks/enqueues validation.
-   - **Evidence boundary:** at this stage campaigns are not yet created in Google Ads.
-
-5. **Build a deployment plan**
-   - `backend/app/api/routes/plans.py`
-   - `build_plan()` builds a snapshot from the batch and runs local/domain validation.
-   - It creates a `DeploymentPlan`.
-   - **Evidence boundary:** building the plan still does not create campaigns in Google Ads.
-
-6. **Validate with Google without creating**
-   - `plans.py::validate_plan()` builds the real Google Ads adapter and calls `adapter.validate_plan(...)`.
-   - `GoogleAdsV242Adapter.validate_plan()` calls `_execute_plan(..., validate_only=True)`.
-   - Google is contacted, but `validate_only=True` means this stage validates requests without creating the campaigns.
-
-7. **User confirms the launch**
-   - `plans.py::confirm_plan()` requires a prior validation result.
-   - It creates/reuses a background `Job` of type `DEPLOY_PLAN`, marks the plan/upload/batch queued and calls `deploy_plan.delay(...)`.
-
-8. **Background worker performs the real deployment**
-   - `backend/app/jobs/tasks.py::deploy_plan()` loads the plan and pending campaign instances.
-   - For a real Google mode it builds the Google Ads adapter and calls `adapter.deploy_plan(snapshot)`.
-
-9. **Google Ads adapter targets each child account**
-   - `backend/app/google_ads/versions/v24_2/adapter.py`
-   - `deploy_plan()` calls `_execute_plan(..., validate_only=False)`.
-   - `_execute_plan()` loops through campaigns, reads each campaign's `customer_id`, builds `MutateGoogleAdsRequest`, assigns that `customer_id` to the request and sends the mutation.
-   - Therefore the MCC is the manager/authentication context; the campaigns are created in the selected child customer accounts.
-
-10. **Store the result**
-    - The worker saves Google request IDs/resource names and updates local statuses.
-    - Successful campaign instances are stored as `PAUSED` after creation.
-
-### Business-level trace to remember
-
-User selects three accounts and campaign settings → Axyro creates three concrete campaign instances → builds and validates a final plan → Google validates without creation → user confirms → Celery worker sends real requests → each request targets its child account → Google returns results → Axyro stores resource names/statuses.
+Он может использовать статистику из Analytics и работать с кампаниями, созданными Auto-upload, но не отвечает за генерацию самого launch-плана.
 
 ---
 
-## Two Design Problems
+## 2. Scenario Trace — реальный сценарий Axyro
 
-### Problem 1 — Mixed responsibilities in `backend/app/jobs/tasks.py`
+### Сценарий
 
-#### Observation
+Есть один MCC и три дочерних Google Ads аккаунта. Пользователь хочет создать через Axyro по одной Demand Gen кампании в каждом из трёх дочерних аккаунтов.
 
-The same Celery task module contains background processes from several different functional/business areas, including:
+Этот сценарий в основном проходит внутри области **Auto-upload / запуск кампаний** и пересекает внешнюю инфраструктурную границу Google Ads.
 
-- domain validation — `validate_upload_domains`
-- campaign deployment — `deploy_plan`
-- campaign status changes — `apply_campaign_status_action`
-- campaign metrics synchronization — `sync_launch_group_metrics`
-- YouTube upload/polling — `upload_youtube_video`, `poll_youtube_video`
-- Google moderation/statistics synchronization — `sync_google_data`
-- Brocard finance synchronization — `sync_finance`
+### Реальный путь через систему
 
-The module also directly works with the database, many ORM models, Google Ads adapters, Brocard, audit/job events and notifications.
+#### Шаг 1. Создание или обновление загрузки
 
-#### Why this is a problem
+Файл:
 
-The file has **low cohesion**: its contents do not represent one narrow responsibility. It also has broad **coupling** to multiple parts of the system.
+`backend/app/api/routes/uploads.py`
 
-The problem is not simply that the file is large. The structural problem is that unrelated processes such as Google Ads deployment and Brocard finance synchronization live in the same general task module and depend on a wide common set of infrastructure/models/helpers.
+Функции:
 
-#### Engineering consequences
+- `create_upload()`
+- `update_upload()`
 
-- Change-impact analysis becomes harder: when one process changes, a reviewer must understand a larger shared module.
-- Regression testing scope is harder to reason about because neighboring task flows and shared helpers/imports must be considered.
-- Business boundaries are less visible in the code structure.
-- The module becomes harder to read, review and maintain as more background processes are added.
+Создаётся `CampaignUpload` со статусом `DRAFT`. В нём хранится конфигурация запуска и связь с Google connection.
 
-#### If left as-is
+На этом этапе никаких кампаний в Google Ads ещё не создаётся.
 
-The file can continue to work, but as new background jobs are added it is likely to accumulate more unrelated responsibilities. That increases cognitive load and makes safe localized changes progressively harder.
+#### Шаг 2. Генерация Launch Batch
 
-**Important evidence limit:** sharing one file does not prove that changing Brocard will automatically break Google deployment. The proven issue is mixed responsibility and broad dependency surface; actual runtime coupling must be checked separately.
+Файл:
+
+`backend/app/api/routes/batches.py`
+
+Функция:
+
+`generate_launch_batch()`
+
+Она получает настройки, проверяет выбранное подключение и аккаунты и вызывает:
+
+`generate_batch_matrix()`.
+
+#### Шаг 3. Разворачивание настроек по аккаунтам
+
+Файл:
+
+`backend/app/domain/batch_generator.py`
+
+Функция:
+
+`generate_batch_matrix()`
+
+Она проходит по выбранным аккаунтам и создаёт отдельный набор данных для каждого.
+
+Если выбраны три аккаунта и `campaigns_per_account = 1`, в результате формируются:
+
+- 3 `AccountTestBundle`
+- 3 `CampaignInstance`
+
+У каждого `CampaignInstance` есть свой `customer_id`, который соответствует конкретному дочернему Google Ads аккаунту.
+
+#### Шаг 4. Сохранение подготовленных сущностей
+
+`generate_launch_batch()` сохраняет в PostgreSQL:
+
+- `LaunchBatch`
+- `AccountTestBundle`
+- `CampaignInstance`
+- creative assignments
+
+Также запускается валидация.
+
+**Важная граница:** на этом этапе реальные кампании в Google Ads всё ещё не созданы.
+
+#### Шаг 5. Создание Deployment Plan
+
+Файл:
+
+`backend/app/api/routes/plans.py`
+
+Функция:
+
+`build_plan()`
+
+Она собирает итоговый snapshot запуска и выполняет локальную/domain validation.
+
+Создаётся `DeploymentPlan`.
+
+**Важная граница:** сам `build_plan()` ещё ничего не создаёт в Google Ads.
+
+#### Шаг 6. Google validate_only
+
+Функция:
+
+`validate_plan()`
+
+Она строит реальный Google Ads adapter и вызывает:
+
+`adapter.validate_plan(...)`.
+
+Далее:
+
+`GoogleAdsV242Adapter.validate_plan()`
+
+вызывает:
+
+`_execute_plan(..., validate_only=True)`.
+
+Google Ads получает запрос и проверяет его, но из-за `validate_only=True` реальная кампания не создаётся.
+
+#### Шаг 7. Явное подтверждение пользователем
+
+Функция:
+
+`confirm_plan()`
+
+Она проверяет, что validate_only уже был выполнен, создаёт или переиспользует background job типа:
+
+`DEPLOY_PLAN`
+
+и вызывает:
+
+`deploy_plan.delay(...)`.
+
+#### Шаг 8. Celery worker выполняет реальный запуск
+
+Файл:
+
+`backend/app/jobs/tasks.py`
+
+Функция:
+
+`deploy_plan()`
+
+Она загружает план и необходимые данные, строит Google Ads adapter и вызывает:
+
+`adapter.deploy_plan(snapshot)`.
+
+#### Шаг 9. Google Ads adapter отправляет запросы в дочерние аккаунты
+
+Файл:
+
+`backend/app/google_ads/versions/v24_2/adapter.py`
+
+Метод:
+
+`deploy_plan()`
+
+вызывает:
+
+`_execute_plan(..., validate_only=False)`.
+
+Далее `_execute_plan()` проходит по кампаниям, берёт `customer_id` каждой кампании и создаёт отдельный `MutateGoogleAdsRequest` для нужного дочернего аккаунта.
+
+То есть:
+
+- MCC используется как управляющий и авторизационный контекст;
+- сама кампания создаётся в конкретном child account.
+
+#### Шаг 10. Сохранение результата
+
+После ответа Google Ads Axyro сохраняет:
+
+- request IDs
+- resource names
+- результат выполнения
+- локальные статусы
+
+Успешно созданные кампании сохраняются со статусом `PAUSED`.
+
+### Короткая бизнес-цепочка
+
+Пользователь выбирает три аккаунта и настройки кампании  
+→ Axyro создаёт три `CampaignInstance`  
+→ собирает `DeploymentPlan`  
+→ выполняет локальную проверку  
+→ выполняет Google `validate_only`  
+→ пользователь подтверждает запуск  
+→ Celery worker вызывает Google Ads adapter  
+→ каждый запрос уходит в свой child account  
+→ Google Ads создаёт кампании  
+→ Axyro сохраняет результат.
 
 ---
 
-### Problem 2 — Many different data areas in `backend/app/db/models.py`
+## 3. Две архитектурные проблемы
 
-#### Observation
+### Проблема №1 — смешение разных ответственностей в `backend/app/jobs/tasks.py`
 
-A single ORM module describes models from many different areas of Axyro, including:
+#### Наблюдение
 
-- users/auth/session models
-- Google credentials/connections/MCC/customer accounts
-- Control Center campaigns, ads, assets, problems, rules and history
-- Auto-upload entities such as `CampaignUpload`, `LaunchBatch`, `AccountTestBundle`, `CampaignInstance`, `DeploymentPlan`, schedules and media
-- jobs/events
-- AI conversations, runs, messages, tool calls, drafts and settings
-- analytics/metric-related models
+В одном `tasks.py` находятся фоновые задачи из разных функциональных и бизнес-областей.
 
-There are also direct cross-area database links. A concrete example is `ControlCenterCampaign.uploader_campaign_instance_id`, which is a foreign key to `campaign_instances` from the uploader flow.
+Примеры:
 
-#### Why this is a problem
+- `validate_upload_domains` — domain validation
+- `deploy_plan` — запуск Google Ads кампаний
+- `apply_campaign_status_action` — изменение статуса кампаний
+- `sync_launch_group_metrics` — синхронизация метрик
+- `upload_youtube_video` / `poll_youtube_video` — работа с YouTube
+- `sync_google_data` — синхронизация данных Google Ads
+- `sync_finance` — синхронизация финансов через Brocard
 
-Again, the problem is not file size by itself. The issue is that the persistence structure makes business ownership/boundaries difficult to see and can encourage different areas to depend directly on each other's internal data models.
+Файл также напрямую использует большое количество ORM-моделей и внешних интеграций.
 
-#### Engineering consequences
+#### Почему это проблема
 
-- It is harder to locate which models belong to which business area.
-- Schema changes require more careful impact analysis across a central module.
-- Cross-area dependencies can become hidden or accidental.
-- The code structure does not clearly reflect the logical boundaries identified above.
+Здесь наблюдается низкая **cohesion** — слабая связность обязанностей внутри одного модуля.
 
-#### If left as-is
+Модуль не отвечает за одну понятную область, а объединяет несколько разных процессов.
 
-The project can continue working, but as new models appear the central ORM module can become increasingly difficult to navigate and cross-area coupling can grow without being obvious.
+Также у него широкий **coupling** — он связан сразу с БД, Google Ads, Brocard, YouTube, validation и другими частями системы.
 
-**Important evidence limit:** splitting the file alone would not remove database coupling. Existing foreign keys and other cross-area contracts would remain until explicitly reviewed.
+Проблема не в том, что файл просто большой.
+
+Проблема в том, что в одном месте находятся процессы, которые по бизнес-смыслу относятся к разным областям.
+
+#### Инженерные последствия
+
+Если, например, меняется Brocard-синхронизация, разработчик работает внутри общего модуля, где находятся и Google Ads deployment, и YouTube, и статистика.
+
+Из-за этого:
+
+- сложнее оценить, что может затронуть изменение;
+- сложнее читать и ревьюить файл;
+- сложнее локализовать тестирование;
+- требуется больше regression testing;
+- границы бизнес-областей хуже видны в структуре кода.
+
+#### Что будет, если оставить как есть
+
+Система может продолжать нормально работать.
+
+Но по мере появления новых background jobs файл будет накапливать всё больше разных обязанностей.
+
+В результате станет сложнее:
+
+- понимать область изменений;
+- безопасно модифицировать код;
+- тестировать отдельные процессы;
+- поддерживать файл.
+
+**Граница доказательства:** сам факт нахождения Brocard и Google Ads кода в одном файле не доказывает, что изменение Brocard обязательно сломает Google Ads. Мы доказали смешение ответственностей и широкую поверхность зависимостей. Реальную runtime-зависимость нужно проверять отдельно.
 
 ---
 
-## Decision Trace — `backend/app/jobs/tasks.py`
+### Проблема №2 — модели разных бизнес-областей собраны в одном `backend/app/db/models.py`
 
-### Observation
+#### Наблюдение
 
-`backend/app/jobs/tasks.py` mixes unrelated background processes: campaign deployment, status actions, metrics, YouTube processing, Google data sync, domain validation and Brocard finance sync. The module also imports/uses a broad set of database models and external integrations.
+В одном ORM-файле описаны модели большого количества разных областей:
 
-### User hypothesis
+- пользователи и сессии;
+- Google credentials / connections / MCC / customer accounts;
+- Control Center;
+- Auto-upload;
+- deployment;
+- jobs;
+- AI;
+- analytics;
+- integrations.
 
-Split `tasks.py` into several parts by business logic so that each part is responsible for its own area of the system.
+То есть бизнес-границы, которые существуют на уровне продукта, практически не отражены в структуре ORM-моделей.
 
-### AI challenge
+Есть и прямые связи между областями.
 
-Physical file splitting alone does not automatically reduce coupling. If the new task modules continue to depend directly on each other's internal services/models or share the same tightly coupled helpers, the dependencies remain; the code is only distributed across more files.
+Конкретный пример:
 
-### Evidence
+`ControlCenterCampaign.uploader_campaign_instance_id`
 
-The current module contains clearly different operations, for example:
+является foreign key на:
 
-- `deploy_plan` — deployment of Google Ads campaigns
-- `upload_youtube_video` / `poll_youtube_video` — media/YouTube processing
-- `sync_google_data` — Google Ads moderation/statistics synchronization
-- `sync_finance` — Brocard finance synchronization
+`campaign_instances.id`.
 
-It imports database models covering deployment, media, metrics, moderation, finance and Google connections, and also calls Google Ads and Brocard integrations.
+То есть модель Control Center напрямую связана с моделью Uploader.
 
-### User final decision
+#### Почему это проблема
 
-Split the tasks by business areas **and at the same time review the direct dependencies between the resulting task modules/areas**. Keep only dependencies that are actually necessary instead of assuming that file splitting by itself solves coupling.
+Проблема опять же не в количестве строк.
+
+Проблема в том, что по структуре файла трудно быстро понять:
+
+- какая модель относится к какой области;
+- кто является владельцем модели;
+- какие зависимости между областями обязательные;
+- какие связи появились просто исторически.
+
+Это снижает cohesion файла и делает архитектурные границы менее заметными.
+
+#### Инженерные последствия
+
+- сложнее находить модели нужной области;
+- сложнее оценивать последствия изменения схемы БД;
+- прямые зависимости между областями могут накапливаться незаметно;
+- структура persistence-слоя хуже отражает бизнес-структуру Axyro.
+
+#### Что будет, если оставить как есть
+
+Система продолжит работать, но по мере роста количества моделей центральный файл будет становиться сложнее для понимания и сопровождения.
+
+Также возрастает риск того, что новые области начнут напрямую связываться друг с другом через ORM просто потому, что все модели уже находятся рядом.
+
+**Граница доказательства:** простое разнесение классов по разным файлам само по себе не устранит coupling. Foreign keys и другие реальные зависимости сохранятся, пока их отдельно не пересмотреть.
+
+---
+
+## 4. Decision Trace — `backend/app/jobs/tasks.py`
+
+### Observation / наблюдение
+
+В `backend/app/jobs/tasks.py` смешаны фоновые процессы разных областей:
+
+- deployment;
+- изменение статусов;
+- метрики;
+- YouTube;
+- Google data sync;
+- domain validation;
+- Brocard finance.
+
+Модуль также зависит от большого количества моделей и внешних интеграций.
+
+### User hypothesis / первоначальная гипотеза пользователя
+
+Разнести `tasks.py` на несколько частей по бизнес-областям, чтобы каждая часть отвечала только за свою область системы.
+
+### AI challenge / критика гипотезы со стороны AI
+
+Одного физического разделения файлов недостаточно.
+
+Если новые task-модули продолжат напрямую зависеть друг от друга, использовать общие внутренние детали или тянуть те же широкие зависимости, coupling никуда не исчезнет.
+
+Получится только:
+
+`один большой файл → несколько маленьких файлов`
+
+но архитектурная связанность останется.
+
+### Evidence / доказательства
+
+В текущем `tasks.py` действительно находятся операции разных типов, например:
+
+- `deploy_plan` — Google Ads deployment
+- `upload_youtube_video` / `poll_youtube_video` — YouTube
+- `sync_google_data` — синхронизация Google Ads данных
+- `sync_finance` — Brocard finance
+
+Также модуль напрямую использует модели и сервисы из нескольких областей.
+
+### User final decision / финальное решение пользователя
+
+Разделить фоновые задачи по бизнес-областям **и одновременно пересмотреть прямые зависимости между этими областями**.
+
+Не считать, что физическое разделение файлов автоматически решает coupling.
+
+Оставить только те межобластные зависимости, которые действительно необходимы.
 
 ### Trade-off
 
-**Benefit:**
+**Что выигрываем**
 
-- clearer business boundaries;
-- easier localization of changes;
-- easier code review and reasoning about what a change can affect;
-- lower risk of accidentally touching unrelated areas;
-- more focused testing where dependencies really are isolated.
+- границы бизнес-областей становятся понятнее;
+- проще локализовать изменения;
+- проще понимать, что может затронуть изменение;
+- проще проводить code review;
+- ниже риск случайно затронуть соседнюю область;
+- там, где зависимости реально изолированы, тестирование можно делать более сфокусированно.
 
-**Cost / risk:**
+**Чем платим**
 
-- the refactoring itself is additional work;
-- existing dependencies must first be identified and understood;
-- imports/call paths/helpers must be moved carefully;
-- regression checks are needed to confirm that background flows still work after the change;
-- if real cross-area dependencies remain, wider integration/regression testing will still be necessary.
+- сам refactoring требует отдельной работы;
+- сначала нужно выявить и понять существующие зависимости;
+- придётся аккуратно переносить функции, imports и helpers;
+- после изменений нужно проводить regression testing;
+- если реальные зависимости между областями останутся, часть integration/regression tests всё равно придётся выполнять шире.
 
-### Why this option was chosen
+### Почему выбран именно этот вариант
 
-A simple “large file → several small files” change would improve readability but could leave the architectural coupling unchanged. The chosen option tries to improve both physical organization and the actual boundaries between business areas.
+Простое разделение большого файла на несколько маленьких улучшило бы читаемость, но не гарантировало бы уменьшение coupling.
 
----
+Поэтому выбран более сильный вариант:
 
-## Open Questions for Mentor
-
-1. For Axyro at its current size, would you already split `tasks.py` by business area, or would you leave it centralized until a specific maintenance/testability problem appears?
-2. When splitting background tasks, what boundary would you prefer: business context (`finance`, `media`, `deployment`, `analytics`) or another grouping principle?
-3. Do you consider the direct `ControlCenterCampaign -> CampaignInstance` foreign key an acceptable integration between contexts, or would you prefer a weaker/stabler contract between Control Center and Uploader?
-4. How far should we go in separating ORM models by bounded context before the extra modules/import management becomes overengineering for Axyro?
+**разделить код по бизнес-областям и одновременно проверить реальные зависимости между ними.**
 
 ---
 
-## Evidence Boundaries / What Is Not Proven Yet
+## 5. Вопросы ментору
 
-- No architecture refactor was implemented as part of this review.
-- No production systems were changed.
-- No push, PR or merge was performed for this artifact.
-- The review identifies concrete structural evidence, but it does not claim that every direct dependency is wrong.
-- We have not exhaustively mapped every dependency between all Axyro contexts.
-- The proposed design is a design decision for discussion/defense, not proof that the refactor will improve production behavior without implementation and tests.
-- Roadmap topics remain `In progress` until the required Defense/review criteria are satisfied.
+1. На текущем размере Axyro вы бы уже разделяли `tasks.py` по бизнес-областям или пока оставили бы его централизованным до появления конкретной проблемы с поддержкой или тестированием?
+
+2. Если разделять background tasks, какой принцип группировки здесь лучше использовать: по бизнес-областям (`finance`, `media`, `deployment`, `analytics`) или по другому принципу?
+
+3. Считаете ли вы прямой foreign key `ControlCenterCampaign -> CampaignInstance` нормальной связью между областями или здесь лучше использовать более слабый и стабильный контракт?
+
+4. Насколько далеко имеет смысл разделять ORM-модели по bounded contexts именно в Axyro, чтобы не перейти грань между полезной архитектурой и overengineering?
+
+---
+
+## 6. Границы доказательств
+
+- В рамках этого Homework архитектурный refactoring не выполнялся.
+- Production-системы не изменялись.
+- Артефакт закоммичен и отправлен в ветку `codex/explorer-production-access`.
+- PR и merge для этого артефакта не выполнялись.
+- Мы нашли реальные признаки смешения ответственностей и прямых зависимостей, но не утверждаем, что каждая существующая зависимость является ошибкой.
+- Полная карта всех зависимостей между областями Axyro не строилась.
+- Предложенное изменение является архитектурным решением для обсуждения и защиты, а не доказательством улучшения production-поведения без реализации и тестов.
+- Темы roadmap остаются `In progress`, пока не пройдена строгая Homework Defense и review ментора.
