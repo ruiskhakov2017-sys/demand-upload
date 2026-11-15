@@ -3,19 +3,19 @@ import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
+import { PUBLIC_COPY } from "../i18n/publicSite";
+import { DEMO_REQUEST_URL, ENTERPRISE_COPY } from "../i18n/enterpriseLanding";
 import { PRIVACY_COPY, TERMS_COPY } from "./LegalPage";
-import { PUBLIC_COPY, PUBLIC_SITE_TITLE } from "./PublicSitePage";
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 
 describe("Axyro Analytics public positioning", () => {
   it("keeps analytics primary and campaign deployment secondary", () => {
-    expect(PUBLIC_COPY.en.productParagraphs[0]).toContain("independent Google Ads analytics and operations software project");
-    expect(PUBLIC_COPY.en.subtitle).toBe("Private Google Ads Analytics & Control Center");
-    expect(PUBLIC_SITE_TITLE).toBe("Axyro Analytics | Private Google Ads Analytics & Control Center");
-    expect(PUBLIC_COPY.en.productParagraphs[2]).toContain("primary purpose");
-    expect(PUBLIC_COPY.en.deploymentEyebrow).toBe("Secondary module");
-    expect(PUBLIC_COPY.en.deploymentTitle).toBe("Validated campaign deployment");
+    expect(ENTERPRISE_COPY.en.title).toBe("Axyro Analytics | Google Ads Analytics");
+    expect(ENTERPRISE_COPY.en.lead).toContain("Compare spend and conversions");
+    expect(PUBLIC_COPY.en.apiBody).toContain("Primary use: reporting, analytics and monitoring");
+    expect(ENTERPRISE_COPY.en.screens[1].body).toContain("paused state");
+    expect(DEMO_REQUEST_URL).toMatch(/^mailto:support@axyro\.tech\?/);
   });
 
   it("identifies the individual operator and sole-user access consistently", () => {
@@ -32,9 +32,9 @@ describe("Axyro Analytics public positioning", () => {
 
   it("describes write operations and their safeguards truthfully", () => {
     const publicText = JSON.stringify(PUBLIC_COPY.en);
-    expect(publicText).toContain("create validated Demand Gen campaigns");
-    expect(publicText).toContain("pause or enable selected campaigns");
-    expect(publicText).toContain("update budgets");
+    expect(publicText).toContain("Create validated Demand Gen campaigns");
+    expect(publicText).toContain("Pause or enable selected campaigns");
+    expect(publicText).toContain("Update selected campaign budgets");
     expect(publicText).toContain("explicit user confirmation");
     expect(publicText).toContain("PAUSED");
     expect(publicText).toContain("AuditLog");
@@ -42,7 +42,7 @@ describe("Axyro Analytics public positioning", () => {
   });
 
   it("does not use prohibited mass-uploader positioning", () => {
-    const publicText = JSON.stringify(PUBLIC_COPY).toLowerCase();
+    const publicText = JSON.stringify({ disclosure: PUBLIC_COPY, page: ENTERPRISE_COPY }).toLowerCase();
     expect(publicText).not.toContain("bulk uploader");
     expect(publicText).not.toContain("mass campaign launcher");
     expect(publicText).not.toContain("\u0430\u0432\u0442\u043e\u0437\u0430\u043b\u0438\u0432\u0430\u0442\u043e\u0440");
