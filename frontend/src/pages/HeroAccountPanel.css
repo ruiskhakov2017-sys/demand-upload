@@ -1,0 +1,37 @@
+.ahp {
+  width:100%; min-width:0; align-self:center;
+  background:#fff; border:1px solid #c9d4e4; border-radius:10px;
+  box-shadow:0 16px 44px -24px #334a6959, 0 2px 8px -5px #25344d40;
+  color:#17283e; text-align:start; font:400 15px/1.4 "Golos Text","Segoe UI",Arial,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+.ahp .ahp-meta {
+  display:flex; justify-content:space-between; align-items:center; gap:8px 14px; flex-wrap:wrap;
+  padding:13px clamp(15px,2.4vw,32px); border-bottom:1px solid #dce3ed; background:#f7f9fc;
+  border-radius:inherit; border-bottom-left-radius:0; border-bottom-right-radius:0;
+  color:#4a596d; font-size:12px;
+}
+.ahp .ahp-sample { display:inline-flex; align-items:center; gap:8px; color:#2d4571; font-weight:600; }
+.ahp-sample::before { content:""; width:8px; height:8px; border-radius:2px; background:#486cbd; }
+.ahp .ahp-body { padding:clamp(19px,2.4vw,31px); }
+.ahp h2 { margin:0; max-width:100%; font:600 clamp(20px,1.65vw,26px)/1.25 "Golos Text","Segoe UI",Arial,sans-serif; letter-spacing:-.035em; color:#192a40; }
+.ahp .ahp-switch { display:inline-flex; max-width:100%; gap:2px; border:1px solid #d3dce7; padding:3px; margin:17px 0 19px; border-radius:6px; background:#f2f5f9; }
+.ahp .ahp-switch button { padding:5px 10px; border:1px solid transparent; border-radius:3px; font:600 12px/1.3 "Golos Text","Segoe UI",Arial,sans-serif; background:none; color:#4c5b70; cursor:pointer; }
+.ahp .ahp-switch button[aria-pressed=true] { color:#203e79; background:#fff; border-color:#cfdae8; box-shadow:0 1px 3px #2c456914; }
+.ahp .ahp-switch button:hover { color:#163880; }
+.ahp .ahp-switch button:focus-visible { outline:2px solid #375bba; outline-offset:2px; }
+.ahp .ahp-rows, .ahp .ahp-total, .ahp dd, .ahp dt { margin:0; padding:0; }
+.ahp .ahp-rows { display:grid; gap:15px; }
+.ahp .ahp-row { display:grid; grid-template-columns:1fr auto; align-items:baseline; gap:5px 12px; }
+.ahp .ahp-row dt { color:#40516b; font-size:13px; font-weight:500; }
+.ahp .ahp-row dd { font-size:14px; font-weight:650; }
+.ahp .ahp-track { grid-column:1/-1; height:8px; background:#edf1f7; overflow:hidden; border-radius:2px; }
+.ahp .ahp-track span { display:block; height:100%; background:#365eb4; border-radius:inherit; }
+.ahp .ahp-total { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:22px; padding-top:14px; border-top:1px solid #d9e1ec; }
+.ahp .ahp-total dt { color:#516075; font-size:13px; }
+.ahp .ahp-total dd { color:#213553; white-space:nowrap; font-weight:650; font-size:clamp(18px,1.5vw,23px); letter-spacing:-.025em; }
+@media(max-width:440px) {
+  .ahp .ahp-body { padding:17px; }
+  .ahp .ahp-rows { gap:12px; }
+  .ahp .ahp-meta { padding:10px 16px; }
+}

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import ArrowOutward from "@mui/icons-material/ArrowOutward";
-import South from "@mui/icons-material/South";
 import { useLocale } from "../i18n";
 import { ENTERPRISE_COPY, DEMO_REQUEST_URL } from "../i18n/enterpriseLanding";
 import { PUBLIC_COPY } from "../i18n/publicSite";
 import { EnterpriseReport } from "./EnterpriseReport";
+import { HeroAccountPanel } from "./HeroAccountPanel";
 import "./EnterpriseLanding.css";
 
 const screenUrls = ["/product/control-center-desktop.png", "/product/creation-paused-desktop.png"];
@@ -45,15 +45,14 @@ export function PublicSitePage() {
       <section className="ax3-hero" aria-labelledby="ax3-hero-title">
         <div className="ax3-wrap ax3-hero-inner">
           <div className="ax3-intro">
-            <p className="ax3-kicker">{copy.category}</p>
-            <h1 id="ax3-hero-title">{copy.hero[0]}<br /><span>{copy.hero[1]}</span></h1>
+            <h1 id="ax3-hero-title">{copy.hero}</h1>
             <p className="ax3-lead">{copy.lead}</p>
             <div className="ax3-actions">
+              <a className="ax3-report-link" href="#report">{copy.see}<ArrowForward /></a>
               <a className="ax3-button" href={DEMO_REQUEST_URL}>{copy.demo}<ArrowOutward /></a>
-              <a className="ax3-report-link" href="#report">{copy.see}<South /></a>
             </div>
           </div>
-          <div className="ax3-art" aria-hidden="true"><img src="/product/orbits-v3.webp" alt="" width="1448" height="1086" fetchPriority="high" /></div>
+          <HeroAccountPanel locale={locale} />
         </div>
       </section>
 

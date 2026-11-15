@@ -1,3 +1,18 @@
+@font-face {
+  font-family: "Golos Text";
+  src: url("/fonts/golos-text-latin.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Golos Text";
+  src: url("/fonts/golos-text-cyrillic.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
 .ax3 {
   --ax3-dark: #060b12;
   --ax3-ink: #141a24;
@@ -19,40 +34,57 @@
 .ax3 a:focus-visible, .ax3 button:focus-visible, .ax3 summary:focus-visible { outline: 3px solid #698dff; outline-offset: 4px; }
 .ax3-wrap { width: min(1280px, 88%); margin-inline: auto; }
 .ax3 svg { width: 19px; height: 19px; flex: 0 0 auto; }
-.ax3-header, .ax3-hero, .ax3-footer { background: var(--ax3-dark); color: #fff; }
-.ax3-header { border-bottom: 1px solid #2b323c; position: relative; z-index: 1; }
-.ax3-top { min-height: 76px; display: flex; align-items: center; gap: clamp(25px, 5.4vw, 88px); }
+.ax3-footer { background: var(--ax3-dark); color: #fff; }
+.ax3-header, .ax3-hero { font-family: "Golos Text", Arial, sans-serif; color: #152640; }
+.ax3-header { background: #fff; border-bottom: 1px solid #d8e0ed; }
+.ax3-header .ax3-brand-secondary { color: #526077; }
+.ax3-header .ax3-mark { color: #264dc3; }
+.ax3-top { min-height: 68px; display: flex; align-items: center; gap: clamp(25px, 5.4vw, 88px); }
 .ax3-brand { display: inline-flex; align-items: center; gap: 11px; font-size: 22px; font-weight: 670; letter-spacing: -.055em; line-height: 1; white-space: nowrap; }
 .ax3-brand-secondary { font-weight: 400; color: #c8cdd5; }
 .ax3-mark { width: 25px; height: 24px; display: inline-block; position: relative; }
 .ax3-mark i { position: absolute; width: 8px; height: 22px; bottom: 1px; background: currentColor; transform: skewX(-24deg); left: 5px; }
 .ax3-mark i + i { height: 13px; transform: skewX(24deg); left: 16px; }
 .ax3-top nav, .ax3-tools, .ax3-foot-inner nav { display: flex; align-items: center; gap: 28px; }
-.ax3-top nav a, .ax3-tools a, .ax3-tools button { font-size: 14px; color: #d4d7df; }
-.ax3-top nav a:hover, .ax3-foot-inner nav a:hover { color: white; text-decoration: underline; text-underline-offset: 5px; }
+.ax3-top nav a, .ax3-tools a, .ax3-tools button { font-size: 14px; color: #35445b; }
+.ax3-top nav a:hover, .ax3-foot-inner nav a:hover { text-decoration: underline; text-underline-offset: 5px; }
 .ax3-tools { margin-left: auto; gap: 16px; }
-.ax3-tools button { background: transparent; border: none; color: #bbc4d2; padding: 10px 5px; }
-.ax3-tools a { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px; border: 1px solid #58606e; border-radius: 3px; }
-.ax3-tools a:hover { background: #242b35; }
+.ax3-tools button { background: transparent; border: none; color: #485a73; padding: 10px 5px; }
+.ax3-tools a { display: inline-flex; align-items: center; gap: 10px; padding: 7px 14px; border: 1px solid #bac7d6; border-radius: 3px; }
+.ax3-tools a:hover { background: #ecf1fa; }
 .ax3-tools svg, .ax3-report-link svg { width: 16px; }
-.ax3-hero { position: relative; overflow: hidden; border-bottom: 1px solid #333b48; }
-.ax3-hero-inner { position: relative; min-height: clamp(525px, 43vw, 660px); display: grid; grid-template-columns: 1fr 1fr; align-items: center; padding-block: clamp(65px, 7vw, 108px); }
-.ax3-intro { z-index: 1; position: relative; pointer-events: none; }
-.ax3-intro a { pointer-events: auto; }
-.ax3-kicker, .ax3-label { display: flex; align-items: center; gap: 12px; font: 600 12px/1.4 "IBM Plex Mono", Consolas, monospace; letter-spacing: .105em; text-transform: uppercase; }
-.ax3-kicker { color: #c2cbe0; }
-.ax3-kicker::before, .ax3-label::before { content: ""; width: 26px; height: 2px; background: #6787ff; }
-.ax3-hero h1 { font-size: clamp(64px, 7.5vw, 116px); letter-spacing: -.072em; font-weight: 520; line-height: .98; margin: 24px 0; }
-.ax3-hero h1 span { color: #c5cdda; }
-.ax3-lead { max-width: 440px; color: #bec6d1; font-size: clamp(16px, 1.35vw, 20px); line-height: 1.5; }
-.ax3-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 24px; margin-top: 32px; }
-.ax3-button, .ax3-report-link { display: inline-flex; align-items: center; justify-content: center; gap: 14px; font-size: 15px; font-weight: 580; }
-.ax3-button { min-height: 46px; padding: 12px 19px; border-radius: 3px; background: #f4f6fa; color: #141923 !important; }
+.ax3-hero {
+  background: linear-gradient(110deg, #f9fbfd 2%, #f2f6fc 48%, #e4ecf8 100%);
+  border-bottom: 1px solid #d6dfec;
+}
+.ax3-hero-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(36px, 5.2vw, 82px);
+  align-items: center;
+  padding-block: clamp(60px, 6vw, 92px);
+}
+.ax3-hero h1 {
+  max-width: 14em;
+  margin: 0;
+  font-size: clamp(43px, 4.35vw, 68px);
+  font-weight: 590;
+  line-height: 1.08;
+  letter-spacing: -.046em;
+  text-wrap: balance;
+}
+.ax3-lead { max-width: 30em; margin: 20px 0 0; color: #44536a; font-size: clamp(16px, 1.3vw, 19px); line-height: 1.55; }
+.ax3-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px 21px; margin-top: 28px; }
+.ax3-button, .ax3-report-link { display: inline-flex; align-items: center; justify-content: center; gap: 12px; font-size: 15px; font-weight: 550; }
+.ax3-button { min-height: 46px; padding: 12px 19px; border-radius: 3px; background: #f4f6fa; color: #141923; }
+.ax3-contact .ax3-button { color: #141923; }
 .ax3-button:hover { background: #dce4ff; }
-.ax3-report-link { min-height: 44px; color: #e5e9ef; gap: 8px; }
-.ax3-report-link:hover { text-decoration: underline; text-underline-offset: 5px; }
-.ax3-art { position: absolute; right: -6.9%; width: 61%; top: 0; bottom: 0; display: grid; align-items: center; pointer-events: none; }
-.ax3-art img { display: block; width: 100%; height: 100%; object-fit: contain; mask-image: linear-gradient(90deg, transparent 0%, black 13%, black 100%); mix-blend-mode: lighten; }
+.ax3-actions .ax3-report-link { padding: 13px 20px; color: white; background: #244bb9; border-radius: 5px; }
+.ax3-actions .ax3-report-link:hover { background: #193b99; }
+.ax3-actions .ax3-button { color: #223958; background: transparent; padding-inline: 0; }
+.ax3-actions .ax3-button:hover { text-decoration: underline; text-underline-offset: 4px; }
+.ax3-label { display: flex; align-items: center; gap: 12px; font: 600 12px/1.4 "IBM Plex Mono", Consolas, monospace; letter-spacing: .105em; text-transform: uppercase; }
+.ax3-label::before { content: ""; width: 26px; height: 2px; }
 .ax3-block { padding-block: clamp(60px, 7vw, 106px); }
 .ax3-work { background: #e9edf3; }
 .ax3-label { color: var(--ax3-slate); margin-bottom: 12px; }
@@ -94,9 +126,7 @@
   .ax3-wrap { width:90%; }
   .ax3-top { gap:32px; min-height:66px; }
   .ax3-top nav { gap:16px; }
-  .ax3-hero-inner { grid-template-columns:1.1fr 1fr; min-height:500px; }
-  .ax3-art { right:-10%; width:60%; }
-  .ax3-lead { max-width:350px; }
+  .ax3-hero-inner { gap: 26px; padding-block: 52px; }
   .ax3-access-inner { gap:6%; }
 }
 @media(max-width:680px) {
@@ -104,12 +134,10 @@
   .ax3-brand { font-size:20px; }
   .ax3-top { min-height:60px; gap:12px; }
   .ax3-tools { gap:10px; }
-  .ax3-hero-inner { display:block; padding-block:46px 0; min-height:0; }
-  .ax3-hero h1 { font-size:clamp(58px, 10.8vw, 78px); margin:18px 0; }
-  .ax3-lead { max-width:450px; }
-  .ax3-actions { margin-top:20px; gap:10px 17px; }
-  .ax3-art { position:relative; width:100%; height:clamp(195px,54vw,330px); margin:10px auto 0; inset:auto; }
-  .ax3-art img { mask-image:none; }
+  .ax3-hero-inner { grid-template-columns: minmax(0, 1fr); padding-block: 36px; gap: 28px; }
+  .ax3-hero h1 { font-size: clamp(34px, 7.8vw, 48px); }
+  .ax3-lead { margin-top: 14px; }
+  .ax3-actions { margin-top: 18px; gap: 10px 15px; }
   .ax3-work-layout, .ax3-access-inner { grid-template-columns:1fr; gap:26px; }
   .ax3-work-layout { margin-top:25px; }
   .ax3-work-description { padding-top:20px; }
@@ -117,8 +145,10 @@
   .ax3-contact-inner .ax3-button { align-self:flex-start; }
 }
 @media(max-width:380px) {
+  .ax3-header .ax3-brand { font-size:18px; gap:6px; }
+  .ax3-tools { gap:6px; }
+  .ax3-tools a svg { display:none; }
   .ax3-tools a { padding:6px 8px; }
-  .ax3-hero h1 { font-size:clamp(48px, 15vw, 60px); }
   .ax3-actions a { font-size:13px; gap:6px; }
-  .ax3-actions .ax3-button { padding-inline:12px; }
+  .ax3-actions .ax3-report-link { padding-inline: 12px; }
 }

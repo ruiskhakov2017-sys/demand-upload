@@ -5,8 +5,8 @@ export const ENTERPRISE_COPY = {
     title: "Axyro Analytics | Аналитика Google Ads",
     nav: ["Отчёты", "Кампании", "Доступ"],
     navigation: "Разделы страницы", lang: "Switch to English", login: "Войти",
-    category: "Аналитика Google Ads", hero: ["Экономика", "рекламы."],
-    lead: "Сколько стоит конверсия? Какой аккаунт расходует бюджет быстрее остальных? Сравнивайте результаты Google Ads в одном кабинете.",
+    hero: "Все аккаунты Google\u00a0Ads в\u00a0одном отчёте",
+    lead: "Сравнивайте расходы по аккаунтам и смотрите, сколько конверсий принёс каждый из них. Сразу видно, где за конверсию вы платите больше.",
     demo: "Запросить демо", see: "Посмотреть отчёт",
     workflow: "Кампании", workflowTitle: "От показателей к решению",
     screens: [
@@ -22,8 +22,8 @@ export const ENTERPRISE_COPY = {
     title: "Axyro Analytics | Google Ads Analytics",
     nav: ["Reports", "Campaigns", "Access"],
     navigation: "Page sections", lang: "Переключить на русский", login: "Sign in",
-    category: "Google Ads analytics", hero: ["The cost of", "performance."],
-    lead: "Compare spend and conversions across Google Ads accounts. See what each acquisition costs and which accounts are spending the most.",
+    hero: "Every Google\u00a0Ads account in one report",
+    lead: "Compare spend and conversions across accounts. See how much each account delivers and where you pay more per conversion.",
     demo: "Request a demo", see: "Explore the report",
     workflow: "Campaigns", workflowTitle: "From metrics to decisions",
     screens: [
