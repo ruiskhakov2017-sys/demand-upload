@@ -1,0 +1,174 @@
+.axyro-landing {
+  --ink: #1b1731;
+  --muted: #56536a;
+  --purple: #4a31ca;
+  --lime: #dcff72;
+  --paper: #fcfbf7;
+  --line: #dedbe8;
+  min-height: 100vh;
+  background: var(--paper);
+  color: var(--ink);
+  color-scheme: light;
+  font-family: Inter, system-ui, sans-serif;
+  line-height: 1.55;
+}
+
+.axyro-landing :is(h1, h2, h3, p, figure) { margin: 0; }
+.axyro-landing a { color: inherit; text-decoration: none; }
+.axyro-landing button { color: inherit; font: inherit; cursor: pointer; }
+.axyro-landing :is(a, button, summary):focus-visible { outline: 3px solid #7355ed; outline-offset: 4px; }
+.axyro-landing [id] { scroll-margin-top: 88px; }
+.axyro-container { width: min(100% - 96px, 1240px); margin-inline: auto; min-width: 0; }
+
+.axyro-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: #fcfbf7f2;
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(14px);
+}
+
+.axyro-header-content { display: flex; align-items: center; justify-content: space-between; gap: 24px; min-height: 72px; }
+.axyro-brand { display: inline-flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 850; letter-spacing: -.045em; white-space: nowrap; }
+.axyro-brand-mark { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--purple); color: #fff; }
+.axyro-brand-light { font-weight: 550; }
+.axyro-nav, .axyro-header-actions { display: flex; align-items: center; gap: 24px; }
+.axyro-nav a, .axyro-login { font-size: 14px; font-weight: 700; white-space: nowrap; }
+.axyro-nav a:hover, .axyro-login:hover { color: var(--purple); }
+.axyro-login { display: inline-flex; align-items: center; gap: 5px; }
+.axyro-login svg { width: 14px; height: 14px; }
+.axyro-locales { display: flex; padding: 3px; border: 1px solid var(--line); border-radius: 9px; }
+.axyro-locales button { min-width: 31px; min-height: 32px; padding: 3px 6px; border: 0; border-radius: 6px; background: transparent; font-size: 12px; font-weight: 750; }
+.axyro-locales button[aria-pressed="true"] { background: #ebe5ff; color: #392499; }
+
+.axyro-hero { background: linear-gradient(133deg, #fcfbf7 25%, #f3eeff 100%); border-bottom: 1px solid var(--line); }
+.axyro-hero-grid { display: grid; grid-template-columns: minmax(0, .93fr) minmax(0, 1.07fr); align-items: center; gap: clamp(28px, 4vw, 65px); padding-block: clamp(56px, 7vw, 104px) 54px; }
+.axyro-audience { display: flex; align-items: center; gap: 10px; color: #482dac; font-size: 14px; font-weight: 780; }
+.axyro-audience::before { content: ""; width: 9px; height: 9px; flex: 0 0 9px; border-radius: 50%; background: #7748ed; box-shadow: 0 0 0 4px #eaddff; }
+.axyro-hero h1 { margin-top: 21px; font-size: clamp(43px, 4.75vw, 76px); line-height: 1.02; letter-spacing: -.063em; font-weight: 850; }
+.axyro-hero h1 span { display: block; color: var(--purple); }
+.axyro-hero .axyro-intro { margin-top: 22px; max-width: 42ch; color: var(--muted); font-size: clamp(17px, 1.45vw, 20px); }
+.axyro-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 29px; }
+.axyro-button { display: inline-flex; justify-content: center; align-items: center; gap: 11px; padding: 12px 17px; min-height: 48px; border: 1px solid transparent; border-radius: 9px; font-size: 14px; font-weight: 800; text-align: center; transition: background-color 160ms, box-shadow 160ms; }
+.axyro-button svg { flex: none; width: 19px; height: 19px; }
+.axyro-landing .axyro-primary { background: var(--purple); color: #fff; box-shadow: 0 6px 15px #4a31ca2c; }
+.axyro-landing .axyro-primary:hover { background: #3721a8; }
+.axyro-landing .axyro-secondary { border-color: #c9c2e5; background: #ffffffa0; color: #272045; }
+.axyro-landing .axyro-secondary:hover { background: #eee7ff; }
+
+.axyro-hero-visual {
+  position: relative;
+  isolation: isolate;
+  min-width: 0;
+  padding: clamp(21px, 3vw, 39px) clamp(16px, 2.7vw, 34px) clamp(43px, 5vw, 70px);
+  border-radius: 26px;
+  background: radial-gradient(ellipse at 100% 100%, #b99afb 0%, transparent 58%), linear-gradient(150deg, #d6c6ff, #b3a3f7 77%);
+  overflow: hidden;
+}
+
+.axyro-hero-visual::before { content: ""; position: absolute; z-index: -1; inset: 0; background-image: radial-gradient(#5635b640 1px, transparent 1px); background-size: 16px 16px; mask-image: linear-gradient(110deg, #000, transparent 70%); }
+.axyro-screen { position: relative; overflow: hidden; border: 1px solid #a18ae5; border-radius: 13px; background: #fff; box-shadow: 0 20px 50px #3a20614a; }
+.axyro-screen-bar { display: flex; align-items: center; justify-content: space-between; gap: 6px; padding: 10px 13px; border-bottom: 1px solid #e8e4f4; }
+.axyro-screen-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; }
+.axyro-screen-label svg { width: 17px; height: 17px; color: var(--purple); }
+.axyro-sample { padding: 3px 7px; border-radius: 12px; background: #eee9fe; color: #462a9c; font-size: 10px; font-weight: 750; white-space: nowrap; }
+.axyro-hero-crop { position: relative; overflow: hidden; aspect-ratio: 1.78; background: #f6f8fb; }
+.axyro-hero-crop img { display: block; position: absolute; width: 128%; height: auto; top: -8%; left: -24%; }
+.axyro-insight { position: absolute; right: clamp(11px, 2vw, 24px); bottom: 15px; display: flex; align-items: center; gap: 9px; max-width: calc(100% - 22px); padding: 11px 13px 11px 9px; border: 1px solid #a5c238; border-radius: 12px; background: var(--lime); color: #242a19; box-shadow: 0 8px 18px #4737713d; }
+.axyro-insight-icon { display: grid; place-items: center; flex: 0 0 31px; height: 31px; border-radius: 8px; background: #28351b; color: #e4ff9c; }
+.axyro-insight-icon svg { width: 18px; height: 18px; }
+.axyro-insight strong, .axyro-insight div span { display: block; }
+.axyro-insight strong { font-size: 13px; }
+.axyro-insight div span { font-size: 11px; }
+
+.axyro-proof { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin-block: 0; padding: 0; border-top: 1px solid #dbd2f0; list-style: none; }
+.axyro-proof li { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 20px 10px; font-size: 14px; font-weight: 740; text-align: center; }
+.axyro-proof li + li { border-left: 1px solid #dbd2f0; }
+.axyro-proof svg { width: 17px; height: 17px; flex: 0 0 17px; color: var(--purple); }
+
+.axyro-section { padding-block: clamp(58px, 8vw, 102px); }
+.axyro-section h2 { max-width: 22ch; font-size: clamp(31px, 4vw, 55px); line-height: 1.07; letter-spacing: -.049em; font-weight: 820; }
+.axyro-section .axyro-section-lead { margin-top: 15px; color: var(--muted); max-width: 60ch; font-size: 17px; }
+.axyro-workflow { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: center; gap: 28px; margin-top: 28px; padding: clamp(17px, 3vw, 36px); border: 1px solid #dfd5fb; border-radius: 22px; background: #f2edff; }
+.axyro-step-content { min-width: 0; }
+.axyro-steps { display: flex; flex-wrap: wrap; gap: 7px; }
+.axyro-steps button { padding: 7px 11px; min-height: 41px; border: 1px solid #d8ccec; border-radius: 8px; background: #fff; font-size: 13px; font-weight: 750; }
+.axyro-steps button:hover { background: #e9ddff; }
+.axyro-steps button[aria-pressed="true"] { border-color: var(--purple); background: var(--purple); color: #fff; }
+.axyro-step-description { margin-top: 22px; }
+.axyro-step-description h3, .axyro-feature h3 { font-size: clamp(20px, 2.3vw, 27px); line-height: 1.2; letter-spacing: -.035em; }
+.axyro-step-description p, .axyro-feature p { margin-top: 10px; color: var(--muted); }
+.axyro-workflow-figure { min-width: 0; }
+.axyro-workflow-image { position: relative; overflow: hidden; aspect-ratio: 2.26; border: 1px solid #d7cbea; border-radius: 9px; background: #fff; }
+.axyro-workflow-image img { position: absolute; display: block; width: 150%; height: auto; left: -31%; }
+.axyro-panel-overview img { top: -42%; }
+.axyro-panel-issues img { bottom: 0; }
+.axyro-panel-export img { top: -88%; }
+.axyro-workflow-figure figcaption, .axyro-campaign figcaption { margin-top: 7px; font-size: 12px; color: var(--muted); }
+
+.axyro-features { background: #fff; border-block: 1px solid var(--line); }
+.axyro-feature-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 28px; }
+.axyro-feature { padding: clamp(18px, 2.6vw, 32px); border: 1px solid var(--line); border-radius: 16px; background: #fbfafc; }
+.axyro-feature-icon { display: grid; place-items: center; width: 43px; height: 43px; margin-bottom: 17px; border-radius: 11px; background: #ece3ff; color: #4126a9; }
+.axyro-feature:nth-child(2) .axyro-feature-icon { background: #e4f8a5; color: #293b10; }
+.axyro-feature:nth-child(3) .axyro-feature-icon { background: #ffe4cc; color: #762e20; }
+
+.axyro-campaign { background: #221942; color: #fff; }
+.axyro-campaign-grid { display: grid; grid-template-columns: minmax(0, .88fr) minmax(0, 1.12fr); align-items: center; gap: clamp(24px, 5vw, 65px); }
+.axyro-campaign .axyro-campaign-label { margin-bottom: 12px; color: var(--lime); font-size: 14px; font-weight: 770; }
+.axyro-campaign h2 + p { margin-top: 16px; color: #e0d8f2; }
+.axyro-campaign ul { display: grid; gap: 11px; margin-block: 23px 0; padding: 0; list-style: none; }
+.axyro-campaign li { display: flex; align-items: flex-start; gap: 8px; }
+.axyro-campaign li svg { flex: 0 0 19px; width: 19px; height: 19px; margin-top: 2px; color: var(--lime); }
+.axyro-campaign-image { display: block; width: 100%; height: auto; border: 1px solid #967ecc; border-radius: 12px; }
+.axyro-campaign figcaption { color: #d6c8f0; }
+
+.axyro-contact { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: clamp(24px, 4.7vw, 56px); border: 1px solid #cfde8b; border-radius: 22px; background: #e8f8ab; }
+.axyro-contact p { max-width: 56ch; margin-top: 15px; color: #3f4829; }
+.axyro-contact .axyro-button { flex-shrink: 0; }
+.axyro-faq { display: grid; grid-template-columns: minmax(0, .72fr) minmax(0, 1.28fr); gap: clamp(24px, 5vw, 65px); margin-top: clamp(44px, 7vw, 79px); }
+.axyro-faq h2 { font-size: clamp(28px, 3.4vw, 41px); }
+.axyro-faq details { border-top: 1px solid var(--line); padding: 14px 0; }
+.axyro-faq details:last-child { border-bottom: 1px solid var(--line); }
+.axyro-faq summary { cursor: pointer; padding: 2px; font-weight: 760; }
+.axyro-faq details :is(p, ul, ol) { color: var(--muted); }
+.axyro-faq details :is(p, strong) { display: block; margin-top: 10px; }
+
+.axyro-footer { padding-block: 25px; background: #eee8fa; border-top: 1px solid #dcd2ee; font-size: 13px; }
+.axyro-footer-content { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+.axyro-footer-content div { display: flex; flex-wrap: wrap; gap: 14px; }
+.axyro-footer a:hover { color: var(--purple); text-decoration: underline; }
+
+@media (max-width: 1000px) {
+  .axyro-container { width: min(100% - 56px, 1240px); }
+  .axyro-nav, .axyro-header-actions { gap: 13px; }
+  .axyro-hero h1 { font-size: clamp(40px, 5.35vw, 62px); }
+}
+
+@media (max-width: 770px) {
+  .axyro-container { width: calc(100% - 36px); }
+  .axyro-header-content { min-height: 61px; }
+  .axyro-nav { display: none; }
+  .axyro-hero-grid, .axyro-workflow, .axyro-campaign-grid, .axyro-faq { grid-template-columns: minmax(0, 1fr); }
+  .axyro-hero-grid { gap: 27px; padding-block: 43px 22px; }
+  .axyro-hero .axyro-intro { margin-top: 17px; }
+  .axyro-hero h1 { font-size: clamp(39px, 8.5vw, 62px); margin-top: 17px; }
+  .axyro-hero-visual { max-width: 570px; width: 100%; border-radius: 18px; }
+  .axyro-proof li { font-size: 12px; padding: 11px 6px; }
+  .axyro-proof li svg { display: none; }
+  .axyro-feature-grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .axyro-contact { align-items: flex-start; flex-direction: column; }
+}
+
+@media (max-width: 380px) {
+  .axyro-brand { gap: 6px; font-size: 17px; }
+  .axyro-brand-mark { width: 27px; height: 27px; }
+  .axyro-header-content, .axyro-header-actions { gap: 8px; }
+  .axyro-login svg { display: none; }
+  .axyro-button { flex: 1 1 auto; padding-inline: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .axyro-button { transition: none; }
+}
