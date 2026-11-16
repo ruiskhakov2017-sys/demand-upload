@@ -30,7 +30,7 @@ import { api } from "../api/client";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatDate, formatNumber, t } from "../i18n";
 import { isDemoPath } from "../demo/isDemoPath";
-import { isPortfolioBuild } from "../app/paths";
+import { isPortfolioBuild, isPortfolioRefinement } from "../app/paths";
 
 export function ModerationPage() {
   return <GoogleDataPage kind="moderation" title={t("ui.80ae616e0b")} />;
@@ -69,7 +69,7 @@ function GoogleDataPage({ kind, title }: { kind: "moderation" | "statistics"; ti
       </Box>
       {error && <Alert severity="error">{error.message}</Alert>}
       {message && <Alert severity="success" onClose={() => setMessage(null)}>{message}</Alert>}
-      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", bgcolor: "background.paper", borderRadius: isPortfolioBuild ? "12px" : 0 }}>
+      <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", bgcolor: "background.paper", borderRadius: isPortfolioRefinement ? "12px" : 0 }}>
         {kind === "moderation" ? <ModerationTable rows={data.data || []} /> : <StatisticsTable rows={data.data || []} />}
       </Box>
     </Stack>

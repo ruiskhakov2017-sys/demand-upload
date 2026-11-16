@@ -1,4 +1,7 @@
 export const ru: Record<string, string> = {
+  "workspace.designComparison": "Сравнение дизайна",
+  "workspace.design.previous": "Прежний вид",
+  "workspace.design.new": "Новый вид",
   "workspace.label": "Рабочее пространство",
   "workspace.navigation": "Управление рекламой",
   "workspace.operator": "Оператор",

@@ -3,6 +3,19 @@
 V4 is on `feature/axyro-portfolio-design-v4`. The previous source is tagged
 `portfolio-ui-before-refinement-20261116` (commit `312ba62`).
 
+## Compare the interfaces
+
+Both presentations are available simultaneously:
+
+- Previous: `https://axyro.tech/portfolio/control-center?design=previous`
+- New: `https://axyro.tech/portfolio/control-center?design=new`
+
+The design parameter is kept when navigating between sections and when signing
+in. Review links show a switch in the top bar. Each tab uses its own URL choice;
+the selection is not saved in shared local storage or cookies. API and export
+URLs do not receive this presentation parameter. Both interfaces use the same
+portfolio data and authenticated session. The URL without `design` opens V4.
+
 Before deployment the running frontend image was tagged on the server as
 `axyro-portfolio-frontend:before-v4`; its original image ID is recorded in
 `~/axyro-portfolio/ui-rollback/before-v4.image`. Keep this image while the design

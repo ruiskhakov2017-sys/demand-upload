@@ -3,7 +3,7 @@ import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
 import { createAppTheme, isThemeName, ThemeName } from "./theme";
 import { createPortfolioTheme } from "./portfolioTheme";
-import { isPortfolioBuild } from "./paths";
+import { isPortfolioRefinement } from "./paths";
 import "./fonts.css";
 
 const STORAGE_KEY = "dgu.theme";
@@ -17,7 +17,7 @@ const ThemePreferenceContext = createContext<ThemePreferenceValue | null>(null);
 
 export function ThemePreferenceProvider({ children }: { children: ReactNode }) {
   const [themeName, setThemeNameState] = useState<ThemeName>(readInitialTheme);
-  const theme = useMemo(() => isPortfolioBuild ? createPortfolioTheme(themeName) : createAppTheme(themeName), [themeName]);
+  const theme = useMemo(() => isPortfolioRefinement ? createPortfolioTheme(themeName) : createAppTheme(themeName), [themeName]);
   const value = useMemo<ThemePreferenceValue>(
     () => ({
       themeName,
