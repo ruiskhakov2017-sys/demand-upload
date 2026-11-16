@@ -19,6 +19,12 @@ design on 2026-11-16: the URL without `design` opens the new presentation, inclu
 entry from the public landing. The previous presentation stays available via
 `?design=previous`.
 
+Release `3e199fe` enables this default. Only the portfolio frontend was rebuilt
+and replaced; the image before this switch is retained as
+`axyro-portfolio-frontend:before-v4-default`. Live checks passed for entry from
+the landing on desktop/mobile, navigation and reload without a design parameter,
+and both explicit comparison links.
+
 Before deployment the running frontend image was tagged on the server as
 `axyro-portfolio-frontend:before-v4`; its original image ID is recorded in
 `~/axyro-portfolio/ui-rollback/before-v4.image`. Keep this image while the design
