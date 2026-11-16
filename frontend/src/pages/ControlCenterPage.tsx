@@ -223,7 +223,7 @@ export function ControlCenterPage() {
           <Tab value="history" label={cc("controlCenter.auto.040")}/>
           <Tab value="rules" label={cc("controlCenter.auto.041")}/>
           <Tab value="views" label={cc("controlCenter.full.018")}/>
-          <Tab value="sync" label={cc("controlCenter.auto.031")}/>
+          {!isPortfolioBuild && <Tab value="sync" label={cc("controlCenter.auto.031")}/>}
         </Tabs>
       </Paper>
       {tab === "accounts" && <AccountsWorkspace canEdit={canEdit} isAdmin={isAdmin} onOpenCampaigns={(accountId) => {
@@ -817,9 +817,11 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
           </Collapse>
           <Divider />
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-            {(!isPortfolioRefinement || selected.size > 0) && <Button size="small" startIcon={<CloudSyncOutlinedIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("SELECTED")}>{cc("controlCenter.auto.063")}</Button>}
-            <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("WORKING")}>{cc("controlCenter.auto.064")}</Button>
-            <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("ALL")}>{cc("controlCenter.auto.065")}</Button>
+            {isPortfolioBuild ? <Button size="small" startIcon={<RefreshIcon />} onClick={() => invalidateControlCenter(queryClient)}>{t("finance.refreshBudget")}</Button> : <>
+              {(!isPortfolioRefinement || selected.size > 0) && <Button size="small" startIcon={<CloudSyncOutlinedIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("SELECTED")}>{cc("controlCenter.auto.063")}</Button>}
+              <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("WORKING")}>{cc("controlCenter.auto.064")}</Button>
+              <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("ALL")}>{cc("controlCenter.auto.065")}</Button>
+            </>}
             <Box sx={{ flex: 1 }}/>
             <Button size="small" startIcon={<DownloadIcon />} href={api.controlCenterExportUrl("csv", exportParams)} download={isDemoPath() ? "axyro-demo.csv" : undefined}>
               CSV
@@ -942,7 +944,7 @@ function SummaryStrip({ data, loading }: {
           </Typography>
           <Typography variant="caption" color="text.secondary">{item.detail}</Typography>
         </Box>))}
-      {!isPortfolioRefinement && data?.quota && (<Typography variant="caption" color="text.secondary" sx={{ gridColumn: "1 / -1", px: 2, py: 0.75, borderTop: 1, borderColor: "divider" }}>
+      {!isPortfolioBuild && data?.quota && (<Typography variant="caption" color="text.secondary" sx={{ gridColumn: "1 / -1", px: 2, py: 0.75, borderTop: 1, borderColor: "divider" }}>
           {t("googleAccess.controlCenter", {
             level: data.quota.access?.level,
             production: data.quota.access?.production_operation_limit ?? "∞",

@@ -62,10 +62,10 @@ function GoogleDataPage({ kind, title }: { kind: "moderation" | "statistics"; ti
     <Stack spacing={3}>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
         <Typography variant="h4">{title}</Typography>
-        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ width: { xs: "100%", sm: "auto" }, minWidth: 0 }}>
+        {isPortfolioBuild ? <Button variant="outlined" startIcon={<RefreshIcon />} disabled={data.isFetching} onClick={() => data.refetch()}>{t("finance.refreshBudget")}</Button> : <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ width: { xs: "100%", sm: "auto" }, minWidth: 0 }}>
           <FormControl size="small" sx={{ minWidth: { xs: 0, sm: 240 } }}><InputLabel>{t("ui.97cb28fe6f")}</InputLabel><Select label={t("ui.97cb28fe6f")} value={connectionId} onChange={(e) => setConnectionId(e.target.value)}>{(connections.data || []).map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {item.status}</MenuItem>)}</Select></FormControl>
           <Button variant="contained" startIcon={<SyncIcon />} disabled={!connectionId || sync.isPending} onClick={() => sync.mutate()}>{t("ui.289c55ebed")}</Button>
-        </Stack>
+        </Stack>}
       </Box>
       {error && <Alert severity="error">{error.message}</Alert>}
       {message && <Alert severity="success" onClose={() => setMessage(null)}>{message}</Alert>}

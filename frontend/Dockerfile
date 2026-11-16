@@ -11,4 +11,5 @@ RUN VITE_BASE_PATH="$VITE_BASE_PATH" npm run build
 
 FROM nginx:1.27-alpine AS runtime
 COPY --from=build /app/dist /usr/share/nginx/html
+RUN chmod -R u=rwX,go=rX /usr/share/nginx/html
 COPY infrastructure/docker/frontend.nginx.conf /etc/nginx/conf.d/default.conf

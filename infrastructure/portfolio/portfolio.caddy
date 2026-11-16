@@ -20,6 +20,8 @@
 			respond @otherApi 404
 			@writeOutsidePortfolio {
 				path /api/accounts /api/google-connections /api/operations/finance
+				path /api/control-center/sync /api/control-center/sync/*
+				path /api/operations/statistics/sync /api/operations/moderation/sync
 				not method GET HEAD
 			}
 			respond @writeOutsidePortfolio 405
