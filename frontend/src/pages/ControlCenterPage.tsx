@@ -232,7 +232,7 @@ export function ControlCenterPage() {
         }}/>}
       {tab === "campaigns" && <CampaignsWorkspace canEdit={canEdit} accountId={campaignAccountId} onClearAccount={() => setCampaignAccountId(null)}/>}
       {tab === "creatives" && <CreativesWorkspace />}
-      {tab === "problems" && <ProblemsWorkspace canEdit={canEdit}/>}
+      {tab === "problems" && <ProblemsWorkspace canEdit={isAdmin}/>}
       {tab === "moderation" && <ModerationWorkspace />}
       {tab === "verification" && <VerificationWorkspace />}
       {tab === "history" && <HistoryWorkspace />}
