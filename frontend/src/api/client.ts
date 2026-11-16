@@ -1,5 +1,6 @@
 import { t } from "../i18n";
 import { isDemoPath } from "../demo/isDemoPath";
+import { appPath, appStorageKey } from "../app/paths";
 import { demoExportUrl, demoRequest } from "../demo/demoApi";
 
 export type User = {
@@ -815,7 +816,7 @@ export type SchedulePreview = {
   }>;
 };
 
-const CSRF_KEY = "dgu.csrf";
+const CSRF_KEY = appStorageKey("dgu.csrf");
 
 export function setCsrfToken(token: string) {
   sessionStorage.setItem(CSRF_KEY, token);
@@ -823,6 +824,10 @@ export function setCsrfToken(token: string) {
 
 export function getCsrfToken() {
   return sessionStorage.getItem(CSRF_KEY);
+}
+
+export function clearCsrfToken() {
+  sessionStorage.removeItem(CSRF_KEY);
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -837,7 +842,7 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (csrf && ["POST", "PUT", "PATCH", "DELETE"].includes((init.method || "GET").toUpperCase())) {
     headers.set("X-CSRF-Token", csrf);
   }
-  const response = await fetch(`/api${path}`, { ...init, headers, credentials: "include" });
+  const response = await fetch(appPath(`/api${path}`), { ...init, headers, credentials: "include" });
   if (!response.ok) {
     let message = t("api.errorStatus", { status: response.status });
     try {
@@ -1104,7 +1109,7 @@ export const api = {
   controlCenterExportUrl: (
     format: "csv" | "xlsx",
     params: QueryParams
-  ) => isDemoPath() ? demoExportUrl(params) : `/api/control-center/accounts/export?${queryString({ format, ...params })}`,
+  ) => isDemoPath() ? demoExportUrl(params) : appPath(`/api/control-center/accounts/export?${queryString({ format, ...params })}`),
 
   listUploads: () => request<CampaignUpload[]>("/uploads"),
   createUpload: (payload: { name: string; execution_mode: ExecutionMode }) =>
@@ -1131,7 +1136,7 @@ export const api = {
     request<DomainValidationStartResult>(`/uploads/${id}/domain-validation`, { method: "POST" }),
 
   listMedia: () => request<MediaAsset[]>("/media"),
-  mediaContentUrl: (id: string) => `/api/media/${encodeURIComponent(id)}/content`,
+  mediaContentUrl: (id: string) => appPath(`/api/media/${encodeURIComponent(id)}/content`),
   uploadMedia: (file: File) => {
     const body = new FormData();
     body.append("file", file);
@@ -1171,7 +1176,7 @@ export const api = {
   patchCampaignInstance: (id: string, payload: unknown) =>
     request<CampaignInstance>(`/campaign-instances/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   launchBatchExportUrl: (id: string, format: "xlsx" | "csv") =>
-    `/api/launch-batches/${encodeURIComponent(id)}/export?format=${format}`,
+    appPath(`/api/launch-batches/${encodeURIComponent(id)}/export?format=${format}`),
 
   listPlans: () => request<DeploymentPlan[]>("/plans"),
   getPlan: (id: string) => request<DeploymentPlan>(`/plans/${id}`),
@@ -1212,7 +1217,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload)
     }),
-  scheduleReportUrl: (id: string) => `/api/schedules/${encodeURIComponent(id)}/report.csv`,
+  scheduleReportUrl: (id: string) => appPath(`/api/schedules/${encodeURIComponent(id)}/report.csv`),
 
   listLaunchGroups: () => request<LaunchGroup[]>("/launch-groups"),
   getLaunchGroup: (id: string) => request<LaunchGroup>(`/launch-groups/${id}`),
@@ -1266,7 +1271,7 @@ export const api = {
     request<AiConversation>(`/ai/conversations/${encodeURIComponent(id)}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteAiConversation: (id: string) =>
     request<void>(`/ai/conversations/${encodeURIComponent(id)}`, { method: "DELETE" }),
-  aiConversationExportUrl: (id: string) => `/api/ai/conversations/${encodeURIComponent(id)}/export`,
+  aiConversationExportUrl: (id: string) => appPath(`/api/ai/conversations/${encodeURIComponent(id)}/export`),
   cancelAiRun: (id: string) => request<Record<string, any>>(`/ai/runs/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
   aiDrafts: (status?: string) => request<AiDraft[]>(`/ai/drafts?${queryString({ status })}`),
   patchAiDraft: (id: string, payload: Record<string, unknown>) =>
@@ -1281,7 +1286,7 @@ export const api = {
     }),
   deleteAiDraft: (id: string) => request<void>(`/ai/drafts/${encodeURIComponent(id)}`, { method: "DELETE" }),
   aiReports: () => request<AiReport[]>("/ai/reports"),
-  aiReportExportUrl: (id: string) => `/api/ai/reports/${encodeURIComponent(id)}/export`,
+  aiReportExportUrl: (id: string) => appPath(`/api/ai/reports/${encodeURIComponent(id)}/export`),
   deleteAiReport: (id: string) => request<void>(`/ai/reports/${encodeURIComponent(id)}`, { method: "DELETE" }),
   aiPreferences: () => request<Record<string, any>>("/ai/preferences"),
   patchAiPreferences: (payload: Record<string, unknown>) =>
@@ -1328,7 +1333,7 @@ export async function streamAiMessage(
   const headers = new Headers({ "Content-Type": "application/json" });
   const csrf = getCsrfToken();
   if (csrf) headers.set("X-CSRF-Token", csrf);
-  const response = await fetch(`/api/ai/conversations/${encodeURIComponent(conversationId)}/messages/stream`, {
+  const response = await fetch(appPath(`/api/ai/conversations/${encodeURIComponent(conversationId)}/messages/stream`), {
     method: "POST",
     headers,
     credentials: "include",

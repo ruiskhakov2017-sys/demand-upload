@@ -26,6 +26,7 @@ def set_session_cookie(response: Response, raw_session_token: str) -> None:
         settings.session_cookie_name,
         raw_session_token,
         max_age=settings.session_ttl_minutes * 60,
+        path=settings.session_cookie_path,
         httponly=True,
         secure=settings.session_cookie_secure,
         samesite="lax",
@@ -112,7 +113,7 @@ def logout(
             )
         )
         db.commit()
-    response.delete_cookie(settings.session_cookie_name)
+    response.delete_cookie(settings.session_cookie_name, path=settings.session_cookie_path)
     response.status_code = status.HTTP_204_NO_CONTENT
     return response
 

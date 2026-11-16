@@ -1,5 +1,34 @@
-http://portfolio.axyro.tech {
-	@entry path / /demo /demo/*
-	redir @entry /login 302
-	reverse_proxy axyro-portfolio-ingress:80
+(portfolio_path) {
+	redir /portfolio /portfolio/ 308
+	handle_path /portfolio/* {
+		route {
+			@entry path / /demo /demo/*
+			redir @entry /portfolio/login 302
+
+			@otherApi {
+				path /api /api/*
+				not {
+					path /api/health /api/ready /api/version /api/setup/status
+					path /api/auth/portfolio-link /api/auth/me /api/auth/logout
+					path /api/control-center/* /api/audit /api/accounts /api/google-connections
+					path /api/operations/statistics /api/operations/statistics/sync
+					path /api/operations/finance /api/operations/finance/google-billing/*
+					path /api/operations/moderation /api/operations/moderation/sync
+					path /api/operations/alerts /api/operations/alerts/*
+				}
+			}
+			respond @otherApi 404
+			@writeOutsidePortfolio {
+				path /api/accounts /api/google-connections /api/operations/finance
+				not method GET HEAD
+			}
+			respond @writeOutsidePortfolio 405
+
+			reverse_proxy axyro-portfolio-ingress:80 {
+				header_up Host axyro.tech
+				header_up Cookie "axyro_portfolio_session={cookie.axyro_portfolio_session}"
+				header_up -Authorization
+			}
+		}
+	}
 }

@@ -8,6 +8,7 @@ export const en: Record<string, string> = {
   "auth.portfolioTitle": "Workspace access",
   "auth.portfolioDescription": "This link can be used once. The workspace uses data from a fictional team.",
   "auth.portfolioOpen": "Open workspace",
+  "auth.portfolioInviteOnly": "Open the sign-in link you received from the portfolio owner.",
   "auth.portfolioLinkError": "Could not sign in. Check that the link is still valid and has not been used.",
   "auth.publicProductPage": "Public product page",
   "preferences.language": "Interface language",

@@ -29,6 +29,7 @@ import { api, ControlCenterAccount, ControlCenterAd, ControlCenterAsset, Control
 import { formatDate, localeTag, t } from "../i18n";
 import { cc, ccPersistedText } from "../i18n/controlCenter";
 import { isDemoPath } from "../demo/isDemoPath";
+import { appStorageKey, isPortfolioBuild } from "../app/paths";
 type MainTab = "accounts" | "campaigns" | "creatives" | "problems" | "moderation" | "verification" | "history" | "rules" | "views" | "sync";
 type QuickFilter = "all" | "working" | "issues" | "verification" | "paused" | "archive";
 type TimezoneMode = "ACCOUNT" | "MOSCOW";
@@ -196,7 +197,7 @@ const COLUMN_SORT_FIELDS: Partial<Record<ColumnKey, string>> = {
     disapproved_ads: "disapproved_ads",
     last_sync: "last_sync_success_at"
 };
-const COLUMN_STORAGE = isDemoPath() ? "axyro.demo.columns.v1" : "dgu.control-center.columns.v1";
+const COLUMN_STORAGE = appStorageKey(isDemoPath() ? "axyro.demo.columns.v1" : "dgu.control-center.columns.v1");
 export function ControlCenterPage() {
     const [tab, setTab] = useState<MainTab>("accounts");
     const [campaignAccountId, setCampaignAccountId] = useState<string | null>(null);
@@ -209,7 +210,7 @@ export function ControlCenterPage() {
           <Typography variant="h4">{cc("controlCenter.auto.033")}</Typography>
           <Typography color="text.secondary" sx={{ mt: 0.5 }}>{cc("controlCenter.auto.034")}</Typography>
         </Box>
-        {!isDemoPath() && <Chip size="small" variant="outlined" color="info" label={cc("controlCenter.auto.035")} sx={{ display: { xs: "none", sm: "flex" } }}/>}
+        {!isDemoPath() && !isPortfolioBuild && <Chip size="small" variant="outlined" color="info" label={cc("controlCenter.auto.035")} sx={{ display: { xs: "none", sm: "flex" } }}/>}
       </Box>
       <Paper variant="outlined" sx={{ overflow: "hidden" }}>
         <Tabs value={tab} onChange={(_, value: MainTab) => setTab(value)} variant="scrollable" scrollButtons="auto" aria-label={cc("controlCenter.auto.036")}>
@@ -248,10 +249,10 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
     const theme = useTheme();
     const mobile = useMediaQuery(theme.breakpoints.down("md"));
     const queryClient = useQueryClient();
-    const [quickFilter, setQuickFilter] = useState<QuickFilter>(isDemoPath() ? "all" : "working");
+    const [quickFilter, setQuickFilter] = useState<QuickFilter>(isDemoPath() || isPortfolioBuild ? "all" : "working");
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
-    const [period, setPeriod] = useState(isDemoPath() ? "30d" : "7d");
+    const [period, setPeriod] = useState(isDemoPath() || isPortfolioBuild ? "30d" : "7d");
     const [timezoneMode, setTimezoneMode] = useState<TimezoneMode>("ACCOUNT");
     const [tagId, setTagId] = useState("");
     const [connectionId, setConnectionId] = useState("");
@@ -900,7 +901,7 @@ function SummaryStrip({ data, loading }: {
             detail: `${data?.quota?.access?.level ?? "—"} · ${data?.quota?.production?.used_today ?? 0}/${data?.quota?.production?.operation_limit ?? "∞"}`
         }
     ];
-    const summaryValues = isDemoPath() ? values.slice(0, 4) : values;
+    const summaryValues = isDemoPath() || isPortfolioBuild ? values.slice(0, 4) : values;
     return (<Box sx={{
             display: "grid",
             gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", lg: `repeat(${summaryValues.length}, minmax(0, 1fr))` },
@@ -1836,8 +1837,8 @@ function CampaignsWorkspace({ canEdit, accountId, onClearAccount }: {
             <InputLabel>{t("googleMode.actionLabel")}</InputLabel>
             <Select value={executionMode} label={t("googleMode.actionLabel")} onChange={(event) => setExecutionMode(event.target.value as ExecutionMode)}>
               <MenuItem value="SIMULATION">Simulation</MenuItem>
-              {!isDemoPath() && <MenuItem value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem>}
-              {!isDemoPath() && <MenuItem value="PRODUCTION">{t("googleMode.productionShort")}</MenuItem>}
+              {!isDemoPath() && !isPortfolioBuild && <MenuItem value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem>}
+              {!isDemoPath() && !isPortfolioBuild && <MenuItem value="PRODUCTION">{t("googleMode.productionShort")}</MenuItem>}
             </Select>
           </FormControl>
           <Button size="small" startIcon={<PauseCircleOutlineIcon />} disabled={!canEdit || previewAction.isPending} onClick={() => requestAction("PAUSE")}>{cc("controlCenter.auto.154")}</Button>
@@ -2775,7 +2776,7 @@ function loadColumnState() {
     catch {
         // Fall back to the stable default column set.
     }
-    if (isDemoPath()) return normalizeColumnState({
+    if (isDemoPath() || isPortfolioBuild) return normalizeColumnState({
         order: ["local_name", "work_status", "cost", "all_conversions", "cpa_registration", "problem", "google_status"],
         visible: ["local_name", "work_status", "cost", "all_conversions", "cpa_registration", "problem", "google_status"],
         widths: {local_name: 190, work_status: 150, cost: 120, all_conversions: 110, cpa_registration: 120, problem: 95, google_status: 120},

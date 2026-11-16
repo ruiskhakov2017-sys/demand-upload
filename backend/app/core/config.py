@@ -20,7 +20,8 @@ class Settings(BaseSettings):
         alias="CORS_ORIGINS",
     )
     allowed_hosts: list[str] = Field(default_factory=lambda: ["*"], alias="ALLOWED_HOSTS")
-    session_cookie_name: str = "dgu_session"
+    session_cookie_name: str = Field(default="dgu_session", alias="SESSION_COOKIE_NAME")
+    session_cookie_path: str = Field(default="/", alias="SESSION_COOKIE_PATH")
     session_cookie_secure: bool = Field(default=True, alias="SESSION_COOKIE_SECURE")
     session_ttl_minutes: int = 720
     setup_token: str | None = Field(default=None, alias="SETUP_TOKEN")

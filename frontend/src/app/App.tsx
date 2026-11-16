@@ -42,7 +42,7 @@ import WorkspacesOutlinedIcon from "@mui/icons-material/WorkspacesOutlined";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 
-import { api, setCsrfToken } from "../api/client";
+import { api, clearCsrfToken, setCsrfToken } from "../api/client";
 import { AiAssistantDrawer } from "../components/AiAssistantDrawer";
 import { LoginPage } from "../pages/LoginPage";
 import { SetupPage } from "../pages/SetupPage";
@@ -51,6 +51,7 @@ import { themeChoices } from "./theme";
 import { t, useLocale } from "../i18n";
 import { ai } from "../i18n/aiAnalyst";
 import { isDemoPath } from "../demo/isDemoPath";
+import { appPath, appRoute, isPortfolioBuild } from "./paths";
 
 const AccountsPage = lazy(() => import("../pages/AccountsPage").then((module) => ({ default: module.AccountsPage })));
 const AuditPage = lazy(() => import("../pages/AuditPage").then((module) => ({ default: module.AuditPage })));
@@ -80,6 +81,8 @@ const drawerWidth = 264;
 type Navigate = (path: string, replace?: boolean) => void;
 type NavItem = { path: string; label: string; icon: JSX.Element };
 type NavGroup = { label: string; items: NavItem[] };
+
+const portfolioRoutes = new Set(["/control-center", "/statistics", "/finance", "/alerts", "/moderation", "/audit"]);
 
 function getNavGroups(): NavGroup[] {
   return [
@@ -121,14 +124,18 @@ function getNavGroups(): NavGroup[] {
 
 export function App() {
   const [path, navigate] = useBrowserPath();
-  const demoPath = isDemoPath(path);
-  const publicPath = path === "/" || path === "/privacy" || path === "/terms";
+  const demoPath = !isPortfolioBuild && isDemoPath(path);
+  const publicPath = !isPortfolioBuild && (path === "/" || path === "/privacy" || path === "/terms");
   const [mobileOpen, setMobileOpen] = useState(false);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
   const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
   const { themeName, setThemeName } = useThemePreference();
   const { locale, setLocale } = useLocale();
-  const navGroups = getNavGroups();
+  const allNavGroups = getNavGroups();
+  const navGroups = isPortfolioBuild
+    ? allNavGroups.map(group => ({ ...group, items: group.items.filter(item => portfolioRoutes.has(item.path)) }))
+        .filter(group => group.items.length > 0)
+    : allNavGroups;
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const queryClient = useQueryClient();
@@ -146,7 +153,8 @@ export function App() {
   const logout = useMutation({
     mutationFn: api.logout,
     onSuccess: () => {
-      sessionStorage.clear();
+      if (isPortfolioBuild) clearCsrfToken();
+      else sessionStorage.clear();
       queryClient.clear();
       navigate("/login", true);
     }
@@ -159,7 +167,9 @@ export function App() {
     }
   }, [currentTitle, publicPath, demoPath, locale]);
   useEffect(() => {
-    if (meQuery.data && path === "/login") navigate("/control-center", true);
+    if (meQuery.data && (path === "/login" || (isPortfolioBuild && !portfolioRoutes.has(path)))) {
+      navigate("/control-center", true);
+    }
   }, [meQuery.data, navigate, path]);
 
   if (demoPath) {
@@ -175,7 +185,7 @@ export function App() {
   }
 
   if (setupQuery.isLoading) return <CenteredText text={t("ui.b807935f97")} />;
-  if (setupQuery.data?.setup_required) return <SetupPage />;
+  if (setupQuery.data?.setup_required && !isPortfolioBuild) return <SetupPage />;
   if (!meQuery.data) return <LoginPage />;
 
   const user = meQuery.data.user;
@@ -327,11 +337,11 @@ export function App() {
         <Toolbar />
         <Box sx={{ maxWidth: 1440, mx: "auto", pt: 3 }}>
           <Suspense fallback={<CenteredText text={t("ui.b807935f97")} />}>
-            {renderRoute(path, navigate)}
+            {renderRoute(isPortfolioBuild && !portfolioRoutes.has(path) ? "/control-center" : path, navigate)}
           </Suspense>
         </Box>
       </Box>
-      <AiAssistantDrawer path={path} navigate={navigate} />
+      {!isPortfolioBuild && <AiAssistantDrawer path={path} navigate={navigate} />}
     </Box>
   );
 }
@@ -394,7 +404,7 @@ function renderRoute(path: string, navigate: Navigate) {
 }
 
 function useBrowserPath(): [string, Navigate] {
-  const normalize = () => (window.location.pathname.replace(/\/+$/, "") || "/");
+  const normalize = () => (appRoute(window.location.pathname).replace(/\/+$/, "") || "/");
   const [path, setPath] = useState(normalize);
   useEffect(() => {
     const onPopState = () => setPath(normalize());
@@ -404,8 +414,8 @@ function useBrowserPath(): [string, Navigate] {
   const navigate = useMemo<Navigate>(
     () => (next, replace = false) => {
       const target = next || "/";
-      if (replace) window.history.replaceState({}, "", target);
-      else window.history.pushState({}, "", target);
+      if (replace) window.history.replaceState({}, "", appPath(target));
+      else window.history.pushState({}, "", appPath(target));
       setPath(target.split("?", 1)[0].replace(/\/+$/, "") || "/");
       window.scrollTo({ top: 0, behavior: "smooth" });
     },

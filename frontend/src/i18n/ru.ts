@@ -8,6 +8,7 @@ export const ru: Record<string, string> = {
   "auth.portfolioTitle": "Доступ к кабинету",
   "auth.portfolioDescription": "По этой ссылке можно войти один раз. В кабинете показаны данные вымышленной команды.",
   "auth.portfolioOpen": "Открыть кабинет",
+  "auth.portfolioInviteOnly": "Откройте ссылку для входа, которую вам прислал владелец портфолио.",
   "auth.portfolioLinkError": "Не удалось войти. Убедитесь, что ссылка ещё действует и не была использована.",
   "auth.publicProductPage": "Публичная страница продукта",
   "preferences.language": "Язык интерфейса",

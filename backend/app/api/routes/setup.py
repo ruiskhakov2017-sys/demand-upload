@@ -69,6 +69,7 @@ def bootstrap_admin(
         settings.session_cookie_name,
         raw_session_token,
         max_age=settings.session_ttl_minutes * 60,
+        path=settings.session_cookie_path,
         httponly=True,
         secure=settings.session_cookie_secure,
         samesite="lax",

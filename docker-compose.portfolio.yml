@@ -9,6 +9,8 @@ x-portfolio-backend: &portfolio-backend
     APP_ENCRYPTION_KEY: ${PORTFOLIO_ENCRYPTION_KEY:?Set PORTFOLIO_ENCRYPTION_KEY}
     SETUP_TOKEN: ${PORTFOLIO_SETUP_TOKEN:?Set PORTFOLIO_SETUP_TOKEN}
     SESSION_COOKIE_SECURE: ${PORTFOLIO_SECURE_COOKIE:-false}
+    SESSION_COOKIE_NAME: ${PORTFOLIO_COOKIE_NAME:-dgu_session}
+    SESSION_COOKIE_PATH: ${PORTFOLIO_BASE_PATH:-/}
     DATABASE_URL: postgresql+psycopg://portfolio:${PORTFOLIO_DB_PASSWORD:?Set PORTFOLIO_DB_PASSWORD}@postgres:5432/axyro_portfolio
     REDIS_URL: redis://redis:6379/0
     ALLOWED_HOSTS: '${PORTFOLIO_ALLOWED_HOSTS:-["localhost", "127.0.0.1"]}'
@@ -71,6 +73,8 @@ services:
     build:
       context: .
       dockerfile: frontend/Dockerfile
+      args:
+        VITE_BASE_PATH: ${PORTFOLIO_BASE_PATH:-/}
     networks: [private]
 
   reverse-proxy:

@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 import { api, setCsrfToken } from "../api/client";
+import { appRoute, isPortfolioBuild } from "../app/paths";
 import { t } from "../i18n";
 
 const schema = z.object({
@@ -19,7 +20,7 @@ type FormValues = z.infer<typeof schema>;
 
 export function LoginPage() {
   const queryClient = useQueryClient();
-  const invite = window.location.pathname === "/login"
+  const invite = appRoute(window.location.pathname) === "/login"
     ? new URLSearchParams(window.location.hash.slice(1)).get("invite")
     : null;
   useEffect(() => {
@@ -47,9 +48,11 @@ export function LoginPage() {
         <Stack spacing={3}>
           <Box>
             <Typography variant="overline" color="primary.main" fontWeight={800}>{t("app.productName")}</Typography>
-            <Typography variant="h4" sx={{ mt: 0.5 }}>{t(invite ? "auth.portfolioTitle" : "ui.07205a06c3")}</Typography>
+            <Typography variant="h4" sx={{ mt: 0.5 }}>
+              {t(invite || isPortfolioBuild ? "auth.portfolioTitle" : "ui.07205a06c3")}
+            </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-              {t(invite ? "auth.portfolioDescription" : "auth.secureWorkspace")}
+              {t(invite ? "auth.portfolioDescription" : isPortfolioBuild ? "auth.portfolioInviteOnly" : "auth.secureWorkspace")}
             </Typography>
           </Box>
           {mutation.error && (
@@ -65,7 +68,7 @@ export function LoginPage() {
             >
               {t("auth.portfolioOpen")}
             </Button>
-          ) : (
+          ) : !isPortfolioBuild && (
             <Stack component="form" spacing={2} onSubmit={handleSubmit((values) => mutation.mutate(values))}>
               <TextField
                 label={t("ui.e2d97c93ec")}

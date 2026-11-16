@@ -30,6 +30,7 @@ import { api } from "../api/client";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatDate, formatNumber, t } from "../i18n";
 import { isDemoPath } from "../demo/isDemoPath";
+import { isPortfolioBuild } from "../app/paths";
 
 export function ModerationPage() {
   return <GoogleDataPage kind="moderation" title={t("ui.80ae616e0b")} />;
@@ -184,7 +185,7 @@ export function FinancePage() {
         {googleBilling.isFetching && <LinearProgress sx={{ mt: 2 }} />}
         {googleBilling.data && <GoogleBillingDetails data={googleBilling.data} />}
       </Paper>
-      {!isDemoPath() && <Paper variant="outlined" sx={{ p: 3 }}>
+      {!isDemoPath() && !isPortfolioBuild && <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>{t("finance.brocardOptional")}</Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={3}><TextField fullWidth label={t("ui.7c5815637f")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Grid>
