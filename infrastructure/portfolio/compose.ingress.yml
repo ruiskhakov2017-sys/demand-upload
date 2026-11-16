@@ -1,0 +1,10 @@
+services:
+  reverse-proxy:
+    networks:
+      public-ingress:
+        aliases: [axyro-portfolio-ingress]
+
+networks:
+  public-ingress:
+    external: true
+    name: ${PORTFOLIO_GATEWAY_NETWORK:-axyro-work_ingress}

@@ -36,3 +36,5 @@ PORTFOLIO_PUBLIC_URL=https://portfolio.axyro.tech
 PORTFOLIO_SECURE_COOKIE=true
 PORTFOLIO_ALLOWED_HOSTS=["portfolio.axyro.tech","localhost","127.0.0.1"]
 ```
+
+На `rul1` добавьте к вызовам `docker compose` файл `-f infrastructure/portfolio/compose.ingress.yml`. Он подключает только прокси портфолио к сети `axyro-work_ingress`. Добавьте `infrastructure/portfolio/portfolio.caddy` в действующую конфигурацию Caddy на этом сервере, проверьте конфигурацию и перезагрузите её через `caddy reload`. Внешний прокси принимает `portfolio.axyro.tech` по HTTPS и передаёт исходный заголовок `Host` в Caddy по HTTP. Продолжайте использовать этот блок при обновлении прокси.
