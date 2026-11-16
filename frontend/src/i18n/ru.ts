@@ -1,5 +1,5 @@
 export const ru: Record<string, string> = {
-  "finance.teamBudgetDescription": "Плановый медиабюджет команды и расходы по аккаунтам за отчётный набор данных.",
+  "finance.teamBudgetDescription": "Плановый бюджет, расходы по аккаунтам и доступный остаток.",
   "finance.refreshBudget": "Обновить данные",
   "finance.plannedBudget": "Плановый бюджет",
   "finance.actualSpend": "Расходы по аккаунтам",

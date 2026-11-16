@@ -1,5 +1,5 @@
 export const en: Record<string, string> = {
-  "finance.teamBudgetDescription": "Planned team media budget and account spend for the reporting dataset.",
+  "finance.teamBudgetDescription": "Planned budget, account spend and remaining funds.",
   "finance.refreshBudget": "Refresh data",
   "finance.plannedBudget": "Planned budget",
   "finance.actualSpend": "Account spend",

@@ -21,7 +21,7 @@ export function AuditPage() {
     <Stack spacing={3}>
       <Typography variant="h4">{t("ui.67ade741ae")}</Typography>
       <Card>
-        <CardContent>
+        <CardContent sx={{ overflowX: "auto" }}>
           <Table size="small">
             <TableHead>
               <TableRow>

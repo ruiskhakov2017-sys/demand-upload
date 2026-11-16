@@ -163,11 +163,11 @@ export function FinancePage() {
       </Box>
       {finance.error && <Alert severity="error">{finance.error.message}</Alert>}
       {finance.isLoading && <LinearProgress />}
-      <Grid container spacing={2}>
-        {[[t("finance.plannedBudget"), planned], [t("finance.actualSpend"), spent], [t("finance.remainingBudget"), remaining]].map(([label, value]) => <Grid key={label} item xs={12} md={4}>
-          <Paper variant="outlined" sx={{ p: 2.5 }}><Typography color="text.secondary">{label}</Typography><Typography variant="h5" sx={{ mt: 1 }}>{profiles.length ? money(Number(value)) : "—"}</Typography></Paper>
-        </Grid>)}
-      </Grid>
+      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "repeat(3, minmax(0, 1fr))" }, gap: 2 }}>
+        {[[t("finance.plannedBudget"), planned], [t("finance.actualSpend"), spent], [t("finance.remainingBudget"), remaining]].map(([label, value]) => <Paper key={label} variant="outlined" sx={{ p: 2.5 }}>
+          <Typography color="text.secondary">{label}</Typography><Typography variant="h5" sx={{ mt: 1 }}>{profiles.length ? money(Number(value)) : "—"}</Typography>
+        </Paper>)}
+      </Box>
       <Paper variant="outlined" sx={{ overflowX: "auto" }}><Table size="small">
         <TableHead><TableRow><TableCell>{t("finance.budgetName")}</TableCell><TableCell align="right">{t("finance.remainingBudget")}</TableCell><TableCell>{t("finance.updatedAt")}</TableCell></TableRow></TableHead>
         <TableBody>{profiles.map(row => <TableRow key={row.id}><TableCell>{row.name}</TableCell><TableCell align="right">{money(Number(row.latest_snapshot?.balance || 0))}</TableCell><TableCell>{formatDate(row.latest_snapshot?.created_at)}</TableCell></TableRow>)}{!profiles.length && !finance.isLoading && <EmptyRow columns={3} text={t("ui.daf4e830c5")} />}</TableBody>
@@ -269,7 +269,7 @@ export function AlertsPage() {
     <Stack spacing={3}>
       <Box sx={{ display: "flex", justifyContent: "space-between", gap: 2 }}><Typography variant="h4">{t("ui.ee3c35f311")}</Typography><Button variant="outlined" startIcon={<RefreshIcon />} onClick={() => alerts.refetch()}>{t("ui.c2f668e54f")}</Button></Box>
       {alerts.error && <Alert severity="error">{alerts.error.message}</Alert>}
-      <Box sx={{ border: 1, borderColor: "divider", bgcolor: "background.paper" }}><Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>{t("ui.c80d7e8172")}</TableCell><TableCell>{t("ui.d9f964d71b")}</TableCell><TableCell>{t("ui.bb92633bf5")}</TableCell><TableCell>{t("ui.dc72346ac4")}</TableCell></TableRow></TableHead><TableBody>{(alerts.data || []).map((row) => <TableRow key={row.id} sx={{ opacity: row.read_at ? 0.62 : 1 }}><TableCell padding="checkbox"><Checkbox icon={<MarkEmailReadOutlinedIcon />} checkedIcon={<MarkEmailReadOutlinedIcon />} checked={Boolean(row.read_at)} onChange={(e) => mark.mutate({ id: row.id, read: e.target.checked })} /></TableCell><TableCell>{formatDate(row.created_at)}</TableCell><TableCell><StatusBadge value={row.severity} /></TableCell><TableCell>{row.title}</TableCell><TableCell>{row.message}</TableCell></TableRow>)}{!alerts.data?.length && <EmptyRow columns={5} text={t("ui.5c5a86cf4c")} />}</TableBody></Table></Box>
+      <Box sx={{ border: 1, borderColor: "divider", bgcolor: "background.paper", overflowX: "auto" }}><Table size="small"><TableHead><TableRow><TableCell padding="checkbox" /><TableCell>{t("ui.c80d7e8172")}</TableCell><TableCell>{t("ui.d9f964d71b")}</TableCell><TableCell>{t("ui.bb92633bf5")}</TableCell><TableCell>{t("ui.dc72346ac4")}</TableCell></TableRow></TableHead><TableBody>{(alerts.data || []).map((row) => <TableRow key={row.id} sx={{ opacity: row.read_at ? 0.62 : 1 }}><TableCell padding="checkbox"><Checkbox icon={<MarkEmailReadOutlinedIcon />} checkedIcon={<MarkEmailReadOutlinedIcon />} checked={Boolean(row.read_at)} onChange={(e) => mark.mutate({ id: row.id, read: e.target.checked })} /></TableCell><TableCell>{formatDate(row.created_at)}</TableCell><TableCell><StatusBadge value={row.severity} /></TableCell><TableCell>{row.title}</TableCell><TableCell>{row.message}</TableCell></TableRow>)}{!alerts.data?.length && <EmptyRow columns={5} text={t("ui.5c5a86cf4c")} />}</TableBody></Table></Box>
     </Stack>
   );
 }
