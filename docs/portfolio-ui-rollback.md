@@ -14,7 +14,9 @@ The design parameter is kept when navigating between sections and when signing
 in. Review links show a switch in the top bar. Each tab uses its own URL choice;
 the selection is not saved in shared local storage or cookies. API and export
 URLs do not receive this presentation parameter. Both interfaces use the same
-portfolio data and authenticated session. The URL without `design` opens V4.
+portfolio data and authenticated session. The owner selected the previous design
+on 2026-11-16: the URL without `design` opens the previous presentation. V4 stays
+available for comparison via `?design=new`.
 
 Before deployment the running frontend image was tagged on the server as
 `axyro-portfolio-frontend:before-v4`; its original image ID is recorded in

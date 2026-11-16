@@ -2,7 +2,7 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 export const isPortfolioBuild = basePath === "/portfolio";
 export const portfolioDesign = typeof window === "undefined" ? null : new URLSearchParams(window.location.search).get("design");
-export const isPortfolioRefinement = isPortfolioBuild && portfolioDesign !== "previous";
+export const isPortfolioRefinement = isPortfolioBuild && portfolioDesign === "new";
 
 /** Keep design review links in this tab, without changing API or export URLs. */
 export function appNavigationPath(path: string) {

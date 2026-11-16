@@ -30,9 +30,9 @@ describe("portfolio design comparison", () => {
     expect(paths.portfolioDesignPath("new")).toBe("/portfolio/finance?design=new");
   });
 
-  it("defaults to the new design without changing ordinary URLs", async () => {
+  it("defaults to the selected previous design without changing ordinary URLs", async () => {
     const paths = await pathsAt("https://axyro.tech/portfolio/control-center");
-    expect(paths.isPortfolioRefinement).toBe(true);
+    expect(paths.isPortfolioRefinement).toBe(false);
     expect(paths.appNavigationPath("/statistics")).toBe("/portfolio/statistics");
   });
 
