@@ -858,6 +858,8 @@ export const api = {
     request<Session>("/setup/bootstrap", { method: "POST", body: JSON.stringify(payload) }),
   login: (payload: { username: string; password: string }) =>
     request<Session>("/auth/login", { method: "POST", body: JSON.stringify(payload) }),
+  loginWithPortfolioLink: (token: string) =>
+    request<Session>("/auth/portfolio-link", { method: "POST", body: JSON.stringify({ token }) }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<Session>("/auth/me"),
   dashboard: () => request<Record<string, any>>("/dashboard/summary"),

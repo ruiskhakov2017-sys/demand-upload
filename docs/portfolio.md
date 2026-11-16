@@ -22,3 +22,17 @@ docker compose --env-file .env.portfolio -f docker-compose.portfolio.yml up --bu
 3. Откройте историю и найдите события по этому аккаунту. Выгрузите выбранный период в XLSX.
 
 Google Ads в этой сборке использует режим симуляции. Для проверки реального запроса к Google можно отдельно настроить тестовую иерархию Google Ads. У таких аккаунтов нет показов и расходов, поэтому отчётность лучше проверять на подготовленном наборе данных.
+
+Чтобы выдать посетителю одноразовую ссылку на этот кабинет, выполните:
+
+```sh
+docker compose --env-file .env.portfolio -f docker-compose.portfolio.yml exec -T api python -m scripts.portfolio_link
+```
+
+Ссылка действует 24 часа. Посетитель нажимает «Открыть кабинет» и получает обычную сессию оператора. Каждый посетитель получает свою ссылку, все операторы работают с одной базой портфолио. Для публикации настройте обратный прокси с HTTPS и добавьте в `.env.portfolio`:
+
+```dotenv
+PORTFOLIO_PUBLIC_URL=https://portfolio.axyro.tech
+PORTFOLIO_SECURE_COOKIE=true
+PORTFOLIO_ALLOWED_HOSTS=["portfolio.axyro.tech","localhost","127.0.0.1"]
+```

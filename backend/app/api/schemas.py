@@ -48,6 +48,10 @@ class LoginIn(BaseModel):
     password: str
 
 
+class PortfolioLinkIn(BaseModel):
+    token: str = Field(pattern=r"^portfolio_[A-Za-z0-9_-]{64}$")
+
+
 class SessionOut(BaseModel):
     user: UserOut
     csrf_token: str

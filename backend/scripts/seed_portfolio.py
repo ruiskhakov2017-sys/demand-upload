@@ -16,6 +16,7 @@ from app.db.models import (
     User,
     UserRole,
 )
+from app.domain.portfolio_access import PORTFOLIO_USERNAME
 
 WORKSPACE = "Atlas Performance"
 MANAGER_ID = "9900000100"
@@ -37,7 +38,7 @@ def seed() -> None:
 
     now = datetime.now(UTC)
     with SessionLocal.begin() as db:
-        if db.scalar(select(User.id).where(User.username == "portfolio")) and db.scalar(
+        if db.scalar(select(User.id).where(User.username == PORTFOLIO_USERNAME)) and db.scalar(
             select(GoogleConnection.id).where(GoogleConnection.name == WORKSPACE)
         ):
             print("Portfolio workspace already initialized")
@@ -46,7 +47,7 @@ def seed() -> None:
             raise SystemExit("Portfolio setup requires an empty Axyro database")
 
         user = User(
-            username="portfolio",
+            username=PORTFOLIO_USERNAME,
             password_hash=hash_password(password),
             role=UserRole.OPERATOR.value,
             is_active=True,

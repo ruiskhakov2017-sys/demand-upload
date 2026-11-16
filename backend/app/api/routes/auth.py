@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_csrf
-from app.api.schemas import LoginIn, SessionOut, UserOut
+from app.api.schemas import LoginIn, PortfolioLinkIn, SessionOut, UserOut
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import (
@@ -15,7 +15,8 @@ from app.core.security import (
     utcnow,
     verify_password,
 )
-from app.db.models import AuditLog, User, UserSession
+from app.db.models import ApplicationSetting, AuditLog, User, UserRole, UserSession
+from app.domain.portfolio_access import PORTFOLIO_USERNAME, invitation_key
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -37,6 +38,31 @@ def login(payload: LoginIn, request: Request, response: Response, db: Session = 
     if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Неверный логин или пароль")
 
+    return create_session(db, request, response, user, "auth.login")
+
+
+@router.post("/portfolio-link", response_model=SessionOut)
+def portfolio_link(
+    payload: PortfolioLinkIn, request: Request, response: Response, db: Session = Depends(get_db)
+) -> SessionOut:
+    if settings.app_env != "portfolio":
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+
+    user = db.scalar(select(User).where(
+        User.username == PORTFOLIO_USERNAME, User.role == UserRole.OPERATOR.value, User.is_active.is_(True)
+    ))
+    invitation = db.scalar(select(ApplicationSetting).where(
+        ApplicationSetting.key == invitation_key(payload.token)
+    ).with_for_update())
+    if not user or not invitation or invitation.value.get("expires_at", 0) <= utcnow().timestamp():
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Ссылка уже использована или истекла")
+
+    db.delete(invitation)
+    response.headers["Cache-Control"] = "no-store"
+    return create_session(db, request, response, user, "auth.portfolio_link")
+
+
+def create_session(db: Session, request: Request, response: Response, user: User, audit_action: str) -> SessionOut:
     raw_session_token = generate_token("dgu_session")
     csrf_token = generate_token("dgu_csrf")
     session = UserSession(
@@ -52,7 +78,7 @@ def login(payload: LoginIn, request: Request, response: Response, db: Session = 
         AuditLog(
             created_at=utcnow(),
             actor_user_id=user.id,
-            action="auth.login",
+            action=audit_action,
             entity_type="user",
             entity_id=str(user.id),
             ip_address=request.client.host if request.client else None,

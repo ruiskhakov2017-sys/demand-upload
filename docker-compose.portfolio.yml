@@ -5,13 +5,13 @@ x-portfolio-backend: &portfolio-backend
   pull_policy: never
   environment: &portfolio-env
     APP_ENV: portfolio
-    APP_PUBLIC_BASE_URL: http://localhost:19082
+    APP_PUBLIC_BASE_URL: ${PORTFOLIO_PUBLIC_URL:-http://localhost:19082}
     APP_ENCRYPTION_KEY: ${PORTFOLIO_ENCRYPTION_KEY:?Set PORTFOLIO_ENCRYPTION_KEY}
     SETUP_TOKEN: ${PORTFOLIO_SETUP_TOKEN:?Set PORTFOLIO_SETUP_TOKEN}
-    SESSION_COOKIE_SECURE: 'false'
+    SESSION_COOKIE_SECURE: ${PORTFOLIO_SECURE_COOKIE:-false}
     DATABASE_URL: postgresql+psycopg://portfolio:${PORTFOLIO_DB_PASSWORD:?Set PORTFOLIO_DB_PASSWORD}@postgres:5432/axyro_portfolio
     REDIS_URL: redis://redis:6379/0
-    ALLOWED_HOSTS: '["localhost", "127.0.0.1"]'
+    ALLOWED_HOSTS: '${PORTFOLIO_ALLOWED_HOSTS:-["localhost", "127.0.0.1"]}'
     AI_ENABLED: 'false'
     CONTROL_CENTER_LIVE_ACTIONS_ENABLED: 'false'
   networks: [private]

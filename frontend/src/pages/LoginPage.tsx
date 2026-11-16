@@ -19,6 +19,9 @@ type FormValues = z.infer<typeof schema>;
 
 export function LoginPage() {
   const queryClient = useQueryClient();
+  const invite = window.location.pathname === "/login"
+    ? new URLSearchParams(window.location.hash.slice(1)).get("invite")
+    : null;
   useEffect(() => {
     document.title = "Secure workspace | Axyro Analytics";
   }, []);
@@ -29,7 +32,9 @@ export function LoginPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const mutation = useMutation({
-    mutationFn: api.login,
+    mutationFn: (credentials: FormValues | string) => typeof credentials === "string"
+      ? api.loginWithPortfolioLink(credentials)
+      : api.login(credentials),
     onSuccess: (session) => {
       setCsrfToken(session.csrf_token);
       queryClient.invalidateQueries({ queryKey: ["me"] });
@@ -42,29 +47,46 @@ export function LoginPage() {
         <Stack spacing={3}>
           <Box>
             <Typography variant="overline" color="primary.main" fontWeight={800}>{t("app.productName")}</Typography>
-            <Typography variant="h4" sx={{ mt: 0.5 }}>{t("ui.07205a06c3")}</Typography>
-            <Typography color="text.secondary" sx={{ mt: 0.75 }}>{t("auth.secureWorkspace")}</Typography>
+            <Typography variant="h4" sx={{ mt: 0.5 }}>{t(invite ? "auth.portfolioTitle" : "ui.07205a06c3")}</Typography>
+            <Typography color="text.secondary" sx={{ mt: 0.75 }}>
+              {t(invite ? "auth.portfolioDescription" : "auth.secureWorkspace")}
+            </Typography>
           </Box>
-          {mutation.error && <Alert severity="error">{mutation.error.message}</Alert>}
-          <Stack component="form" spacing={2} onSubmit={handleSubmit((values) => mutation.mutate(values))}>
-            <TextField
-              label={t("ui.e2d97c93ec")}
-              autoComplete="username"
-              error={Boolean(errors.username)}
-              helperText={errors.username?.message}
-              {...register("username")}
-            />
-            <TextField
-              label={t("ui.14f7c63cc1")}
-              type="password"
-              autoComplete="current-password"
-              error={Boolean(errors.password)}
-              helperText={errors.password?.message}
-              {...register("password")}
-            />
-            <Button type="submit" variant="contained" size="large" startIcon={<LoginIcon />} disabled={mutation.isPending}>
-              {t("ui.939e95a11d")}</Button>
-          </Stack>
+          {mutation.error && (
+            <Alert severity="error">{invite ? t("auth.portfolioLinkError") : mutation.error.message}</Alert>
+          )}
+          {invite ? (
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<LoginIcon />}
+              disabled={mutation.isPending || mutation.isSuccess}
+              onClick={() => mutation.mutate(invite)}
+            >
+              {t("auth.portfolioOpen")}
+            </Button>
+          ) : (
+            <Stack component="form" spacing={2} onSubmit={handleSubmit((values) => mutation.mutate(values))}>
+              <TextField
+                label={t("ui.e2d97c93ec")}
+                autoComplete="username"
+                error={Boolean(errors.username)}
+                helperText={errors.username?.message}
+                {...register("username")}
+              />
+              <TextField
+                label={t("ui.14f7c63cc1")}
+                type="password"
+                autoComplete="current-password"
+                error={Boolean(errors.password)}
+                helperText={errors.password?.message}
+                {...register("password")}
+              />
+              <Button type="submit" variant="contained" size="large" startIcon={<LoginIcon />} disabled={mutation.isPending}>
+                {t("ui.939e95a11d")}
+              </Button>
+            </Stack>
+          )}
           <Link href="/" underline="hover" sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, width: "fit-content" }}>
             <ArrowBackIcon fontSize="small" />
             {t("auth.publicProductPage")}
