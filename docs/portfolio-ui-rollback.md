@@ -14,9 +14,10 @@ The design parameter is kept when navigating between sections and when signing
 in. Review links show a switch in the top bar. Each tab uses its own URL choice;
 the selection is not saved in shared local storage or cookies. API and export
 URLs do not receive this presentation parameter. Both interfaces use the same
-portfolio data and authenticated session. The owner selected the previous design
-on 2026-11-16: the URL without `design` opens the previous presentation. V4 stays
-available for comparison via `?design=new`.
+portfolio data and authenticated session. The owner selected V4 as the working
+design on 2026-11-16: the URL without `design` opens the new presentation, including
+entry from the public landing. The previous presentation stays available via
+`?design=previous`.
 
 Before deployment the running frontend image was tagged on the server as
 `axyro-portfolio-frontend:before-v4`; its original image ID is recorded in
@@ -30,6 +31,7 @@ From the deployed V4 release directory under `~/axyro-portfolio/releases/`:
 ```sh
 sudo docker compose \
   --env-file ../../.env.portfolio --env-file ../../.env.path \
+  --env-file ../../.env.public \
   -f docker-compose.portfolio.yml \
   -f infrastructure/portfolio/compose.ingress.yml \
   -f infrastructure/portfolio/compose.ui-rollback.yml \
