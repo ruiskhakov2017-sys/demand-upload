@@ -1,0 +1,2 @@
+# Deployment scripts must remain executable by Linux Bash in Git archives.
+*.sh text eol=lf
