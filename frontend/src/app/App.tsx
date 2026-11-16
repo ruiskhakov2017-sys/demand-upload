@@ -50,6 +50,7 @@ import { useThemePreference } from "./ThemePreference";
 import { themeChoices } from "./theme";
 import { t, useLocale } from "../i18n";
 import { ai } from "../i18n/aiAnalyst";
+import { isDemoPath } from "../demo/isDemoPath";
 
 const AccountsPage = lazy(() => import("../pages/AccountsPage").then((module) => ({ default: module.AccountsPage })));
 const AuditPage = lazy(() => import("../pages/AuditPage").then((module) => ({ default: module.AuditPage })));
@@ -72,6 +73,7 @@ const NewUploadPage = lazy(() => import("../pages/UploadWizardPage").then((modul
 const UploadWizardPage = lazy(() => import("../pages/UploadWizardPage").then((module) => ({ default: module.UploadWizardPage })));
 const PublicSitePage = lazy(() => import("../pages/PublicSitePage").then((module) => ({ default: module.PublicSitePage })));
 const LegalPage = lazy(() => import("../pages/LegalPage").then((module) => ({ default: module.LegalPage })));
+const DemoWorkspace = lazy(() => import("../pages/DemoWorkspace").then((module) => ({ default: module.DemoWorkspace })));
 
 const drawerWidth = 264;
 
@@ -119,6 +121,7 @@ function getNavGroups(): NavGroup[] {
 
 export function App() {
   const [path, navigate] = useBrowserPath();
+  const demoPath = isDemoPath(path);
   const publicPath = path === "/" || path === "/privacy" || path === "/terms";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
@@ -129,7 +132,7 @@ export function App() {
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const queryClient = useQueryClient();
-  const setupQuery = useQuery({ queryKey: ["setup-status"], queryFn: api.setupStatus, enabled: !publicPath });
+  const setupQuery = useQuery({ queryKey: ["setup-status"], queryFn: api.setupStatus, enabled: !publicPath && !demoPath });
   const meQuery = useQuery({
     queryKey: ["me"],
     queryFn: async () => {
@@ -137,7 +140,7 @@ export function App() {
       setCsrfToken(session.csrf_token);
       return session;
     },
-    enabled: !publicPath && setupQuery.data?.setup_required === false,
+    enabled: !publicPath && !demoPath && setupQuery.data?.setup_required === false,
     retry: false
   });
   const logout = useMutation({
@@ -151,13 +154,17 @@ export function App() {
 
   const currentTitle = navGroups.flatMap((group) => group.items).find((item) => isSelected(path, item.path))?.label;
   useEffect(() => {
-    if (!publicPath) {
+    if (!publicPath && !demoPath) {
       document.title = `${currentTitle || t("app.productName")} | Axyro Analytics`;
     }
-  }, [currentTitle, publicPath, locale]);
+  }, [currentTitle, publicPath, demoPath, locale]);
   useEffect(() => {
     if (meQuery.data && path === "/login") navigate("/control-center", true);
   }, [meQuery.data, navigate, path]);
+
+  if (demoPath) {
+    return <Suspense fallback={<CenteredText text={t("ui.b807935f97")} />}><DemoWorkspace /></Suspense>;
+  }
 
   if (publicPath) {
     return (

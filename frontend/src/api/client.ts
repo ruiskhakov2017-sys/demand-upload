@@ -1,4 +1,6 @@
 import { t } from "../i18n";
+import { isDemoPath } from "../demo/isDemoPath";
+import { demoExportUrl, demoRequest } from "../demo/demoApi";
 
 export type User = {
   id: string;
@@ -824,6 +826,9 @@ export function getCsrfToken() {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  if (isDemoPath()) {
+    return demoRequest<T>(path, init);
+  }
   const headers = new Headers(init.headers);
   if (!headers.has("Content-Type") && init.body && !(init.body instanceof FormData)) {
     headers.set("Content-Type", "application/json");
@@ -880,7 +885,7 @@ export const api = {
       method: "POST"
     }),
 
-  controlCenterSummary: () => request<Record<string, any>>("/control-center/summary"),
+  controlCenterSummary: (params: QueryParams = {}) => request<Record<string, any>>(`/control-center/summary?${queryString(params)}`),
   controlCenterAccounts: (params: QueryParams) =>
     request<{
       items: ControlCenterAccount[];
@@ -1097,7 +1102,7 @@ export const api = {
   controlCenterExportUrl: (
     format: "csv" | "xlsx",
     params: QueryParams
-  ) => `/api/control-center/accounts/export?${queryString({ format, ...params })}`,
+  ) => isDemoPath() ? demoExportUrl(params) : `/api/control-center/accounts/export?${queryString({ format, ...params })}`,
 
   listUploads: () => request<CampaignUpload[]>("/uploads"),
   createUpload: (payload: { name: string; execution_mode: ExecutionMode }) =>

@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { PUBLIC_COPY } from "../i18n/publicSite";
-import { DEMO_REQUEST_URL, ENTERPRISE_COPY } from "../i18n/enterpriseLanding";
+import { DEMO_URL, ENTERPRISE_COPY } from "../i18n/enterpriseLanding";
 import { PRIVACY_COPY, TERMS_COPY } from "./LegalPage";
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
@@ -15,7 +15,7 @@ describe("Axyro Analytics public positioning", () => {
     expect(ENTERPRISE_COPY.en.lead).toContain("Compare spend and conversions");
     expect(PUBLIC_COPY.en.apiBody).toContain("Primary use: reporting, analytics and monitoring");
     expect(ENTERPRISE_COPY.en.screens[1].body).toContain("paused state");
-    expect(DEMO_REQUEST_URL).toMatch(/^mailto:support@axyro\.tech\?/);
+    expect(DEMO_URL).toBe("/demo/control-center");
   });
 
   it("identifies the individual operator and sole-user access consistently", () => {

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import ArrowOutward from "@mui/icons-material/ArrowOutward";
 import { useLocale } from "../i18n";
-import { ENTERPRISE_COPY, DEMO_REQUEST_URL } from "../i18n/enterpriseLanding";
+import { ENTERPRISE_COPY, DEMO_URL } from "../i18n/enterpriseLanding";
 import { PUBLIC_COPY } from "../i18n/publicSite";
 import { EnterpriseReport } from "./EnterpriseReport";
 import { HeroAccountPanel } from "./HeroAccountPanel";
@@ -37,7 +37,7 @@ export function PublicSitePage() {
         </nav>
         <div className="ax3-tools">
           <button type="button" aria-label={copy.lang} onClick={() => setLocale(nextLocale)}>{nextLocale.toUpperCase()}</button>
-          <a href="/login">{copy.login}<ArrowOutward /></a>
+          <a href={DEMO_URL}>{copy.login}<ArrowOutward /></a>
         </div>
       </div>
     </header>
@@ -49,7 +49,7 @@ export function PublicSitePage() {
             <p className="ax3-lead">{copy.lead}</p>
             <div className="ax3-actions">
               <a className="ax3-report-link" href="#report">{copy.see}<ArrowForward /></a>
-              <a className="ax3-button" href={DEMO_REQUEST_URL}>{copy.demo}<ArrowOutward /></a>
+              <a className="ax3-button" href={DEMO_URL}>{copy.demo}<ArrowOutward /></a>
             </div>
           </div>
           <HeroAccountPanel locale={locale} />
@@ -86,14 +86,14 @@ export function PublicSitePage() {
           <div className="ax3-questions">
             <details><summary>{copy.permissions}</summary><p>{legal.apiBody}</p><ul>{legal.readItems.map(item => <li key={item}>{item}</li>)}</ul></details>
             <details><summary>{copy.changes}</summary><ul>{legal.writeItems.map(item => <li key={item}>{item}</li>)}</ul><p>{legal.productionNotice}</p><ol>{legal.deploymentSteps.map(item => <li key={item}>{item}</li>)}</ol></details>
-            <details><summary>{copy.users}</summary><p>{legal.audienceBody}</p><p>{legal.architectureBody}</p><p>{legal.affiliation}</p></details>
+            <details><summary>{copy.users}</summary><p>{legal.demoAccess}</p><p>{legal.audienceBody}</p><p>{legal.architectureBody}</p><p>{legal.affiliation}</p></details>
           </div>
         </div>
       </section>
       <section className="ax3-contact" aria-labelledby="ax3-contact-title">
         <div className="ax3-wrap ax3-contact-inner">
           <div><h2 id="ax3-contact-title">{copy.contactTitle}</h2><p>{copy.contact}</p></div>
-          <a className="ax3-button" href={DEMO_REQUEST_URL}>{copy.demo}<ArrowOutward /></a>
+          <a className="ax3-button" href={DEMO_URL}>{copy.demo}<ArrowOutward /></a>
         </div>
       </section>
     </main>

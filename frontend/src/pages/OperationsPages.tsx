@@ -29,6 +29,7 @@ import { useEffect, useState } from "react";
 import { api } from "../api/client";
 import { StatusBadge } from "../components/StatusBadge";
 import { formatDate, formatNumber, t } from "../i18n";
+import { isDemoPath } from "../demo/isDemoPath";
 
 export function ModerationPage() {
   return <GoogleDataPage kind="moderation" title={t("ui.80ae616e0b")} />;
@@ -183,7 +184,7 @@ export function FinancePage() {
         {googleBilling.isFetching && <LinearProgress sx={{ mt: 2 }} />}
         {googleBilling.data && <GoogleBillingDetails data={googleBilling.data} />}
       </Paper>
-      <Paper variant="outlined" sx={{ p: 3 }}>
+      {!isDemoPath() && <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>{t("finance.brocardOptional")}</Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={3}><TextField fullWidth label={t("ui.7c5815637f")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Grid>
@@ -192,7 +193,7 @@ export function FinancePage() {
         </Grid>
         <Alert severity="info" sx={{ mt: 2 }}>{t("ui.98a65e2fdd")}</Alert>
         <Button sx={{ mt: 2 }} variant="contained" startIcon={<SaveOutlinedIcon />} disabled={!form.api_token || save.isPending} onClick={() => save.mutate()}>{t("ui.4864057d62")}</Button>
-      </Paper>
+      </Paper>}
       <Box sx={{ overflowX: "auto", border: 1, borderColor: "divider", bgcolor: "background.paper" }}><Table size="small"><TableHead><TableRow><TableCell>{t("ui.eb0b9b0d90")}</TableCell><TableCell>{t("ui.2d385af6d6")}</TableCell><TableCell>{t("ui.f7f293b5c5")}</TableCell><TableCell>{t("ui.5266d4a020")}</TableCell><TableCell>{t("ui.f5585974e7")}</TableCell><TableCell>{t("ui.05df0b42f4")}</TableCell><TableCell align="right">{t("ui.4fe9c0675c")}</TableCell></TableRow></TableHead><TableBody>{(finance.data || []).map((row) => <TableRow key={row.id}><TableCell>{row.name}</TableCell><TableCell>{row.provider}</TableCell><TableCell><StatusBadge value={row.status} /></TableCell><TableCell>{row.latest_snapshot ? `${row.latest_snapshot.balance} ${row.latest_snapshot.currency}` : "—"}</TableCell><TableCell>{row.latest_snapshot ? `${row.latest_snapshot.cards_active}/${row.latest_snapshot.cards_total}` : "—"}</TableCell><TableCell>{formatDate(row.updated_at)}</TableCell><TableCell align="right"><Button size="small" startIcon={<SyncIcon />} disabled={row.status === "SYNCING" || sync.isPending} onClick={() => sync.mutate(row.id)}>{t("ui.289c55ebed")}</Button></TableCell></TableRow>)}{!finance.data?.length && <EmptyRow columns={7} text={t("ui.daf4e830c5")} />}</TableBody></Table></Box>
     </Stack>
   );

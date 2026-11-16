@@ -34,6 +34,7 @@ export const PUBLIC_COPY = {
     ],
     architectureBody: "The browser communicates only with the protected application API. OAuth refresh tokens and Google Ads credentials stay encrypted on the backend and are never returned to frontend code.",
     audienceTitle: "Sole-operator access",
+    demoAccess: "The public demo opens immediately with illustrative data. Table preferences are stored locally, and sample edits are kept for the current browser tab session. The demo does not connect to Google Ads accounts.",
     audienceBody: "The workspace is currently used only by Iskhakov Ruslan through the protected owner account. No employee, contractor, client, or member of the public has access.",
     affiliation: "Axyro Analytics is the name of an independent software project operated by Iskhakov Ruslan, an individual. It is not a registered company or separate legal entity and is not affiliated with, endorsed by, or sponsored by Google.",
     footerProduct: "Axyro Analytics · Operated by Iskhakov Ruslan (individual)"
@@ -73,6 +74,7 @@ export const PUBLIC_COPY = {
     ],
     architectureBody: "Браузер обращается только к защищённому API приложения. OAuth refresh tokens и реквизиты Google Ads остаются зашифрованными на backend и никогда не возвращаются frontend-коду.",
     audienceTitle: "Доступ только владельца",
+    demoAccess: "Публичное демо открывается сразу с примером данных. Настройки таблицы хранятся локально, а изменения примера — в текущем сеансе вкладки браузера. Демо не подключается к аккаунтам Google Ads.",
     audienceBody: "Рабочим кабинетом сейчас пользуется только Iskhakov Ruslan через защищённую учётную запись владельца. Доступа нет ни у сотрудников, ни у подрядчиков, ни у клиентов, ни у посторонних лиц.",
     affiliation: "Axyro Analytics — название независимого программного проекта физического лица Iskhakov Ruslan. Это не зарегистрированная компания и не отдельное юридическое лицо; проект не связан с Google и не одобрен или спонсируется Google.",
     footerProduct: "Axyro Analytics · Оператор: Iskhakov Ruslan (физическое лицо)"

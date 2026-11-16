@@ -28,6 +28,7 @@ import { useEffect, useMemo, useState } from "react";
 import { api, ControlCenterAccount, ControlCenterAd, ControlCenterAsset, ControlCenterCampaign, ControlCenterGeo, ControlCenterMcc, ControlCenterProblem, ControlCenterRule, ControlCenterTag, ExecutionMode, QueryParams, SavedControlCenterView } from "../api/client";
 import { formatDate, localeTag, t } from "../i18n";
 import { cc, ccPersistedText } from "../i18n/controlCenter";
+import { isDemoPath } from "../demo/isDemoPath";
 type MainTab = "accounts" | "campaigns" | "creatives" | "problems" | "moderation" | "verification" | "history" | "rules" | "views" | "sync";
 type QuickFilter = "all" | "working" | "issues" | "verification" | "paused" | "archive";
 type TimezoneMode = "ACCOUNT" | "MOSCOW";
@@ -195,7 +196,7 @@ const COLUMN_SORT_FIELDS: Partial<Record<ColumnKey, string>> = {
     disapproved_ads: "disapproved_ads",
     last_sync: "last_sync_success_at"
 };
-const COLUMN_STORAGE = "dgu.control-center.columns.v1";
+const COLUMN_STORAGE = isDemoPath() ? "axyro.demo.columns.v1" : "dgu.control-center.columns.v1";
 export function ControlCenterPage() {
     const [tab, setTab] = useState<MainTab>("accounts");
     const [campaignAccountId, setCampaignAccountId] = useState<string | null>(null);
@@ -208,7 +209,7 @@ export function ControlCenterPage() {
           <Typography variant="h4">{cc("controlCenter.auto.033")}</Typography>
           <Typography color="text.secondary" sx={{ mt: 0.5 }}>{cc("controlCenter.auto.034")}</Typography>
         </Box>
-        <Chip size="small" variant="outlined" color="info" label={cc("controlCenter.auto.035")} sx={{ display: { xs: "none", sm: "flex" } }}/>
+        {!isDemoPath() && <Chip size="small" variant="outlined" color="info" label={cc("controlCenter.auto.035")} sx={{ display: { xs: "none", sm: "flex" } }}/>}
       </Box>
       <Paper variant="outlined" sx={{ overflow: "hidden" }}>
         <Tabs value={tab} onChange={(_, value: MainTab) => setTab(value)} variant="scrollable" scrollButtons="auto" aria-label={cc("controlCenter.auto.036")}>
@@ -247,10 +248,10 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
     const theme = useTheme();
     const mobile = useMediaQuery(theme.breakpoints.down("md"));
     const queryClient = useQueryClient();
-    const [quickFilter, setQuickFilter] = useState<QuickFilter>("working");
+    const [quickFilter, setQuickFilter] = useState<QuickFilter>(isDemoPath() ? "all" : "working");
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
-    const [period, setPeriod] = useState("7d");
+    const [period, setPeriod] = useState(isDemoPath() ? "30d" : "7d");
     const [timezoneMode, setTimezoneMode] = useState<TimezoneMode>("ACCOUNT");
     const [tagId, setTagId] = useState("");
     const [connectionId, setConnectionId] = useState("");
@@ -302,8 +303,8 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
     }>(() => loadColumnState());
     const [defaultApplied, setDefaultApplied] = useState(false);
     const summary = useQuery({
-        queryKey: ["control-center-summary"],
-        queryFn: api.controlCenterSummary,
+        queryKey: ["control-center-summary", period, customStart, customEnd],
+        queryFn: () => api.controlCenterSummary({period, start_date: customStart, end_date: customEnd}),
         refetchInterval: 30000
     });
     const tags = useQuery({ queryKey: ["control-center-tags"], queryFn: api.controlCenterTags });
@@ -802,12 +803,12 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
             <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("WORKING")}>{cc("controlCenter.auto.064")}</Button>
             <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("ALL")}>{cc("controlCenter.auto.065")}</Button>
             <Box sx={{ flex: 1 }}/>
-            <Button size="small" startIcon={<DownloadIcon />} href={api.controlCenterExportUrl("csv", exportParams)}>
+            <Button size="small" startIcon={<DownloadIcon />} href={api.controlCenterExportUrl("csv", exportParams)} download={isDemoPath() ? "axyro-demo.csv" : undefined}>
               CSV
             </Button>
-            <Button size="small" startIcon={<DownloadIcon />} href={api.controlCenterExportUrl("xlsx", exportParams)}>
+            {!isDemoPath() && <Button size="small" startIcon={<DownloadIcon />} href={api.controlCenterExportUrl("xlsx", exportParams)}>
               XLSX
-            </Button>
+            </Button>}
             <Typography variant="body2" color="text.secondary">{cc("controlCenter.auto.066")}{accounts.data?.total ?? 0}
             </Typography>
           </Box>
@@ -899,17 +900,18 @@ function SummaryStrip({ data, loading }: {
             detail: `${data?.quota?.access?.level ?? "—"} · ${data?.quota?.production?.used_today ?? 0}/${data?.quota?.production?.operation_limit ?? "∞"}`
         }
     ];
+    const summaryValues = isDemoPath() ? values.slice(0, 4) : values;
     return (<Box sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", lg: "repeat(5, minmax(0, 1fr))" },
+            gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", lg: `repeat(${summaryValues.length}, minmax(0, 1fr))` },
             border: 1,
             borderColor: "divider",
             bgcolor: "background.paper"
         }}>
-      {values.map((item, index) => (<Box key={item.label} sx={{
+      {summaryValues.map((item, index) => (<Box key={item.label} sx={{
                 p: { xs: 1.5, sm: 2 },
                 minWidth: 0,
-                borderRight: { lg: index < values.length - 1 ? 1 : 0 },
+                borderRight: { lg: index < summaryValues.length - 1 ? 1 : 0 },
                 borderBottom: { xs: index < 4 ? 1 : 0, lg: 0 },
                 borderColor: "divider"
             }}>
@@ -1001,6 +1003,11 @@ function AccountsTable(props: {
     }, [props.columns, props.pinned]);
     return (<TableContainer component={Paper} variant="outlined" sx={{ maxHeight: "calc(100vh - 220px)", minHeight: 320, overflow: "auto" }}>
       <Table size="small" stickyHeader sx={{ tableLayout: "fixed", minWidth: tableWidth(props.columns), "& .MuiTableCell-root": { py: props.density === "compact" ? 0.5 : 1 } }}>
+        <colgroup>
+          <col style={{ width: 48 }} />
+          {props.columns.map(column => <col key={column.key} style={{ width: column.width }} />)}
+          <col />
+        </colgroup>
         <TableHead>
           <TableRow>
             <TableCell padding="checkbox" sx={{ position: "sticky", left: 0, zIndex: 5, width: 48, bgcolor: "background.paper" }}>
@@ -1028,7 +1035,7 @@ function AccountsTable(props: {
                 <Box role="separator" aria-label={(cc("controlCenter.full.057") + column.label + "")} onMouseDown={(event) => startColumnResize(event, column, props.onResize)} sx={{ position: "absolute", top: 0, right: -3, width: 7, height: "100%", cursor: "col-resize", zIndex: 8 }}/>
               </TableCell>);
         })}
-            <TableCell align="right" sx={{ width: 92, minWidth: 92 }}>{cc("controlCenter.auto.087")}</TableCell>
+            <TableCell align="right" sx={{ minWidth: 92 }}>{cc("controlCenter.auto.087")}</TableCell>
           </TableRow>
         </TableHead>
         <TableBody>
@@ -1829,8 +1836,8 @@ function CampaignsWorkspace({ canEdit, accountId, onClearAccount }: {
             <InputLabel>{t("googleMode.actionLabel")}</InputLabel>
             <Select value={executionMode} label={t("googleMode.actionLabel")} onChange={(event) => setExecutionMode(event.target.value as ExecutionMode)}>
               <MenuItem value="SIMULATION">Simulation</MenuItem>
-              <MenuItem value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem>
-              <MenuItem value="PRODUCTION">{t("googleMode.productionShort")}</MenuItem>
+              {!isDemoPath() && <MenuItem value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem>}
+              {!isDemoPath() && <MenuItem value="PRODUCTION">{t("googleMode.productionShort")}</MenuItem>}
             </Select>
           </FormControl>
           <Button size="small" startIcon={<PauseCircleOutlineIcon />} disabled={!canEdit || previewAction.isPending} onClick={() => requestAction("PAUSE")}>{cc("controlCenter.auto.154")}</Button>
@@ -2768,6 +2775,12 @@ function loadColumnState() {
     catch {
         // Fall back to the stable default column set.
     }
+    if (isDemoPath()) return normalizeColumnState({
+        order: ["local_name", "work_status", "cost", "all_conversions", "cpa_registration", "problem", "google_status"],
+        visible: ["local_name", "work_status", "cost", "all_conversions", "cpa_registration", "problem", "google_status"],
+        widths: {local_name: 190, work_status: 150, cost: 120, all_conversions: 110, cpa_registration: 120, problem: 95, google_status: 120},
+        pinned: ["local_name"], density: "normal"
+    });
     return {
         order: COLUMNS.map((item) => item.key),
         visible: DEFAULT_COLUMNS,

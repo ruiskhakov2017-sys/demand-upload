@@ -23,7 +23,7 @@ type LegalDocument = { title: string; updated: string; introduction: string; sec
 export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
   en: {
     title: "Privacy Policy",
-    updated: "Last updated: August 18, 2026",
+    updated: "Last updated: November 15, 2026",
     introduction:
       "This Privacy Policy explains how Axyro Analytics, an independent Google Ads analytics and operations software project operated by Iskhakov Ruslan, processes information on its public website and in its restricted workspace.",
     sections: [
@@ -36,6 +36,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "2. Scope and intended users",
         paragraphs: [
+          "The public demonstration workspace uses illustrative data. Its preferences are stored in browser local storage, while sample edits are stored in session storage for the current tab. Visitors can reset sample edits using Start over. This demo makes no Google Ads API requests.",
           "The public website provides product and legal information. The workspace is not a public advertising service and is currently available only to Iskhakov Ruslan through the protected owner account. No employee, contractor, client, or member of the public has access."
         ]
       },
@@ -109,7 +110,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
   },
   ru: {
     title: "Политика конфиденциальности",
-    updated: "Последнее обновление: 18 августа 2026 года",
+    updated: "Последнее обновление: 15 ноября 2026 года",
     introduction:
       "Эта политика объясняет, как Axyro Analytics, независимый программный проект аналитики и управления Google Ads физического лица Iskhakov Ruslan, обрабатывает информацию на публичном сайте и в закрытом рабочем кабинете.",
     sections: [
@@ -122,6 +123,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "2. Область действия и пользователи",
         paragraphs: [
+          "Публичный демонстрационный кабинет использует пример данных. Настройки хранятся локально в браузере, изменения примера — в хранилище текущей вкладки. Кнопка «Начать заново» сбрасывает изменения примера. Этот режим не выполняет запросов к Google Ads API.",
           "Публичный сайт содержит информацию о продукте и юридические документы. Рабочий кабинет не является публичным рекламным сервисом и сейчас доступен только Iskhakov Ruslan через защищённую учётную запись владельца. Доступа нет у сотрудников, подрядчиков, клиентов или посторонних лиц."
         ]
       },

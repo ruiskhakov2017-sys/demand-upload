@@ -1,13 +1,13 @@
-export const DEMO_REQUEST_URL = "mailto:support@axyro.tech?subject=Axyro%20Analytics%20%E2%80%94%20Demo";
+export const DEMO_URL = "/demo/control-center";
 
 export const ENTERPRISE_COPY = {
   ru: {
     title: "Axyro Analytics | Аналитика Google Ads",
     nav: ["Отчёты", "Кампании", "Доступ"],
-    navigation: "Разделы страницы", lang: "Switch to English", login: "Войти",
+    navigation: "Разделы страницы", lang: "Switch to English", login: "Демо",
     hero: "Все аккаунты Google\u00a0Ads в\u00a0одном отчёте",
     lead: "Сравнивайте расходы по аккаунтам и смотрите, сколько конверсий принёс каждый из них. Сразу видно, где за конверсию вы платите больше.",
-    demo: "Запросить демо", see: "Посмотреть отчёт",
+    demo: "Посмотреть демо", see: "Посмотреть отчёт",
     workflow: "Кампании", workflowTitle: "От показателей к решению",
     screens: [
       { label: "Проверка аккаунтов", title: "Разберитесь, что мешает показам", body: "Откройте аккаунт и проверьте статусы объявлений, ограничения и сроки подтверждения рекламодателя. Добавьте заметку, чтобы при следующей проверке видеть, на чём остановились.", alt: "Интерфейс Axyro с фильтрами, статусами и таблицей аккаунтов Google Ads", caption: "Кабинет Axyro · Обзор аккаунтов" },
@@ -15,16 +15,16 @@ export const ENTERPRISE_COPY = {
     ],
     screenLabel: "Экраны кабинета", sample: "Демонстрационные данные", enlarge: "Открыть изображение",
     accessTitle: "Доступ и работа с данными", permissions: "Какие данные читает Axyro?", changes: "Как подтверждаются изменения?", users: "У кого есть доступ к кабинету?",
-    contactTitle: "Посмотрите Axyro в работе", contact: "Напишите, что хотите разобрать на демо: сравнение аккаунтов, расходы или проверку кампаний.",
+    contactTitle: "Посмотрите Axyro в работе", contact: "Откройте кабинет с примером данных. Сравните аккаунты, настройте таблицу и изучите кампании. Демо доступно сразу, без регистрации.",
     footer: "Документы и контакты"
   },
   en: {
     title: "Axyro Analytics | Google Ads Analytics",
     nav: ["Reports", "Campaigns", "Access"],
-    navigation: "Page sections", lang: "Переключить на русский", login: "Sign in",
+    navigation: "Page sections", lang: "Переключить на русский", login: "Demo",
     hero: "Every Google\u00a0Ads account in one report",
     lead: "Compare spend and conversions across accounts. See how much each account delivers and where you pay more per conversion.",
-    demo: "Request a demo", see: "Explore the report",
+    demo: "Explore the demo", see: "Explore the report",
     workflow: "Campaigns", workflowTitle: "From metrics to decisions",
     screens: [
       { label: "Review accounts", title: "Find what is holding delivery back", body: "Open an account to review ad statuses, policy issues and advertiser verification deadlines. Leave a note so your next review starts where you left off.", alt: "Axyro workspace showing filters, statuses and a table of Google Ads accounts", caption: "Axyro workspace · Account overview" },
@@ -32,7 +32,7 @@ export const ENTERPRISE_COPY = {
     ],
     screenLabel: "Workspace views", sample: "Demonstration data", enlarge: "Open full image",
     accessTitle: "Access and data handling", permissions: "What data does Axyro read?", changes: "How are changes confirmed?", users: "Who has access to the workspace?",
-    contactTitle: "See Axyro in action", contact: "Tell us what you would like to explore in a demo: account comparisons, advertising costs or campaign review.",
+    contactTitle: "See Axyro in action", contact: "Open the workspace with sample data. Compare accounts, customize the table and explore campaigns. No registration required.",
     footer: "Documents and contact"
   }
 } as const;

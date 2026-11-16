@@ -2,6 +2,7 @@ import { CssBaseline, ThemeProvider } from "@mui/material";
 import { createContext, ReactNode, useContext, useMemo, useState } from "react";
 
 import { createAppTheme, isThemeName, ThemeName } from "./theme";
+import "./fonts.css";
 
 const STORAGE_KEY = "dgu.theme";
 
