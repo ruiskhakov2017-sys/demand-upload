@@ -17,6 +17,7 @@ from app.db.models import (
     UserRole,
 )
 from app.domain.portfolio_access import PORTFOLIO_USERNAME
+from scripts.portfolio_dataset import prepare_dataset
 
 WORKSPACE = "Atlas Performance"
 MANAGER_ID = "9900000100"
@@ -41,6 +42,7 @@ def seed() -> None:
         if db.scalar(select(User.id).where(User.username == PORTFOLIO_USERNAME)) and db.scalar(
             select(GoogleConnection.id).where(GoogleConnection.name == WORKSPACE)
         ):
+            prepare_dataset(db)
             print("Portfolio workspace already initialized")
             return
         if db.scalar(select(User.id).limit(1)) or db.scalar(select(GoogleConnection.id).limit(1)):
@@ -128,6 +130,8 @@ def seed() -> None:
                 budget_micros=spend * 1_000_000,
                 last_synced_at=now,
             ))
+        db.flush()
+        prepare_dataset(db)
     print("Portfolio workspace initialized")
 
 

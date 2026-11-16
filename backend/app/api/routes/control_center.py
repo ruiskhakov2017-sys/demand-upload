@@ -60,7 +60,6 @@ from app.core.database import get_db
 from app.core.security import generate_token, hash_token, utcnow
 from app.db.models import (
     AccountMetricDaily,
-    AccountMonitoringState,
     AccountNoteHistory,
     AccountTag,
     AccountTagHistory,
@@ -216,13 +215,19 @@ DEFAULT_ACCOUNT_EXPORT_COLUMNS = [
 
 @router.get("/summary")
 def get_summary(
+    period: str = "7d",
+    timezone_mode: str = Query(default="ACCOUNT", pattern="^(ACCOUNT|MOSCOW)$"),
+    start_date: str | None = None,
+    end_date: str | None = None,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> dict:
+    date_start, date_end = _parse_period(period, start_date, end_date)
     accounts = list(db.scalars(select(CustomerAccount)).all())
-    states = list(db.scalars(select(AccountMonitoringState)).all())
-    available_states = [state for state in states if state.cost_micros is not None]
-    money_totals = currency_totals(accounts, states)
+    metrics = monitoring_state_map(db, [account.id for account in accounts], date_start, date_end, timezone_mode)
+    money_totals = currency_totals(accounts, metrics)
+    clicks = [metric["clicks"] for metric in metrics.values() if metric.get("clicks") is not None]
+    conversions = [metric["conversions"] for metric in metrics.values() if metric.get("conversions") is not None]
     counts = quick_filter_counts(db, accounts)
     active_problems = int(
         db.scalar(
@@ -254,9 +259,10 @@ def get_summary(
         "problems": {"active": active_problems},
         "metrics": {
             **money_totals,
-            "clicks": (sum(state.clicks or 0 for state in available_states) if available_states else None),
-            "conversions": (sum(state.conversions or 0 for state in available_states) if available_states else None),
+            "clicks": int(sum(clicks)) if clicks else None,
+            "conversions": float(sum(conversions)) if conversions else None,
         },
+        "period": {"start_date": date_start, "end_date": date_end, "timezone_mode": timezone_mode},
         "quota": quota_summary(db),
         "default_view": saved_view_payload(default_view) if default_view else None,
         "refreshed_at": utcnow(),

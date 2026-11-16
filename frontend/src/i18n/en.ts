@@ -1,4 +1,11 @@
 export const en: Record<string, string> = {
+  "finance.teamBudgetDescription": "Planned team media budget and account spend for the reporting dataset.",
+  "finance.refreshBudget": "Refresh data",
+  "finance.plannedBudget": "Planned budget",
+  "finance.actualSpend": "Account spend",
+  "finance.remainingBudget": "Remaining budget",
+  "finance.budgetName": "Budget",
+  "finance.updatedAt": "Updated",
   "workspace.designComparison": "Compare designs",
   "workspace.design.previous": "Previous",
   "workspace.design.new": "New design",

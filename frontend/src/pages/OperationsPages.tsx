@@ -149,6 +149,31 @@ export function FinancePage() {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
     }
   });
+  if (isPortfolioBuild) {
+    const profiles = finance.data || [];
+    const planned = profiles.reduce((total, row) => total + Number(row.details?.planned_budget || 0), 0);
+    const spent = profiles.reduce((total, row) => total + Number(row.details?.spent || 0), 0);
+    const remaining = profiles.reduce((total, row) => total + Number(row.latest_snapshot?.balance || 0), 0);
+    const currency = profiles[0]?.latest_snapshot?.currency || "USD";
+    const money = (value: number) => `${formatNumber(value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+    return <Stack spacing={3}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
+        <Box><Typography variant="h4">{t("ui.61dcf3af42")}</Typography><Typography color="text.secondary" sx={{ mt: 0.5 }}>{t("finance.teamBudgetDescription")}</Typography></Box>
+        <Button variant="outlined" startIcon={<RefreshIcon />} disabled={finance.isFetching} onClick={() => finance.refetch()}>{t("finance.refreshBudget")}</Button>
+      </Box>
+      {finance.error && <Alert severity="error">{finance.error.message}</Alert>}
+      {finance.isLoading && <LinearProgress />}
+      <Grid container spacing={2}>
+        {[[t("finance.plannedBudget"), planned], [t("finance.actualSpend"), spent], [t("finance.remainingBudget"), remaining]].map(([label, value]) => <Grid key={label} item xs={12} md={4}>
+          <Paper variant="outlined" sx={{ p: 2.5 }}><Typography color="text.secondary">{label}</Typography><Typography variant="h5" sx={{ mt: 1 }}>{profiles.length ? money(Number(value)) : "—"}</Typography></Paper>
+        </Grid>)}
+      </Grid>
+      <Paper variant="outlined" sx={{ overflowX: "auto" }}><Table size="small">
+        <TableHead><TableRow><TableCell>{t("finance.budgetName")}</TableCell><TableCell align="right">{t("finance.remainingBudget")}</TableCell><TableCell>{t("finance.updatedAt")}</TableCell></TableRow></TableHead>
+        <TableBody>{profiles.map(row => <TableRow key={row.id}><TableCell>{row.name}</TableCell><TableCell align="right">{money(Number(row.latest_snapshot?.balance || 0))}</TableCell><TableCell>{formatDate(row.latest_snapshot?.created_at)}</TableCell></TableRow>)}{!profiles.length && !finance.isLoading && <EmptyRow columns={3} text={t("ui.daf4e830c5")} />}</TableBody>
+      </Table></Paper>
+    </Stack>;
+  }
   return (
     <Stack spacing={3}>
       <Typography variant="h4">{t("ui.da65f953fb")}</Typography>

@@ -165,25 +165,33 @@ def monitoring_state_map(
     result: dict[UUID, dict] = {}
     for account_id in account_ids:
         state = states.get(account_id)
+        # A monitoring snapshot covers one specific interval and timezone. Using
+        # it for an empty/custom interval would silently report unrelated spend.
+        snapshot_matches = bool(
+            state and state.period_start and state.period_end
+            and state.period_start.date() == start_date and state.period_end.date() == end_date
+            and state.timezone_mode == timezone_mode
+        )
+        period_state = state if snapshot_matches else None
         payload = {
-            "impressions": state.impressions if state else None,
-            "clicks": state.clicks if state else None,
-            "cost_micros": state.cost_micros if state else None,
-            "conversions": state.conversions if state else None,
-            "all_conversions": state.all_conversions if state else None,
-            "conversion_value": state.conversion_value if state else None,
-            "registrations": state.registrations if state else None,
-            "deposits": state.deposits if state else None,
-            "registration_value": state.registration_value if state else None,
-            "deposit_value": state.deposit_value if state else None,
-            "registration_data_available": (state.registration_data_available if state else False),
-            "deposit_data_available": (state.deposit_data_available if state else False),
+            "impressions": period_state.impressions if period_state else None,
+            "clicks": period_state.clicks if period_state else None,
+            "cost_micros": period_state.cost_micros if period_state else None,
+            "conversions": period_state.conversions if period_state else None,
+            "all_conversions": period_state.all_conversions if period_state else None,
+            "conversion_value": period_state.conversion_value if period_state else None,
+            "registrations": period_state.registrations if period_state else None,
+            "deposits": period_state.deposits if period_state else None,
+            "registration_value": period_state.registration_value if period_state else None,
+            "deposit_value": period_state.deposit_value if period_state else None,
+            "registration_data_available": (period_state.registration_data_available if period_state else False),
+            "deposit_data_available": (period_state.deposit_data_available if period_state else False),
             "budget_micros": state.budget_micros if state else None,
             "active_campaigns": state.active_campaigns if state else None,
             "disapproved_ads": state.disapproved_ads if state else None,
             "policy_issues": state.policy_issues if state else None,
-            "freshness": state.freshness if state else "NO_DATA",
-            "data_observed_at": state.data_observed_at if state else None,
+            "freshness": period_state.freshness if period_state else "NO_DATA",
+            "data_observed_at": period_state.data_observed_at if period_state else None,
             "boundary_precision": state.boundary_precision if state else "EXACT",
             "last_error_code": state.last_error_code if state else None,
             "last_request_id": state.last_request_id if state else None,
@@ -191,6 +199,7 @@ def monitoring_state_map(
         }
         if account_id in daily:
             payload.update(daily[account_id])
+            payload["freshness"] = state.freshness if state else "FRESH"
         result[account_id] = with_derived_metrics(payload)
     return result
 
@@ -246,15 +255,19 @@ def with_derived_metrics(metrics: dict) -> dict:
 
 def currency_totals(
     accounts: list[CustomerAccount],
-    states: list[AccountMonitoringState],
+    states: list[AccountMonitoringState] | dict[UUID, dict],
 ) -> dict:
     account_currency = {account.id: (account.currency_code or "UNKNOWN").upper() for account in accounts}
     grouped: dict[str, dict[str, int]] = defaultdict(lambda: {"cost_micros": 0, "accounts_with_data": 0})
-    for state in states:
-        if state.cost_micros is None:
+    costs = (
+        ((account_id, metric.get("cost_micros")) for account_id, metric in states.items())
+        if isinstance(states, dict) else ((state.account_id, state.cost_micros) for state in states)
+    )
+    for account_id, cost_micros in costs:
+        if cost_micros is None:
             continue
-        currency_code = account_currency.get(state.account_id, "UNKNOWN")
-        grouped[currency_code]["cost_micros"] += int(state.cost_micros)
+        currency_code = account_currency.get(account_id, "UNKNOWN")
+        grouped[currency_code]["cost_micros"] += int(cost_micros)
         grouped[currency_code]["accounts_with_data"] += 1
     by_currency = [
         {

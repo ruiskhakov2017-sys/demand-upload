@@ -1,4 +1,11 @@
 export const ru: Record<string, string> = {
+  "finance.teamBudgetDescription": "Плановый медиабюджет команды и расходы по аккаунтам за отчётный набор данных.",
+  "finance.refreshBudget": "Обновить данные",
+  "finance.plannedBudget": "Плановый бюджет",
+  "finance.actualSpend": "Расходы по аккаунтам",
+  "finance.remainingBudget": "Остаток бюджета",
+  "finance.budgetName": "Бюджет",
+  "finance.updatedAt": "Обновлено",
   "workspace.designComparison": "Сравнение дизайна",
   "workspace.design.previous": "Прежний вид",
   "workspace.design.new": "Новый вид",

@@ -305,8 +305,8 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
     }>(() => loadColumnState());
     const [defaultApplied, setDefaultApplied] = useState(false);
     const summary = useQuery({
-        queryKey: ["control-center-summary", period, customStart, customEnd],
-        queryFn: () => api.controlCenterSummary({period, start_date: customStart, end_date: customEnd}),
+        queryKey: ["control-center-summary", period, timezoneMode, customStart, customEnd],
+        queryFn: () => api.controlCenterSummary({period, timezone_mode: timezoneMode, start_date: customStart, end_date: customEnd}),
         refetchInterval: 30000
     });
     const tags = useQuery({ queryKey: ["control-center-tags"], queryFn: api.controlCenterTags });
