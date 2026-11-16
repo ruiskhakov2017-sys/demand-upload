@@ -2,9 +2,7 @@ name: axyro-portfolio
 
 x-portfolio-backend: &portfolio-backend
   image: axyro-portfolio-backend:local
-  build:
-    context: .
-    dockerfile: backend/Dockerfile
+  pull_policy: never
   environment: &portfolio-env
     APP_ENV: portfolio
     APP_PUBLIC_BASE_URL: http://localhost:19082
@@ -49,6 +47,9 @@ services:
 
   api:
     <<: *portfolio-backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
     volumes: [app_storage:/var/lib/dgu/storage]
     depends_on:
       initialize:
