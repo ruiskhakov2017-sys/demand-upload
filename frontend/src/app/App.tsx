@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Avatar,
   Box,
   Drawer,
   IconButton,
@@ -76,7 +77,7 @@ const PublicSitePage = lazy(() => import("../pages/PublicSitePage").then((module
 const LegalPage = lazy(() => import("../pages/LegalPage").then((module) => ({ default: module.LegalPage })));
 const DemoWorkspace = lazy(() => import("../pages/DemoWorkspace").then((module) => ({ default: module.DemoWorkspace })));
 
-const drawerWidth = 264;
+const drawerWidth = isPortfolioBuild ? 240 : 264;
 
 type Navigate = (path: string, replace?: boolean) => void;
 type NavItem = { path: string; label: string; icon: JSX.Element };
@@ -191,20 +192,27 @@ export function App() {
   const user = meQuery.data.user;
   const drawer = (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Toolbar sx={{ px: 2.25 }}>
+      <Toolbar sx={{ px: isPortfolioBuild ? 3 : 2.25, gap: 1.25, minHeight: isPortfolioBuild ? "88px !important" : undefined }}>
+        {isPortfolioBuild && <Box aria-hidden="true" sx={{ width: 34, height: 34, bgcolor: "primary.main", borderRadius: "10px", display: "grid", placeItems: "center", color: "primary.contrastText" }}>
+          <Box component="svg" viewBox="0 0 24 24" sx={{ width: 24, height: 24 }}><path d="M5 18 11 5h3l5 13h-4l-3-9-4 9Z" fill="currentColor"/><path d="M10 15h6v3h-7Z" fill="currentColor"/></Box>
+        </Box>}
         <Box>
-          <Typography fontWeight={800} lineHeight={1.15}>{t("app.productName")}</Typography>
-          <Typography variant="caption" color="text.secondary">{t("app.subtitle")}</Typography>
+          <Typography fontWeight={isPortfolioBuild ? 600 : 800} lineHeight={1.15} sx={isPortfolioBuild ? { fontSize: 22, letterSpacing: "-0.04em" } : undefined}>{isPortfolioBuild ? "Axyro" : t("app.productName")}</Typography>
+          <Typography variant="caption" color="text.secondary">{isPortfolioBuild ? "Analytics" : t("app.subtitle")}</Typography>
         </Box>
       </Toolbar>
+      {isPortfolioBuild && <Box sx={{ mx: 2, mb: 3, mt: 1, px: 1.75, py: 1.5, border: 1, borderColor: "divider", borderRadius: 2, bgcolor: "background.default" }}>
+        <Typography fontSize={13} fontWeight={500}>{t("workspace.label")}</Typography>
+        <Typography variant="caption" color="text.secondary">Google Ads</Typography>
+      </Box>}
       <Box sx={{ overflowY: "auto", flex: 1, pb: 2 }}>
         {navGroups.map((group) => (
           <List
             dense
             key={group.label}
             subheader={
-              <ListSubheader sx={{ lineHeight: "32px", bgcolor: "transparent", fontSize: 11, fontWeight: 800 }}>
-                {group.label.toUpperCase()}
+              <ListSubheader sx={{ lineHeight: "32px", bgcolor: "transparent", fontSize: 11, fontWeight: isPortfolioBuild ? 500 : 800, px: isPortfolioBuild ? 3 : 2 }}>
+                {isPortfolioBuild ? t("workspace.navigation") : group.label.toUpperCase()}
               </ListSubheader>
             }
           >
@@ -216,7 +224,7 @@ export function App() {
                   navigate(item.path);
                   setMobileOpen(false);
                 }}
-                sx={{ mx: 1, minHeight: 40 }}
+                sx={{ mx: isPortfolioBuild ? 1.5 : 1, minHeight: isPortfolioBuild ? 46 : 40, mb: isPortfolioBuild ? 0.5 : 0, borderRadius: isPortfolioBuild ? 2 : undefined }}
               >
                 <ListItemIcon sx={{ minWidth: 38 }}>{item.icon}</ListItemIcon>
                 <ListItemText primary={item.label} />
@@ -225,6 +233,13 @@ export function App() {
           </List>
         ))}
       </Box>
+      {isPortfolioBuild && <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, p: 2.5, borderTop: 1, borderColor: "divider" }}>
+        <Avatar sx={{ width: 34, height: 34, fontSize: 14, bgcolor: "action.selected", color: "primary.main", borderRadius: 2 }}>{user.username.slice(0, 1).toUpperCase()}</Avatar>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography noWrap fontSize={13} fontWeight={500}>{user.username}</Typography>
+          <Typography variant="caption" color="text.secondary">{user.role === "OPERATOR" ? t("workspace.operator") : user.role === "ADMIN" ? t("workspace.admin") : user.role}</Typography>
+        </Box>
+      </Box>}
     </Box>
   );
 
@@ -234,7 +249,7 @@ export function App() {
         position="fixed"
         color="inherit"
         elevation={0}
-        sx={{ zIndex: (value) => value.zIndex.drawer + 1, borderBottom: 1, borderColor: "divider" }}
+        sx={{ zIndex: (value) => isPortfolioBuild ? value.zIndex.appBar : value.zIndex.drawer + 1, borderBottom: 1, borderColor: "divider", ...(isPortfolioBuild && { width: desktop ? `calc(100% - ${drawerWidth}px)` : "100%", ml: desktop ? `${drawerWidth}px` : 0 }) }}
       >
         <Toolbar>
           {!desktop && (
@@ -244,12 +259,12 @@ export function App() {
               </IconButton>
             </Tooltip>
           )}
-          <Typography variant="h6" sx={{ flexGrow: 1, fontSize: 18 }}>
-            {currentTitle || t("app.productName")}
+          <Typography variant="h6" sx={{ flexGrow: 1, fontSize: isPortfolioBuild ? 13 : 18, fontWeight: isPortfolioBuild ? 400 : undefined }}>
+            {isPortfolioBuild && <Box component="span" sx={{ color: "text.secondary", display: { xs: "none", sm: "inline" } }}>{t("workspace.label")}<Box component="span" sx={{ mx: 1.5, opacity: 0.5 }}>/</Box></Box>}{currentTitle || t("app.productName")}
           </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mr: 1.5, display: { xs: "none", sm: "block" } }}>
+          {!isPortfolioBuild && <Typography variant="body2" color="text.secondary" sx={{ mr: 1.5, display: { xs: "none", sm: "block" } }}>
             {user.username} · {user.role}
-          </Typography>
+          </Typography>}
           <Tooltip title={t("ui.cde3676894")}>
             <IconButton onClick={(event) => setThemeAnchor(event.currentTarget)}>
               <PaletteOutlinedIcon />
@@ -335,7 +350,7 @@ export function App() {
         }}
       >
         <Toolbar />
-        <Box sx={{ maxWidth: 1440, mx: "auto", pt: 3 }}>
+        <Box sx={{ maxWidth: 1440, mx: "auto", pt: isPortfolioBuild ? { xs: 3, md: 4 } : 3 }}>
           <Suspense fallback={<CenteredText text={t("ui.b807935f97")} />}>
             {renderRoute(isPortfolioBuild && !portfolioRoutes.has(path) ? "/control-center" : path, navigate)}
           </Suspense>

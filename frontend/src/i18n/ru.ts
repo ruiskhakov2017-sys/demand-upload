@@ -1,4 +1,10 @@
 export const ru: Record<string, string> = {
+  "workspace.label": "Рабочее пространство",
+  "workspace.navigation": "Управление рекламой",
+  "workspace.operator": "Оператор",
+  "workspace.admin": "Администратор",
+  "workspace.description": "Расходы, результаты и статусы кампаний — в одном пространстве.",
+  "workspace.filters": "Фильтры",
   "app.productName": "Axyro Analytics",
   "app.subtitle": "Аналитика Google Ads и центр контроля",
   "nav.analytics": "Аналитика и контроль",

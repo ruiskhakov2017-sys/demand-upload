@@ -1,4 +1,4 @@
-import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Drawer, FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, LinearProgress, MenuItem, Paper, Select, Snackbar, Stack, Switch, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, Tabs, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Accordion, AccordionDetails, AccordionSummary, Alert, Box, Button, Checkbox, Chip, CircularProgress, Collapse, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Drawer, FormControl, FormControlLabel, IconButton, InputAdornment, InputLabel, LinearProgress, MenuItem, Paper, Select, Snackbar, Stack, Switch, Tab, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TableSortLabel, Tabs, TextField, ToggleButton, ToggleButtonGroup, Tooltip, Typography, useMediaQuery, useTheme } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
@@ -204,15 +204,15 @@ export function ControlCenterPage() {
     const me = useQuery({ queryKey: ["me"], queryFn: api.me });
     const canEdit = me.data?.user.role === "ADMIN" || me.data?.user.role === "OPERATOR";
     const isAdmin = me.data?.user.role === "ADMIN";
-    return (<Stack spacing={2.5} sx={{ minWidth: 0 }}>
+    return (<Stack spacing={isPortfolioBuild ? 3 : 2.5} sx={{ minWidth: 0 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 2 }}>
         <Box>
           <Typography variant="h4">{cc("controlCenter.auto.033")}</Typography>
-          <Typography color="text.secondary" sx={{ mt: 0.5 }}>{cc("controlCenter.auto.034")}</Typography>
+          <Typography color="text.secondary" sx={{ mt: 1 }}>{isPortfolioBuild ? t("workspace.description") : cc("controlCenter.auto.034")}</Typography>
         </Box>
         {!isDemoPath() && !isPortfolioBuild && <Chip size="small" variant="outlined" color="info" label={cc("controlCenter.auto.035")} sx={{ display: { xs: "none", sm: "flex" } }}/>}
       </Box>
-      <Paper variant="outlined" sx={{ overflow: "hidden" }}>
+      <Paper variant="outlined" sx={{ overflow: "hidden", ...(isPortfolioBuild && { bgcolor: "transparent", border: 0, borderBottom: 1, borderColor: "divider", borderRadius: 0 }) }}>
         <Tabs value={tab} onChange={(_, value: MainTab) => setTab(value)} variant="scrollable" scrollButtons="auto" aria-label={cc("controlCenter.auto.036")}>
           <Tab value="accounts" label={cc("controlCenter.auto.037")}/>
           <Tab value="campaigns" label={cc("controlCenter.auto.038")}/>
@@ -252,6 +252,7 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
     const [quickFilter, setQuickFilter] = useState<QuickFilter>(isDemoPath() || isPortfolioBuild ? "all" : "working");
     const [search, setSearch] = useState("");
     const [searchInput, setSearchInput] = useState("");
+    const [filtersOpen, setFiltersOpen] = useState(false);
     const [period, setPeriod] = useState(isDemoPath() || isPortfolioBuild ? "30d" : "7d");
     const [timezoneMode, setTimezoneMode] = useState<TimezoneMode>("ACCOUNT");
     const [tagId, setTagId] = useState("");
@@ -590,13 +591,16 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
         offset: undefined,
         columns: visibleColumns.map((column) => column.key).join(",")
     };
+    const activeFilterCount = [connectionId, geoId, mccId, workStatus, activityStatus, googleStatus, problemMode, currency, tagId,
+        problemType, noteSearch, costMin, costMax, registrationsMin, depositsZero, cpaMin, cpaMax,
+        activeCampaignsMin, disapprovedAdsMin, registrationsWithoutDeposits, grouping !== "none", timezoneMode !== "ACCOUNT"].filter(Boolean).length;
     return (<Stack spacing={2}>
       <SummaryStrip data={summary.data} loading={summary.isLoading}/>
       {error && <Alert severity="error">{error.message}</Alert>}
       <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, minWidth: 0 }}>
         <Stack spacing={1.5}>
           <Box sx={{ overflowX: "auto", pb: 0.25 }}>
-            <ToggleButtonGroup exclusive size="small" value={quickFilter} onChange={(_, value: QuickFilter | null) => value && setQuickFilter(value)} aria-label={cc("controlCenter.auto.047")} sx={{ minWidth: "max-content" }}>
+            <ToggleButtonGroup exclusive size="small" value={quickFilter} onChange={(_, value: QuickFilter | null) => value && setQuickFilter(value)} aria-label={cc("controlCenter.auto.047")} sx={{ minWidth: "max-content", ...(isPortfolioBuild && { gap: 0.5, "& .MuiToggleButtonGroup-grouped": { border: 0, borderRadius: "7px !important", px: 1.5, fontSize: 13 }, "& .Mui-selected": { fontWeight: 600 } }) }}>
               {QUICK_FILTERS.map((item) => (<ToggleButton key={item.value} value={item.value}>
                   {item.label}
                   <Box component="span" sx={{ ml: 0.75, color: "text.secondary" }}>
@@ -611,28 +615,39 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
           </Box>)}
           <Box sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", sm: "minmax(240px, 2fr) repeat(2, minmax(150px, 1fr))" },
+            gridTemplateColumns: isPortfolioBuild ? { xs: "repeat(2, minmax(0, 1fr))", lg: "minmax(240px, 1fr) 205px auto auto" } : { xs: "1fr", sm: "minmax(240px, 2fr) repeat(2, minmax(150px, 1fr))" },
             gap: 1
         }}>
-            <TextField size="small" value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder={cc("controlCenter.auto.048")} InputProps={{
+            <TextField size="small" sx={isPortfolioBuild ? { gridColumn: { xs: "1 / -1", lg: "auto" } } : undefined} inputProps={{ "aria-label": cc("controlCenter.auto.048") }} value={searchInput} onChange={(event) => setSearchInput(event.target.value)} placeholder={cc("controlCenter.auto.048")} InputProps={{
             startAdornment: (<InputAdornment position="start"><SearchIcon fontSize="small"/></InputAdornment>)
         }}/>
-            <FormControl size="small">
+            <FormControl size="small" sx={isPortfolioBuild ? { gridColumn: { xs: "1 / -1", sm: "auto" } } : undefined}>
               <InputLabel>{cc("controlCenter.auto.049")}</InputLabel>
               <Select value={period} label={cc("controlCenter.auto.049")} onChange={(event) => setPeriod(event.target.value)}>
                 {PERIODS.map((item) => (<MenuItem key={item.value} value={item.value}>{item.label}</MenuItem>))}
               </Select>
             </FormControl>
-            <ToggleButtonGroup exclusive size="small" value={timezoneMode} onChange={(_, value: TimezoneMode | null) => value && setTimezoneMode(value)} fullWidth>
+            {!isPortfolioBuild && <ToggleButtonGroup exclusive size="small" value={timezoneMode} onChange={(_, value: TimezoneMode | null) => value && setTimezoneMode(value)} fullWidth>
               <ToggleButton value="ACCOUNT">{cc("controlCenter.auto.050")}</ToggleButton>
               <ToggleButton value="MOSCOW">{cc("controlCenter.auto.051")}</ToggleButton>
-            </ToggleButtonGroup>
+            </ToggleButtonGroup>}
+            {isPortfolioBuild && <>
+              <Button variant={filtersOpen || activeFilterCount ? "contained" : "outlined"} startIcon={<FilterAltOutlinedIcon />} aria-expanded={filtersOpen} aria-controls="account-filters" onClick={() => setFiltersOpen(open => !open)}>{t("workspace.filters")}{activeFilterCount > 0 ? ` · ${activeFilterCount}` : ""}</Button>
+              <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => setColumnDialog(true)}>{cc("controlCenter.auto.062")}</Button>
+            </>}
           </Box>
+          <Collapse in={!isPortfolioBuild || filtersOpen} id="account-filters">
+          <Stack spacing={2} sx={isPortfolioBuild ? { pt: 1 } : undefined}>
+          {isPortfolioBuild && <ToggleButtonGroup exclusive size="small" value={timezoneMode} onChange={(_, value: TimezoneMode | null) => value && setTimezoneMode(value)} sx={{ alignSelf: "flex-start" }}>
+            <ToggleButton value="ACCOUNT">{cc("controlCenter.auto.050")}</ToggleButton>
+            <ToggleButton value="MOSCOW">{cc("controlCenter.auto.051")}</ToggleButton>
+          </ToggleButtonGroup>}
           <Box sx={{
             display: "flex",
             gap: 1,
             alignItems: "center",
-            flexWrap: "wrap"
+            flexWrap: "wrap",
+            ...(isPortfolioBuild && { display: "grid", gridTemplateColumns: { xs: "minmax(0, 1fr)", sm: "repeat(2, minmax(0, 1fr))", lg: "repeat(4, minmax(0, 1fr))" }, gap: 1.5, "& > .MuiFormControl-root": { minWidth: 0 } })
         }}>
             <FormControl size="small" sx={{ minWidth: 170 }}>
               <InputLabel>{cc("controlCenter.full.021")}</InputLabel>
@@ -732,7 +747,7 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
                 <Button variant="outlined" startIcon={<SaveOutlinedIcon />} disabled={!canEdit} onClick={() => setSaveViewDialog(true)}>{cc("controlCenter.auto.061")}</Button>
               </span>
             </Tooltip>
-            <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => setColumnDialog(true)}>{cc("controlCenter.auto.062")}</Button>
+            {!isPortfolioBuild && <Button variant="outlined" startIcon={<TuneIcon />} onClick={() => setColumnDialog(true)}>{cc("controlCenter.auto.062")}</Button>}
           </Box>
           <Accordion disableGutters elevation={0} sx={{ border: 1, borderColor: "divider", "&::before": { display: "none" } }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />}>
@@ -798,9 +813,11 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
               <Typography variant="caption" color="text.secondary">{cc("controlCenter.full.047")}</Typography>
             </AccordionDetails>
           </Accordion>
+          </Stack>
+          </Collapse>
           <Divider />
           <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", alignItems: "center" }}>
-            <Button size="small" startIcon={<CloudSyncOutlinedIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("SELECTED")}>{cc("controlCenter.auto.063")}</Button>
+            {(!isPortfolioBuild || selected.size > 0) && <Button size="small" startIcon={<CloudSyncOutlinedIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("SELECTED")}>{cc("controlCenter.auto.063")}</Button>}
             <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("WORKING")}>{cc("controlCenter.auto.064")}</Button>
             <Button size="small" startIcon={<RefreshIcon />} disabled={!canEdit || estimateSync.isPending} onClick={() => openSync("ALL")}>{cc("controlCenter.auto.065")}</Button>
             <Box sx={{ flex: 1 }}/>
@@ -810,7 +827,7 @@ function AccountsWorkspace({ canEdit, isAdmin, onOpenCampaigns }: {
             {!isDemoPath() && <Button size="small" startIcon={<DownloadIcon />} href={api.controlCenterExportUrl("xlsx", exportParams)}>
               XLSX
             </Button>}
-            <Typography variant="body2" color="text.secondary">{cc("controlCenter.auto.066")}{accounts.data?.total ?? 0}
+            <Typography variant="body2" color="text.secondary">{cc("controlCenter.auto.066")} {accounts.data?.total ?? 0}
             </Typography>
           </Box>
         </Stack>
@@ -886,14 +903,14 @@ function SummaryStrip({ data, loading }: {
         ? currencyRows.map((item) => money(item.cost_micros, item.currency_code)).join(" · ")
         : "—";
     const values = [
-        { label: cc("controlCenter.auto.077"), value: data?.accounts?.all, detail: (data?.accounts?.working ?? 0) + cc("controlCenter.auto.078") },
+        { label: cc("controlCenter.auto.077"), value: data?.accounts?.all, detail: (data?.accounts?.working ?? 0) + " " + cc("controlCenter.auto.078") },
         {
             label: cc("controlCenter.auto.020"),
             value: costSummary,
             detail: data?.metrics?.mixed_currencies
                 ? cc("controlCenter.full.051") : cc("controlCenter.auto.079")
         },
-        { label: cc("controlCenter.auto.026"), value: data?.campaigns?.enabled, detail: (data?.campaigns?.total ?? 0) + cc("controlCenter.auto.080") },
+        { label: cc("controlCenter.auto.026"), value: data?.campaigns?.enabled, detail: (data?.campaigns?.total ?? 0) + " " + cc("controlCenter.auto.080") },
         { label: cc("controlCenter.auto.081"), value: data?.problems?.active, detail: cc("controlCenter.auto.082") },
         {
             label: cc("controlCenter.auto.083"),
@@ -905,24 +922,27 @@ function SummaryStrip({ data, loading }: {
     return (<Box sx={{
             display: "grid",
             gridTemplateColumns: { xs: "repeat(2, minmax(0, 1fr))", lg: `repeat(${summaryValues.length}, minmax(0, 1fr))` },
-            border: 1,
+            border: isPortfolioBuild ? 0 : 1,
             borderColor: "divider",
-            bgcolor: "background.paper"
+            bgcolor: isPortfolioBuild ? "transparent" : "background.paper",
+            gap: isPortfolioBuild ? 1.5 : 0
         }}>
       {summaryValues.map((item, index) => (<Box key={item.label} sx={{
-                p: { xs: 1.5, sm: 2 },
+                p: isPortfolioBuild ? { xs: 2, sm: 2.5 } : { xs: 1.5, sm: 2 },
                 minWidth: 0,
-                borderRight: { lg: index < summaryValues.length - 1 ? 1 : 0 },
-                borderBottom: { xs: index < 4 ? 1 : 0, lg: 0 },
-                borderColor: "divider"
+                borderRight: isPortfolioBuild ? undefined : { lg: index < summaryValues.length - 1 ? 1 : 0 },
+                borderBottom: isPortfolioBuild ? undefined : { xs: index < 4 ? 1 : 0, lg: 0 },
+                border: isPortfolioBuild ? 1 : undefined,
+                borderColor: "divider",
+                ...(isPortfolioBuild && { borderRadius: "12px", bgcolor: "background.paper", boxShadow: "0 2px 4px rgba(21, 38, 64, 0.015)" })
             }}>
-          <Typography variant="caption" color="text.secondary">{item.label}</Typography>
-          <Typography sx={{ fontSize: { xs: 20, sm: 24 }, fontWeight: 800, lineHeight: 1.25, mt: 0.25 }}>
+          <Typography variant="caption" color="text.secondary" sx={isPortfolioBuild ? { fontSize: 13, display: "block" } : undefined}>{item.label}</Typography>
+          <Typography sx={{ fontSize: isPortfolioBuild ? { xs: index === 1 ? 22 : 28, sm: 30, xl: 34 } : { xs: 20, sm: 24 }, fontWeight: isPortfolioBuild ? 600 : 800, letterSpacing: isPortfolioBuild ? "-0.045em" : undefined, lineHeight: 1.25, mt: isPortfolioBuild ? 1.25 : 0.25, mb: isPortfolioBuild ? 0.5 : 0, overflowWrap: "anywhere" }}>
             {loading ? "…" : item.value ?? "—"}
           </Typography>
           <Typography variant="caption" color="text.secondary">{item.detail}</Typography>
         </Box>))}
-      {data?.quota && (<Typography variant="caption" color="text.secondary" sx={{ gridColumn: "1 / -1", px: 2, py: 0.75, borderTop: 1, borderColor: "divider" }}>
+      {!isPortfolioBuild && data?.quota && (<Typography variant="caption" color="text.secondary" sx={{ gridColumn: "1 / -1", px: 2, py: 0.75, borderTop: 1, borderColor: "divider" }}>
           {t("googleAccess.controlCenter", {
             level: data.quota.access?.level,
             production: data.quota.access?.production_operation_limit ?? "∞",
@@ -1003,7 +1023,7 @@ function AccountsTable(props: {
         return result;
     }, [props.columns, props.pinned]);
     return (<TableContainer component={Paper} variant="outlined" sx={{ maxHeight: "calc(100vh - 220px)", minHeight: 320, overflow: "auto" }}>
-      <Table size="small" stickyHeader sx={{ tableLayout: "fixed", minWidth: tableWidth(props.columns), "& .MuiTableCell-root": { py: props.density === "compact" ? 0.5 : 1 } }}>
+      <Table size="small" stickyHeader sx={{ tableLayout: "fixed", minWidth: tableWidth(props.columns), "& .MuiTableCell-root": { py: props.density === "compact" ? 0.5 : isPortfolioBuild ? 1.25 : 1 }, ...(isPortfolioBuild && { "& .MuiTableCell-head": { bgcolor: "background.default", fontWeight: 500 }, "& .MuiTableRow-hover:hover > td, & .MuiTableRow-root.Mui-selected > td": { bgcolor: "background.default" } }) }}>
         <colgroup>
           <col style={{ width: 48 }} />
           {props.columns.map(column => <col key={column.key} style={{ width: column.width }} />)}
@@ -1025,7 +1045,7 @@ function AccountsTable(props: {
                     left: pinnedLeft[column.key],
                     zIndex: pinnedLeft[column.key] !== undefined ? 4 : undefined,
                     bgcolor: "background.paper",
-                    fontWeight: 800,
+                    fontWeight: isPortfolioBuild ? 500 : 800,
                     fontSize: 12,
                     position: pinnedLeft[column.key] !== undefined ? "sticky" : "relative"
                 }}>
@@ -1093,8 +1113,8 @@ function AccountCell({ account, column, canEdit, onStatus, onEdit }: {
             return (<Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0 }}>
           {account.is_pinned && <PushPinIcon fontSize="inherit" color="primary"/>}
           <Box sx={{ minWidth: 0 }}>
-            <Typography fontWeight={700} noWrap>{account.local_name || account.descriptive_name || account.customer_id}</Typography>
-            {account.local_name && <Typography variant="caption" color="text.secondary" noWrap>{account.descriptive_name}</Typography>}
+            <Typography fontWeight={isPortfolioBuild ? 500 : 700} noWrap>{account.local_name || account.descriptive_name || account.customer_id}</Typography>
+            {(account.local_name || isPortfolioBuild) && <Typography variant="caption" color="text.secondary" noWrap>{isPortfolioBuild && account.local_name === account.descriptive_name ? formatCustomerId(account.customer_id) : account.descriptive_name}</Typography>}
           </Box>
         </Stack>);
         case "google_name":

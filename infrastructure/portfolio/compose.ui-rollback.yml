@@ -1,0 +1,6 @@
+# The immutable frontend image captured before the V4 visual refinement.
+# Apply with --no-deps --no-build so application data and backend services stay running.
+services:
+  frontend:
+    image: axyro-portfolio-frontend:before-v4
+    pull_policy: never
