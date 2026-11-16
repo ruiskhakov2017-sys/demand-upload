@@ -16,6 +16,7 @@ import {
 import { useEffect } from "react";
 
 import { Locale, useLocale } from ".";
+import { isShowcaseBuild } from "../app/paths";
 
 type LegalSection = { title: string; paragraphs?: string[]; items?: string[] };
 type LegalDocument = { title: string; updated: string; introduction: string; sections: LegalSection[] };
@@ -23,7 +24,7 @@ type LegalDocument = { title: string; updated: string; introduction: string; sec
 export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
   en: {
     title: "Privacy Policy",
-    updated: "Last updated: November 15, 2026",
+    updated: "Last updated: November 16, 2026",
     introduction:
       "This Privacy Policy explains how Axyro Analytics, an independent Google Ads analytics and operations software project operated by Iskhakov Ruslan, processes information on its public website and in its restricted workspace.",
     sections: [
@@ -36,8 +37,8 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "2. Scope and intended users",
         paragraphs: [
-          "The public demonstration workspace uses illustrative data. Its preferences are stored in browser local storage, while sample edits are stored in session storage for the current tab. Visitors can reset sample edits using Start over. This demo makes no Google Ads API requests.",
-          "The public website provides product and legal information. The workspace is not a public advertising service and is currently available only to Iskhakov Ruslan through the protected owner account. No employee, contractor, client, or member of the public has access."
+          "The separate public portfolio workspace uses data from a fictional team. Table preferences stay in browser storage. Notes, statuses, saved views and audit records are stored on the server and shared between visitors. Do not enter personal or confidential information in this shared space. It contains no Google Ads credentials and makes no live Google Ads requests.",
+          "The public website provides product and legal information. The private operational workspace and real connected accounts remain available only to Iskhakov Ruslan through the protected owner account. Portfolio access does not provide access to that workspace."
         ]
       },
       {
@@ -84,7 +85,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "7. Sharing and processors",
         paragraphs: [
-          "Information is disclosed only as needed to operate the service: to Google when the owner makes an authorized API request, and to infrastructure providers that host or transmit the application and its encrypted data. It is not sold or shared for independent marketing. Application access is limited to Iskhakov Ruslan."
+          "Information is disclosed only as needed to operate the service: to Google when the owner makes an authorized API request, and to infrastructure providers that host or transmit the application and its encrypted data. It is not sold or shared for independent marketing. Private operational access is limited to Iskhakov Ruslan; edits in the separate public portfolio workspace are visible to its visitors."
         ]
       },
       {
@@ -110,21 +111,21 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
   },
   ru: {
     title: "Политика конфиденциальности",
-    updated: "Последнее обновление: 15 ноября 2026 года",
+    updated: "Последнее обновление: 16 ноября 2026 года",
     introduction:
       "Эта политика объясняет, как Axyro Analytics, независимый программный проект аналитики и управления Google Ads физического лица Iskhakov Ruslan, обрабатывает информацию на публичном сайте и в закрытом рабочем кабинете.",
     sections: [
       {
         title: "1. Оператор и контакт",
         paragraphs: [
-          "Оператором и единственным пользователем является физическое лицо Iskhakov Ruslan. Axyro Analytics — название проекта, а не зарегистрированная компания или отдельное юридическое лицо. Запросы о конфиденциальности, Google Ads API, доступе и удалении данных можно направлять на support@axyro.tech."
+          "Оператором проекта является физическое лицо Iskhakov Ruslan. Axyro Analytics — название проекта, а не зарегистрированная компания или отдельное юридическое лицо. Запросы о конфиденциальности, Google Ads API, доступе и удалении данных можно направлять на support@axyro.tech."
         ]
       },
       {
         title: "2. Область действия и пользователи",
         paragraphs: [
-          "Публичный демонстрационный кабинет использует пример данных. Настройки хранятся локально в браузере, изменения примера — в хранилище текущей вкладки. Кнопка «Начать заново» сбрасывает изменения примера. Этот режим не выполняет запросов к Google Ads API.",
-          "Публичный сайт содержит информацию о продукте и юридические документы. Рабочий кабинет не является публичным рекламным сервисом и сейчас доступен только Iskhakov Ruslan через защищённую учётную запись владельца. Доступа нет у сотрудников, подрядчиков, клиентов или посторонних лиц."
+          "Отдельный публичный кабинет портфолио содержит данные вымышленной команды. Настройки таблицы остаются в браузере. Заметки, статусы, представления и журнал сохраняются на сервере и доступны другим посетителям. Не вводите личную или конфиденциальную информацию в это общее пространство. В нём нет реквизитов Google Ads, и запросы к реальным аккаунтам Google Ads не выполняются.",
+          "Публичный сайт содержит информацию о продукте и юридические документы. Закрытый рабочий кабинет и реальные подключённые аккаунты доступны только Iskhakov Ruslan через защищённую учётную запись владельца. Доступ в портфолио не даёт доступа к этому кабинету."
         ]
       },
       {
@@ -171,7 +172,7 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
       {
         title: "7. Передача и обработчики",
         paragraphs: [
-          "Информация передаётся только для работы сервиса: Google при выполнении владельцем авторизованного API-запроса и инфраструктурным провайдерам, которые размещают или передают приложение и его зашифрованные данные. Информация не продаётся и не передаётся для независимого маркетинга. Доступ к приложению имеет только Iskhakov Ruslan."
+          "Информация передаётся только для работы сервиса: Google при выполнении владельцем авторизованного API-запроса и инфраструктурным провайдерам, которые размещают или передают приложение и его зашифрованные данные. Информация не продаётся и не передаётся для независимого маркетинга. Доступ к закрытому рабочему кабинету имеет только Iskhakov Ruslan; изменения в отдельном публичном кабинете портфолио видны его посетителям."
         ]
       },
       {
@@ -200,9 +201,9 @@ export const PRIVACY_COPY: Record<Locale, LegalDocument> = {
 export const TERMS_COPY: Record<Locale, LegalDocument> = {
   en: {
     title: "Terms of Use",
-    updated: "Last updated: August 18, 2026",
+    updated: "Last updated: November 16, 2026",
     introduction:
-      "These Terms govern authorized internal use of Axyro Analytics and its protected Google Ads analytics and operations workspace.",
+      "These Terms describe use of Axyro Analytics, its protected operational workspace and the separate public portfolio workspace.",
     sections: [
       {
         title: "1. Product and operator",
@@ -213,7 +214,7 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
       {
         title: "2. Restricted audience",
         paragraphs: [
-          "The workspace is currently intended and available only for Iskhakov Ruslan. No employee, contractor, external client, or member of the public has access. It is not a public self-service advertising platform, agency marketplace, API resale product, or service for unrelated third parties."
+          "The private operational workspace and real connected accounts are available only to Iskhakov Ruslan. A separate public portfolio workspace offers operator access to fictional team data. Its changes are shared between visitors and do not modify real advertising accounts. Do not enter personal or confidential data there."
         ]
       },
       {
@@ -273,7 +274,7 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
   },
   ru: {
     title: "Условия использования",
-    updated: "Последнее обновление: 18 августа 2026 года",
+    updated: "Последнее обновление: 16 ноября 2026 года",
     introduction:
       "Эти условия регулируют авторизованное внутреннее использование Axyro Analytics и защищённого кабинета аналитики и операций Google Ads.",
     sections: [
@@ -286,7 +287,7 @@ export const TERMS_COPY: Record<Locale, LegalDocument> = {
       {
         title: "2. Ограниченная аудитория",
         paragraphs: [
-          "Рабочий кабинет сейчас предназначен и доступен только Iskhakov Ruslan. Доступа нет у сотрудников, подрядчиков, внешних клиентов или посторонних лиц. Это не публичная рекламная платформа самообслуживания, не маркетплейс агентств, не продукт перепродажи API и не сервис для несвязанных третьих лиц."
+          "Закрытый рабочий кабинет и реальные подключённые аккаунты доступны только Iskhakov Ruslan. Отдельный публичный кабинет портфолио предоставляет права оператора для работы с данными вымышленной команды. Изменения доступны другим посетителям и не меняют реальные рекламные аккаунты. Не вводите туда личную или конфиденциальную информацию."
         ]
       },
       {
@@ -364,7 +365,7 @@ export function LegalPage({ kind }: { kind: "privacy" | "terms" }) {
               <ToggleButton value="en">EN</ToggleButton>
               <ToggleButton value="ru">RU</ToggleButton>
             </ToggleButtonGroup>
-            <Button component="a" href="/login" variant="outlined" startIcon={<Login />} sx={{ display: { xs: "none", sm: "inline-flex" } }}>
+            <Button component="a" href={isShowcaseBuild ? "/portfolio/login?open=1" : "/login"} variant="outlined" startIcon={<Login />} sx={{ display: { xs: "none", sm: "inline-flex" } }}>
               {locale === "en" ? "Workspace" : "Кабинет"}
             </Button>
           </Toolbar>

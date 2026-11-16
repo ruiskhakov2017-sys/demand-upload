@@ -3,7 +3,7 @@ import { Alert, Box, Button, Link, Paper, Stack, TextField, Typography } from "@
 import LoginIcon from "@mui/icons-material/Login";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
@@ -18,11 +18,14 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-export function LoginPage() {
+export function LoginPage({ publicAccessEnabled = false }: { publicAccessEnabled?: boolean }) {
   const queryClient = useQueryClient();
   const invite = appRoute(window.location.pathname) === "/login"
     ? new URLSearchParams(window.location.hash.slice(1)).get("invite")
     : null;
+  const autoOpen = isPortfolioBuild && publicAccessEnabled && !invite
+    && new URLSearchParams(window.location.search).get("open") === "1";
+  const autoOpenStarted = useRef(false);
   useEffect(() => {
     document.title = "Secure workspace | Axyro Analytics";
   }, []);
@@ -33,14 +36,21 @@ export function LoginPage() {
   } = useForm<FormValues>({ resolver: zodResolver(schema) });
 
   const mutation = useMutation({
-    mutationFn: (credentials: FormValues | string) => typeof credentials === "string"
+    mutationFn: (credentials: FormValues | string | { guest: true }) => typeof credentials === "string"
       ? api.loginWithPortfolioLink(credentials)
-      : api.login(credentials),
+      : "guest" in credentials ? api.loginAsPortfolioGuest() : api.login(credentials),
     onSuccess: (session) => {
       setCsrfToken(session.csrf_token);
+      queryClient.setQueryData(["me"], session);
       queryClient.invalidateQueries({ queryKey: ["me"] });
     }
   });
+  useEffect(() => {
+    if (autoOpen && !autoOpenStarted.current) {
+      autoOpenStarted.current = true;
+      mutation.mutate({ guest: true });
+    }
+  }, [autoOpen, mutation.mutate]);
 
   return (
     <Box sx={{ minHeight: "100vh", display: "grid", placeItems: "center", p: 3 }}>
@@ -52,7 +62,9 @@ export function LoginPage() {
               {t(invite || isPortfolioBuild ? "auth.portfolioTitle" : "ui.07205a06c3")}
             </Typography>
             <Typography color="text.secondary" sx={{ mt: 0.75 }}>
-              {t(invite ? "auth.portfolioDescription" : isPortfolioBuild ? "auth.portfolioInviteOnly" : "auth.secureWorkspace")}
+              {t(invite ? "auth.portfolioDescription" : isPortfolioBuild
+                ? publicAccessEnabled ? "auth.portfolioPublicDescription" : "auth.portfolioInviteOnly"
+                : "auth.secureWorkspace")}
             </Typography>
           </Box>
           {mutation.error && (
@@ -68,7 +80,11 @@ export function LoginPage() {
             >
               {t("auth.portfolioOpen")}
             </Button>
-          ) : !isPortfolioBuild && (
+          ) : isPortfolioBuild && publicAccessEnabled ? <Button
+            variant="contained" size="large" startIcon={<LoginIcon />}
+            disabled={mutation.isPending || mutation.isSuccess}
+            onClick={() => mutation.mutate({ guest: true })}
+          >{t(mutation.isPending ? "auth.portfolioOpening" : "auth.portfolioOpen")}</Button> : !isPortfolioBuild && (
             <Stack component="form" spacing={2} onSubmit={handleSubmit((values) => mutation.mutate(values))}>
               <TextField
                 label={t("ui.e2d97c93ec")}

@@ -42,4 +42,12 @@ describe("portfolio design comparison", () => {
     expect(paths.isPortfolioRefinement).toBe(false);
     expect(paths.appNavigationPath("/statistics")).toBe("/statistics");
   });
+
+  it("keeps the public showcase separate from the portfolio build", async () => {
+    const paths = await pathsAt("https://axyro.tech/", "/showcase/");
+    expect(paths.isShowcaseBuild).toBe(true);
+    expect(paths.isPortfolioBuild).toBe(false);
+    expect(paths.appPath("/product/control-center-desktop.png")).toBe("/showcase/product/control-center-desktop.png");
+    expect(paths.appRoute("/privacy")).toBe("/privacy");
+  });
 });

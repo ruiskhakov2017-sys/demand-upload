@@ -32,6 +32,7 @@ class UserOut(BaseModel):
 
 
 class SetupStatusOut(BaseModel):
+    portfolio_public_access_enabled: bool = False
     setup_required: bool
     users_count: int
 

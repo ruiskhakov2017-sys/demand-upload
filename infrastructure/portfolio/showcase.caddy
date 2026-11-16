@@ -1,0 +1,12 @@
+(public_showcase) {
+    @showcase_pages path / /privacy /terms /showcase/*
+    handle @showcase_pages {
+        reverse_proxy axyro-portfolio-ingress:80 {
+            header_up Host axyro.tech
+            header_up -Cookie
+            header_up -Authorization
+        }
+    }
+    @legacy_demo path /demo /demo/*
+    redir @legacy_demo /portfolio/login?open=1 302
+}

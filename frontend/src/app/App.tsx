@@ -1,5 +1,6 @@
 import {
   AppBar,
+  Alert,
   Avatar,
   Box,
   Button,
@@ -53,7 +54,7 @@ import { themeChoices } from "./theme";
 import { t, useLocale } from "../i18n";
 import { ai } from "../i18n/aiAnalyst";
 import { isDemoPath } from "../demo/isDemoPath";
-import { appNavigationPath, appRoute, isPortfolioBuild, isPortfolioRefinement, portfolioDesign, portfolioDesignPath } from "./paths";
+import { appNavigationPath, appRoute, isPortfolioBuild, isPortfolioRefinement, isShowcaseBuild, portfolioDesign, portfolioDesignPath } from "./paths";
 
 const AccountsPage = lazy(() => import("../pages/AccountsPage").then((module) => ({ default: module.AccountsPage })));
 const AuditPage = lazy(() => import("../pages/AuditPage").then((module) => ({ default: module.AuditPage })));
@@ -126,8 +127,9 @@ function getNavGroups(): NavGroup[] {
 
 export function App() {
   const [path, navigate] = useBrowserPath();
-  const demoPath = !isPortfolioBuild && isDemoPath(path);
-  const publicPath = !isPortfolioBuild && (path === "/" || path === "/privacy" || path === "/terms");
+  const demoPath = !isPortfolioBuild && !isShowcaseBuild && isDemoPath(path);
+  const publicPath = isShowcaseBuild || (!isPortfolioBuild && (path === "/" || path === "/privacy" || path === "/terms"));
+  const [showSharedNotice, setShowSharedNotice] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [themeAnchor, setThemeAnchor] = useState<HTMLElement | null>(null);
   const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
@@ -188,7 +190,8 @@ export function App() {
 
   if (setupQuery.isLoading) return <CenteredText text={t("ui.b807935f97")} />;
   if (setupQuery.data?.setup_required && !isPortfolioBuild) return <SetupPage />;
-  if (!meQuery.data) return <LoginPage />;
+  if (meQuery.isLoading) return <CenteredText text={t("ui.b807935f97")} />;
+  if (!meQuery.data) return <LoginPage publicAccessEnabled={setupQuery.data?.portfolio_public_access_enabled} />;
 
   const user = meQuery.data.user;
   const drawer = (
@@ -362,6 +365,7 @@ export function App() {
       >
         <Toolbar />
         <Box sx={{ maxWidth: 1440, mx: "auto", pt: isPortfolioRefinement ? { xs: 3, md: 4 } : 3 }}>
+          {isPortfolioBuild && setupQuery.data?.portfolio_public_access_enabled && showSharedNotice && <Alert severity="info" onClose={() => setShowSharedNotice(false)} sx={{ mb: 2.5 }}>{t("auth.portfolioPublicDescription")}</Alert>}
           <Suspense fallback={<CenteredText text={t("ui.b807935f97")} />}>
             {renderRoute(isPortfolioBuild && !portfolioRoutes.has(path) ? "/control-center" : path, navigate)}
           </Suspense>

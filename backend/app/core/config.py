@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     session_cookie_path: str = Field(default="/", alias="SESSION_COOKIE_PATH")
     session_cookie_secure: bool = Field(default=True, alias="SESSION_COOKIE_SECURE")
     session_ttl_minutes: int = 720
+    portfolio_public_access_enabled: bool = Field(default=False, alias="PORTFOLIO_PUBLIC_ACCESS_ENABLED")
+    portfolio_guest_rate_limit_per_minute: int = Field(default=30, ge=1, le=300)
     setup_token: str | None = Field(default=None, alias="SETUP_TOKEN")
     app_encryption_key: str = Field(alias="APP_ENCRYPTION_KEY")
     google_ads_api_version: str = Field(default="v24.2", alias="GOOGLE_ADS_API_VERSION")

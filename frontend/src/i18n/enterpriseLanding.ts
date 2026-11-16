@@ -1,13 +1,13 @@
-export const DEMO_URL = "/demo/control-center";
+export const DEMO_URL = "/portfolio/login?open=1";
 
 export const ENTERPRISE_COPY = {
   ru: {
     title: "Axyro Analytics | Аналитика Google Ads",
     nav: ["Отчёты", "Кампании", "Доступ"],
-    navigation: "Разделы страницы", lang: "Switch to English", login: "Демо",
+    navigation: "Разделы страницы", lang: "Switch to English", login: "Кабинет",
     hero: "Все аккаунты Google\u00a0Ads в\u00a0одном отчёте",
     lead: "Сравнивайте расходы по аккаунтам и смотрите, сколько конверсий принёс каждый из них. Сразу видно, где за конверсию вы платите больше.",
-    demo: "Посмотреть демо", see: "Посмотреть отчёт",
+    demo: "Открыть кабинет", see: "Посмотреть отчёт",
     workflow: "Кампании", workflowTitle: "От показателей к решению",
     screens: [
       { label: "Проверка аккаунтов", title: "Разберитесь, что мешает показам", body: "Откройте аккаунт и проверьте статусы объявлений, ограничения и сроки подтверждения рекламодателя. Добавьте заметку, чтобы при следующей проверке видеть, на чём остановились.", alt: "Интерфейс Axyro с фильтрами, статусами и таблицей аккаунтов Google Ads", caption: "Кабинет Axyro · Обзор аккаунтов" },
@@ -15,16 +15,16 @@ export const ENTERPRISE_COPY = {
     ],
     screenLabel: "Экраны кабинета", sample: "Демонстрационные данные", enlarge: "Открыть изображение",
     accessTitle: "Доступ и работа с данными", permissions: "Какие данные читает Axyro?", changes: "Как подтверждаются изменения?", users: "У кого есть доступ к кабинету?",
-    contactTitle: "Посмотрите Axyro в работе", contact: "Откройте кабинет с примером данных. Сравните аккаунты, настройте таблицу и изучите кампании. Демо доступно сразу, без регистрации.",
+    contactTitle: "Посмотрите Axyro в работе", contact: "Сравните аккаунты, настройте таблицу, изучите кампании и сохраните заметку. Кабинет доступен сразу, без регистрации.",
     footer: "Документы и контакты"
   },
   en: {
     title: "Axyro Analytics | Google Ads Analytics",
     nav: ["Reports", "Campaigns", "Access"],
-    navigation: "Page sections", lang: "Переключить на русский", login: "Demo",
+    navigation: "Page sections", lang: "Переключить на русский", login: "Workspace",
     hero: "Every Google\u00a0Ads account in one report",
     lead: "Compare spend and conversions across accounts. See how much each account delivers and where you pay more per conversion.",
-    demo: "Explore the demo", see: "Explore the report",
+    demo: "Open workspace", see: "Explore the report",
     workflow: "Campaigns", workflowTitle: "From metrics to decisions",
     screens: [
       { label: "Review accounts", title: "Find what is holding delivery back", body: "Open an account to review ad statuses, policy issues and advertiser verification deadlines. Leave a note so your next review starts where you left off.", alt: "Axyro workspace showing filters, statuses and a table of Google Ads accounts", caption: "Axyro workspace · Account overview" },

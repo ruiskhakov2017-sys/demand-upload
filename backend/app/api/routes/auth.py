@@ -1,4 +1,5 @@
 from datetime import UTC, datetime
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
@@ -16,7 +17,13 @@ from app.core.security import (
     verify_password,
 )
 from app.db.models import ApplicationSetting, AuditLog, User, UserRole, UserSession
-from app.domain.portfolio_access import PORTFOLIO_USERNAME, invitation_key
+from app.domain.portfolio_access import (
+    PORTFOLIO_USERNAME,
+    PUBLIC_SESSION_PREFIX,
+    invitation_key,
+    require_prepared_public_workspace,
+    reserve_guest_entry,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -63,8 +70,39 @@ def portfolio_link(
     return create_session(db, request, response, user, "auth.portfolio_link")
 
 
-def create_session(db: Session, request: Request, response: Response, user: User, audit_action: str) -> SessionOut:
-    raw_session_token = generate_token("dgu_session")
+@router.post("/portfolio-guest", response_model=SessionOut)
+def portfolio_guest(request: Request, response: Response, db: Session = Depends(get_db)) -> SessionOut:
+    if settings.app_env != "portfolio" or not settings.portfolio_public_access_enabled:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    public_url = urlsplit(settings.app_public_base_url)
+    if request.headers.get("origin") != f"{public_url.scheme}://{public_url.netloc}":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Недопустимый источник входа")
+    # Fail closed if a deployment points the public entry at operational data.
+    require_prepared_public_workspace(db)
+    user = db.scalar(select(User).where(
+        User.username == PORTFOLIO_USERNAME, User.role == UserRole.OPERATOR.value,
+        User.is_active.is_(True), User.is_setup_admin.is_(False),
+    ))
+    if not user:
+        raise HTTPException(status_code=503, detail="Публичный кабинет ещё не подготовлен")
+    response.headers["Cache-Control"] = "no-store"
+    token = request.cookies.get(settings.session_cookie_name)
+    if token:
+        session = db.scalar(select(UserSession).where(
+            UserSession.user_id == user.id, UserSession.token_hash == hash_token(token),
+            UserSession.revoked_at.is_(None), UserSession.expires_at > utcnow(),
+        ))
+        if session:
+            return SessionOut(user=UserOut.model_validate(user), csrf_token=session.csrf_token)
+    reserve_guest_entry()
+    return create_session(db, request, response, user, "auth.portfolio_guest", token_prefix=PUBLIC_SESSION_PREFIX)
+
+
+def create_session(
+    db: Session, request: Request, response: Response, user: User, audit_action: str,
+    *, token_prefix: str = "dgu_session",
+) -> SessionOut:
+    raw_session_token = generate_token(token_prefix)
     csrf_token = generate_token("dgu_csrf")
     session = UserSession(
         user_id=user.id,

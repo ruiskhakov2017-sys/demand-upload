@@ -1,4 +1,6 @@
 export const ru: Record<string, string> = {
+  "auth.portfolioPublicDescription": "Общее пространство с данными вымышленной команды. Изменения сохраняются и видны другим посетителям.",
+  "auth.portfolioOpening": "Открываем кабинет…",
   "finance.teamBudgetDescription": "Плановый бюджет, расходы по аккаунтам и доступный остаток.",
   "finance.refreshBudget": "Обновить данные",
   "finance.plannedBudget": "Плановый бюджет",

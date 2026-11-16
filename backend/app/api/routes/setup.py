@@ -14,7 +14,10 @@ router = APIRouter(prefix="/setup", tags=["setup"])
 @router.get("/status", response_model=SetupStatusOut)
 def setup_status(db: Session = Depends(get_db)) -> SetupStatusOut:
     users_count = db.scalar(select(func.count()).select_from(User)) or 0
-    return SetupStatusOut(setup_required=users_count == 0, users_count=users_count)
+    return SetupStatusOut(
+        setup_required=users_count == 0, users_count=users_count,
+        portfolio_public_access_enabled=settings.app_env == "portfolio" and settings.portfolio_public_access_enabled,
+    )
 
 
 @router.post("/bootstrap", response_model=SessionOut, status_code=status.HTTP_201_CREATED)

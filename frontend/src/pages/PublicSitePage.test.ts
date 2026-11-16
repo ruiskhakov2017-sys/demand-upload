@@ -15,16 +15,18 @@ describe("Axyro Analytics public positioning", () => {
     expect(ENTERPRISE_COPY.en.lead).toContain("Compare spend and conversions");
     expect(PUBLIC_COPY.en.apiBody).toContain("Primary use: reporting, analytics and monitoring");
     expect(ENTERPRISE_COPY.en.screens[1].body).toContain("paused state");
-    expect(DEMO_URL).toBe("/demo/control-center");
+    expect(DEMO_URL).toBe("/portfolio/login?open=1");
   });
 
-  it("identifies the individual operator and sole-user access consistently", () => {
+  it("distinguishes private operational access from the shared portfolio", () => {
     const publicText = JSON.stringify(PUBLIC_COPY);
     const legalText = JSON.stringify({ privacy: PRIVACY_COPY, terms: TERMS_COPY });
 
     expect(publicText).toContain("Iskhakov Ruslan");
     expect(publicText).toContain("not a registered company");
-    expect(publicText).toContain("No employee, contractor, client, or member of the public has access");
+    expect(publicText).toContain("private operational workspace");
+    expect(publicText).toContain("separate portfolio workspace");
+    expect(publicText).toContain("stored on the server and shared between visitors");
     expect(legalText).toContain("Iskhakov Ruslan");
     expect(legalText).toContain("not a registered company or separate legal entity");
     expect(PRIVACY_COPY.ru.sections[0].paragraphs?.[0]).toContain("Iskhakov Ruslan");

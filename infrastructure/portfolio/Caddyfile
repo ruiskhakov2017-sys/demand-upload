@@ -1,0 +1,27 @@
+:80 {
+    encode zstd gzip
+    header {
+        -Server
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy same-origin
+        Permissions-Policy "camera=(), microphone=(), geolocation=()"
+        Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; media-src 'self' blob:; frame-src https://www.youtube-nocookie.com"
+        Strict-Transport-Security "max-age=86400"
+    }
+    @public_pages path / /privacy /terms
+    handle @public_pages {
+        reverse_proxy showcase-frontend:80
+    }
+    handle_path /showcase/* {
+        @api path /api /api/*
+        respond @api 404
+        reverse_proxy showcase-frontend:80
+    }
+    handle /api/* {
+        reverse_proxy api:8000
+    }
+    handle {
+        reverse_proxy frontend:80
+    }
+}

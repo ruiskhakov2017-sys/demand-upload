@@ -1,4 +1,6 @@
 export const en: Record<string, string> = {
+  "auth.portfolioPublicDescription": "A shared workspace with data from a fictional team. Changes are saved and visible to other visitors.",
+  "auth.portfolioOpening": "Opening workspace…",
   "finance.teamBudgetDescription": "Planned budget, account spend and remaining funds.",
   "finance.refreshBudget": "Refresh data",
   "finance.plannedBudget": "Planned budget",

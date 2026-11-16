@@ -9,7 +9,7 @@
 				path /api /api/*
 				not {
 					path /api/health /api/ready /api/version /api/setup/status
-					path /api/auth/portfolio-link /api/auth/me /api/auth/logout
+					path /api/auth/portfolio-link /api/auth/portfolio-guest /api/auth/me /api/auth/logout
 					path /api/control-center/* /api/audit /api/accounts /api/google-connections
 					path /api/operations/statistics /api/operations/statistics/sync
 					path /api/operations/finance /api/operations/finance/google-billing/*

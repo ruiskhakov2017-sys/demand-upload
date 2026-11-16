@@ -94,6 +94,7 @@ htmlcov/
 # Node, React and Vite
 node_modules/
 dist/
+frontend/dist-showcase/
 build/
 coverage/
 *.tsbuildinfo

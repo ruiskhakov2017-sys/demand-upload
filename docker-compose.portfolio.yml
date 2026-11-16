@@ -5,6 +5,7 @@ x-portfolio-backend: &portfolio-backend
   pull_policy: never
   environment: &portfolio-env
     APP_ENV: portfolio
+    PORTFOLIO_PUBLIC_ACCESS_ENABLED: ${PORTFOLIO_PUBLIC_ACCESS_ENABLED:-false}
     APP_PUBLIC_BASE_URL: ${PORTFOLIO_PUBLIC_URL:-http://localhost:19082}
     APP_ENCRYPTION_KEY: ${PORTFOLIO_ENCRYPTION_KEY:?Set PORTFOLIO_ENCRYPTION_KEY}
     SETUP_TOKEN: ${PORTFOLIO_SETUP_TOKEN:?Set PORTFOLIO_SETUP_TOKEN}
@@ -77,13 +78,21 @@ services:
         VITE_BASE_PATH: ${PORTFOLIO_BASE_PATH:-/}
     networks: [private]
 
+  showcase-frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_BASE_PATH: /showcase/
+    networks: [private]
+
   reverse-proxy:
     image: caddy:2.8-alpine
     environment:
       DGU_SITE_ADDRESS: ':80'
     ports: ['127.0.0.1:19082:80']
-    volumes: [./infrastructure/caddy/Caddyfile:/etc/caddy/Caddyfile:ro]
-    depends_on: [api, frontend]
+    volumes: [./infrastructure/portfolio/Caddyfile:/etc/caddy/Caddyfile:ro]
+    depends_on: [api, frontend, showcase-frontend]
     networks: [private, edge]
 
 networks:

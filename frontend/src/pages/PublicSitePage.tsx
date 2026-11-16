@@ -6,9 +6,10 @@ import { ENTERPRISE_COPY, DEMO_URL } from "../i18n/enterpriseLanding";
 import { PUBLIC_COPY } from "../i18n/publicSite";
 import { EnterpriseReport } from "./EnterpriseReport";
 import { HeroAccountPanel } from "./HeroAccountPanel";
+import { appPath } from "../app/paths";
 import "./EnterpriseLanding.css";
 
-const screenUrls = ["/product/control-center-desktop.png", "/product/creation-paused-desktop.png"];
+const screenUrls = [appPath("/product/control-center-desktop.png"), appPath("/product/creation-paused-desktop.png")];
 const sectionIds = ["report", "campaigns", "access"];
 
 function Brand() {

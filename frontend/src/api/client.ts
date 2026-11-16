@@ -858,13 +858,14 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 export const api = {
-  setupStatus: () => request<{ setup_required: boolean; users_count: number }>("/setup/status"),
+  setupStatus: () => request<{ setup_required: boolean; users_count: number; portfolio_public_access_enabled?: boolean }>("/setup/status"),
   bootstrap: (payload: { username: string; password: string; email?: string; setup_token?: string }) =>
     request<Session>("/setup/bootstrap", { method: "POST", body: JSON.stringify(payload) }),
   login: (payload: { username: string; password: string }) =>
     request<Session>("/auth/login", { method: "POST", body: JSON.stringify(payload) }),
   loginWithPortfolioLink: (token: string) =>
     request<Session>("/auth/portfolio-link", { method: "POST", body: JSON.stringify({ token }) }),
+  loginAsPortfolioGuest: () => request<Session>("/auth/portfolio-guest", { method: "POST", body: "{}" }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<Session>("/auth/me"),
   dashboard: () => request<Record<string, any>>("/dashboard/summary"),
