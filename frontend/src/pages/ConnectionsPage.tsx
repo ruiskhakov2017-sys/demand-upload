@@ -1,3 +1,4 @@
+import { isPortfolioBuild } from "../app/paths";
 import {
   Alert,
   Box,
@@ -112,7 +113,7 @@ export function ConnectionsPage() {
       </Alert>}
       {error && <Alert severity="error">{error.message}</Alert>}
       {notice && <Alert severity={notice.severity} onClose={() => setNotice(null)}>{notice.message}</Alert>}
-      <Paper variant="outlined" sx={{ p: 3 }}>
+      {!isPortfolioBuild && <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h6" gutterBottom>{t("ui.80355ccf86")}</Typography>
         <Grid container spacing={2}>
           <Grid item xs={12} md={4}><TextField fullWidth label={t("ui.3de49828e8")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></Grid>
@@ -179,7 +180,7 @@ export function ConnectionsPage() {
           ) : null}
         </Grid>
         <Button sx={{ mt: 2 }} variant="contained" startIcon={form.auth_type === "OAUTH_WEB" ? <GoogleIcon /> : <AddLinkIcon />} disabled={create.isPending || oauth.isPending || !form.name || !form.login_customer_id || (form.connection_mode === "GOOGLE_TEST" && !form.credential_source_connection_id)} onClick={() => create.mutate()}>{form.auth_type === "OAUTH_WEB" ? t("ui.ba5527f9f1") : t("ui.b40f28bb9c")}</Button>
-      </Paper>
+      </Paper>}
 
       <Paper variant="outlined" sx={{ p: 3 }}>
         <Typography variant="h6">{t("ui.8399b77ec7")}</Typography><Divider sx={{ my: 2 }} />
@@ -190,8 +191,8 @@ export function ConnectionsPage() {
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
                 <StatusBadge value={connection.connection_mode} /><StatusBadge value={connection.status} />
                 {connection.auth_type === "OAUTH_WEB" && <Button size="small" variant="outlined" startIcon={<GoogleIcon />} onClick={() => oauth.mutate(connection.id)}>{connection.status === "NEEDS_CREDENTIALS" ? t("ui.124298ec71") : t("ui.deda92776c")}</Button>}
-                <Button size="small" variant="outlined" startIcon={<FactCheckIcon />} disabled={test.isPending} onClick={() => test.mutate(connection.id)}>{t("ui.52dec92eda")}</Button>
-                <Button size="small" variant="outlined" startIcon={<SyncIcon />} disabled={sync.isPending} onClick={() => sync.mutate(connection.id)}>{t("ui.e9af21d100")}</Button>
+                <Button size="small" variant="outlined" startIcon={<FactCheckIcon />} disabled={isPortfolioBuild || test.isPending} onClick={() => test.mutate(connection.id)}>{t("ui.52dec92eda")}</Button>
+                <Button size="small" variant="outlined" startIcon={<SyncIcon />} disabled={isPortfolioBuild || sync.isPending} onClick={() => sync.mutate(connection.id)}>{t("ui.e9af21d100")}</Button>
                 {connection.auth_type === "OAUTH_WEB" && connection.status !== "NEEDS_CREDENTIALS" && <Button size="small" color="error" startIcon={<LinkOffIcon />} onClick={() => disconnect.mutate(connection.id)}>{t("ui.94d07a2171")}</Button>}
               </Stack>
             </Box>

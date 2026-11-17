@@ -7,11 +7,12 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy import desc, select
+from sqlalchemy import desc, func, select, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, require_csrf
 from app.api.workflow_schemas import MediaOut, YouTubeRegisterIn, YouTubeUploadIn
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import utcnow
 from app.db.models import (
@@ -97,6 +98,11 @@ async def upload_media(
         )
         if existing:
             return existing
+        if settings.app_env == "portfolio":
+            db.execute(text("SELECT pg_advisory_xact_lock(65812937)"))
+            used = db.scalar(select(func.sum(MediaAsset.size_bytes))) or 0
+            if used + total > 256 * 1024 * 1024:
+                raise HTTPException(status_code=413, detail="Хранилище материалов публичного кабинета заполнено")
         key = f"media/{digest[:2]}/{digest}{suffix}"
         FilesystemStorage().put_file(temp_path, key, file.content_type)
         asset = MediaAsset(

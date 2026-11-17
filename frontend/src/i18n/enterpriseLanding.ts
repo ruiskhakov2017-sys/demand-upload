@@ -36,3 +36,14 @@ export const ENTERPRISE_COPY = {
     footer: "Documents and contact"
   }
 } as const;
+
+export const PORTFOLIO_INTRO = {
+  ru: {
+    hero: "Кампании Demand Gen для нескольких аккаунтов",
+    lead: "Загрузите таблицу, добавьте объявления и проверьте план кампаний. В рабочем аккаунте Axyro создаёт их на паузе. В открытом кабинете можно пройти те же шаги в режиме симуляции.",
+  },
+  en: {
+    hero: "Build Demand Gen campaigns across accounts",
+    lead: "Import a spreadsheet, add your ads and review the campaign plan. Axyro creates paused campaigns in connected accounts. Try the workflow in simulation in the public workspace.",
+  }
+} as const;

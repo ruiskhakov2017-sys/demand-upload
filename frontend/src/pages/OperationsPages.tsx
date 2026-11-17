@@ -315,7 +315,7 @@ export function SettingsPage() {
           <Grid item xs={12} md={3}><TextField fullWidth type="number" label={t("ui.6b9fbb7e5f")} value={limits.parallel} onChange={(e) => setLimits({ ...limits, parallel: e.target.value })} /></Grid>
           <Grid item xs={12} md={3}><TextField fullWidth label={t("ui.68a3882b45")} value={limits.budgets} onChange={(e) => setLimits({ ...limits, budgets: e.target.value })} /></Grid>
         </Grid>
-        <Box><Button variant="contained" startIcon={<SaveOutlinedIcon />} disabled={saveLimits.isPending} onClick={() => saveLimits.mutate()}>{t("ui.7a61095907")}</Button></Box>
+        <Box><Button variant="contained" startIcon={<SaveOutlinedIcon />} disabled={isPortfolioBuild || saveLimits.isPending} onClick={() => saveLimits.mutate()}>{t("ui.7a61095907")}</Button></Box>
       </Paper>
     </Stack>
   );

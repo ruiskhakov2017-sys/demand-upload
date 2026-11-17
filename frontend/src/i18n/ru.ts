@@ -19,6 +19,7 @@ export const ru: Record<string, string> = {
   "workspace.filters": "Фильтры",
   "app.productName": "Axyro Analytics",
   "app.subtitle": "Аналитика Google Ads и центр контроля",
+  "domain.formatOnly": "Проверен формат ссылки. Доступность сайта в этом кабинете не проверяется.",
   "nav.analytics": "Аналитика и контроль",
   "nav.deployment": "Проверенное развёртывание кампаний",
   "nav.systemOverview": "Состояние системы",

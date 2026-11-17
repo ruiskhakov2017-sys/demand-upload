@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import re
+from urllib.parse import urlsplit
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
@@ -32,6 +34,8 @@ class DomainValidationService:
         cached_report: dict | None = None,
         force: bool = False,
     ) -> dict:
+        if settings.app_env == "portfolio":
+            return self._portfolio_report(references)
         started = datetime.now(UTC)
         grouped = _group_references(references)
         cached = {
@@ -76,6 +80,29 @@ class DomainValidationService:
             },
             "results": results,
         }
+
+    @staticmethod
+    def _portfolio_report(references: list[dict]) -> dict:
+        """Check campaign URL syntax offline in the isolated public workspace."""
+        report = DomainValidationService.pending(references)
+        grouped = _group_references(references)
+        for result in report["results"]:
+            try:
+                url = urlsplit(grouped[result["url_hash"]]["url"])
+                valid = bool(url.scheme in {"http", "https"} and url.hostname and url.username is None)
+                _ = url.port  # Reject malformed ports.
+            except ValueError:
+                valid = False
+            result.update(
+                status="FORMAT_ONLY" if valid else "UNAVAILABLE",
+                code="FORMAT_ONLY" if valid else "INVALID_URL",
+                checked_at=report["checked_at"], blocking=not valid, warning=valid,
+                availability={"status": "NOT_CHECKED"}, reputation={"status": "NOT_CHECKED"},
+            )
+        report["status"] = "COMPLETED"
+        report["summary"]["blocked"] = sum(item["blocking"] for item in report["results"])
+        report["summary"]["warnings"] = sum(item["warning"] for item in report["results"])
+        return report
 
     def _validate_one(self, value: str, references: list[dict]) -> dict:
         checked_at = datetime.now(UTC)

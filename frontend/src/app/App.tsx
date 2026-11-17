@@ -85,7 +85,6 @@ type Navigate = (path: string, replace?: boolean) => void;
 type NavItem = { path: string; label: string; icon: JSX.Element };
 type NavGroup = { label: string; items: NavItem[] };
 
-const portfolioRoutes = new Set(["/control-center", "/statistics", "/finance", "/alerts", "/moderation", "/audit"]);
 
 function getNavGroups(): NavGroup[] {
   return [
@@ -135,11 +134,7 @@ export function App() {
   const [localeAnchor, setLocaleAnchor] = useState<HTMLElement | null>(null);
   const { themeName, setThemeName } = useThemePreference();
   const { locale, setLocale } = useLocale();
-  const allNavGroups = getNavGroups();
-  const navGroups = isPortfolioBuild
-    ? allNavGroups.map(group => ({ ...group, items: group.items.filter(item => portfolioRoutes.has(item.path)) }))
-        .filter(group => group.items.length > 0)
-    : allNavGroups;
+  const navGroups = getNavGroups();
   const theme = useTheme();
   const desktop = useMediaQuery(theme.breakpoints.up("md"));
   const queryClient = useQueryClient();
@@ -171,7 +166,7 @@ export function App() {
     }
   }, [currentTitle, publicPath, demoPath, locale]);
   useEffect(() => {
-    if (meQuery.data && (path === "/login" || (isPortfolioBuild && !portfolioRoutes.has(path)))) {
+    if (meQuery.data && (path === "/login" || (isPortfolioBuild && path === "/"))) {
       navigate("/control-center", true);
     }
   }, [meQuery.data, navigate, path]);
@@ -216,7 +211,7 @@ export function App() {
             key={group.label}
             subheader={
               <ListSubheader sx={{ lineHeight: "32px", bgcolor: "transparent", fontSize: 11, fontWeight: isPortfolioRefinement ? 500 : 800, px: isPortfolioRefinement ? 3 : 2 }}>
-                {isPortfolioRefinement ? t("workspace.navigation") : group.label.toUpperCase()}
+                {isPortfolioRefinement ? group.label : group.label.toUpperCase()}
               </ListSubheader>
             }
           >
@@ -367,7 +362,7 @@ export function App() {
         <Box sx={{ maxWidth: 1440, mx: "auto", pt: isPortfolioRefinement ? { xs: 3, md: 4 } : 3 }}>
           {isPortfolioBuild && setupQuery.data?.portfolio_public_access_enabled && showSharedNotice && <Alert severity="info" onClose={() => setShowSharedNotice(false)} sx={{ mb: 2.5 }}>{t("auth.portfolioPublicDescription")}</Alert>}
           <Suspense fallback={<CenteredText text={t("ui.b807935f97")} />}>
-            {renderRoute(isPortfolioBuild && !portfolioRoutes.has(path) ? "/control-center" : path, navigate)}
+            {renderRoute(path, navigate)}
           </Suspense>
         </Box>
       </Box>

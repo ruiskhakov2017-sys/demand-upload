@@ -19,6 +19,7 @@ export const en: Record<string, string> = {
   "workspace.filters": "Filters",
   "app.productName": "Axyro Analytics",
   "app.subtitle": "Google Ads Analytics & Control Center",
+  "domain.formatOnly": "URL format checked. Site availability is not checked in this workspace.",
   "nav.analytics": "Analytics & control",
   "nav.deployment": "Validated campaign deployment",
   "nav.systemOverview": "System overview",

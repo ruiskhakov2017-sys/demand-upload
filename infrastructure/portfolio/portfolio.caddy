@@ -5,9 +5,19 @@
 			@entry path / /demo /demo/*
 			redir @entry /portfolio/login 302
 
+			@workspaceFiles path /api/media/upload /api/uploads/*/import
+			request_body @workspaceFiles {
+				max_size 21MB
+			}
+			@mediaContent path /api/media/*/content
+			header @mediaContent Content-Security-Policy "sandbox; default-src 'none'"
 			@otherApi {
 				path /api /api/*
 				not {
+					path /api/dashboard/summary /api/operations/settings /api/settings/campaign-builder-guardrails /api/google-ads/capabilities /api/accounts/*/catalog /api/jobs /api/media/*/content
+					path /api/ai/capabilities /api/ai/preferences /api/ai/source-registry /api/ai/conversations /api/ai/drafts /api/ai/reports /api/ai/usage /api/ai/geo-profiles /api/ai/geo-overrides /api/ai/metric-source-mappings
+					path /api/uploads /api/uploads/* /api/templates /api/templates/* /api/plans /api/plans/* /api/schedules /api/schedules/* /api/launch-batches /api/launch-batches/* /api/campaign-instances/* /api/launch-groups /api/launch-groups/*
+					path /api/media /api/media/upload /api/media/youtube /api/media/*/youtube-upload
 					path /api/health /api/ready /api/version /api/setup/status
 					path /api/auth/portfolio-link /api/auth/portfolio-guest /api/auth/me /api/auth/logout
 					path /api/control-center/* /api/audit /api/accounts /api/google-connections
@@ -19,6 +29,8 @@
 			}
 			respond @otherApi 404
 			@writeOutsidePortfolio {
+				path /api/dashboard/summary /api/operations/settings /api/settings/campaign-builder-guardrails /api/google-ads/capabilities /api/accounts/*/catalog /api/jobs /api/media/*/content
+				path /api/ai/capabilities /api/ai/preferences /api/ai/source-registry /api/ai/conversations /api/ai/drafts /api/ai/reports /api/ai/usage /api/ai/geo-profiles /api/ai/geo-overrides /api/ai/metric-source-mappings
 				path /api/accounts /api/google-connections /api/operations/finance
 				path /api/control-center/sync /api/control-center/sync/*
 				path /api/operations/statistics/sync /api/operations/moderation/sync

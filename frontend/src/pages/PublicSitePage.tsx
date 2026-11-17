@@ -2,11 +2,11 @@ import { useEffect, useState } from "react";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import ArrowOutward from "@mui/icons-material/ArrowOutward";
 import { useLocale } from "../i18n";
-import { ENTERPRISE_COPY, DEMO_URL } from "../i18n/enterpriseLanding";
+import { ENTERPRISE_COPY, PORTFOLIO_INTRO, DEMO_URL } from "../i18n/enterpriseLanding";
 import { PUBLIC_COPY } from "../i18n/publicSite";
 import { EnterpriseReport } from "./EnterpriseReport";
 import { HeroAccountPanel } from "./HeroAccountPanel";
-import { appPath } from "../app/paths";
+import { appPath, isShowcaseBuild } from "../app/paths";
 import "./EnterpriseLanding.css";
 
 const screenUrls = [appPath("/product/control-center-desktop.png"), appPath("/product/creation-paused-desktop.png")];
@@ -22,6 +22,7 @@ function Brand() {
 export function PublicSitePage() {
   const { locale, setLocale } = useLocale();
   const copy = ENTERPRISE_COPY[locale];
+  const intro = isShowcaseBuild ? PORTFOLIO_INTRO[locale] : copy;
   const legal = PUBLIC_COPY[locale];
   const [activeScreen, setActiveScreen] = useState(0);
   const screen = copy.screens[activeScreen];
@@ -46,8 +47,8 @@ export function PublicSitePage() {
       <section className="ax3-hero" aria-labelledby="ax3-hero-title">
         <div className="ax3-wrap ax3-hero-inner">
           <div className="ax3-intro">
-            <h1 id="ax3-hero-title">{copy.hero}</h1>
-            <p className="ax3-lead">{copy.lead}</p>
+            <h1 id="ax3-hero-title">{intro.hero}</h1>
+            <p className="ax3-lead">{intro.lead}</p>
             <div className="ax3-actions">
               <a className="ax3-report-link" href="#report">{copy.see}<ArrowForward /></a>
               <a className="ax3-button" href={DEMO_URL}>{copy.demo}<ArrowOutward /></a>

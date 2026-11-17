@@ -1,3 +1,4 @@
+import { isPortfolioBuild } from "../app/paths";
 import {
   Alert,
   Box,
@@ -161,7 +162,7 @@ export function MediaPage() {
         <DialogTitle>{t("ui.9826673908")}</DialogTitle>
         <DialogContent>
           <Grid container spacing={2} sx={{ pt: 1 }}>
-            <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t("ui.ff0fbd56f4")}</InputLabel><Select label={t("ui.ff0fbd56f4")} value={queueForm.execution_mode} onChange={(e) => setQueueForm({ ...queueForm, execution_mode: e.target.value as ExecutionMode })}><MenuItem value="SIMULATION">{t("ui.c69d7e0c09")}</MenuItem><MenuItem value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem><MenuItem value="PRODUCTION">{t("googleMode.productionShort")}</MenuItem></Select></FormControl></Grid>
+            <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t("ui.ff0fbd56f4")}</InputLabel><Select label={t("ui.ff0fbd56f4")} value={queueForm.execution_mode} onChange={(e) => setQueueForm({ ...queueForm, execution_mode: e.target.value as ExecutionMode })}><MenuItem value="SIMULATION">{t("ui.c69d7e0c09")}</MenuItem><MenuItem disabled={isPortfolioBuild} value="GOOGLE_TEST">{t("googleMode.testShort")}</MenuItem><MenuItem disabled={isPortfolioBuild} value="PRODUCTION">{t("googleMode.productionShort")}</MenuItem></Select></FormControl></Grid>
             <Grid item xs={12} sm={6}><FormControl fullWidth><InputLabel>{t("ui.79e350f743")}</InputLabel><Select label={t("ui.79e350f743")} value={queueForm.connection_id} onChange={(e) => setQueueForm({ ...queueForm, connection_id: e.target.value })}><MenuItem value="">{t("ui.fad95c5cb0")}</MenuItem>{(connections.data || []).map((item) => <MenuItem key={item.id} value={item.id}>{item.name} · {item.status}</MenuItem>)}</Select></FormControl></Grid>
             <Grid item xs={12}><FormControl fullWidth><InputLabel>Customer ID</InputLabel><Select label="Customer ID" value={queueForm.customer_id} onChange={(e) => setQueueForm({ ...queueForm, customer_id: e.target.value })}>{visibleAccounts.map((item) => <MenuItem key={item.id} value={item.customer_id}>{item.customer_id} · {item.descriptive_name || t("ui.32b74a3c47")}</MenuItem>)}</Select></FormControl></Grid>
             {!visibleAccounts.length && <Grid item xs={12}><TextField fullWidth label="Customer ID" value={queueForm.customer_id} onChange={(e) => setQueueForm({ ...queueForm, customer_id: e.target.value })} /></Grid>}

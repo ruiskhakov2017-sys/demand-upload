@@ -1,3 +1,4 @@
+import { isPortfolioBuild } from "../app/paths";
 import {
   Accordion,
   AccordionDetails,
@@ -261,8 +262,8 @@ export function NewUploadPage({ navigate }: { navigate: Navigate }) {
           <TextField label={t("ui.3de49828e8")} value={name} onChange={(event) => setName(event.target.value)} fullWidth />
           <ToggleButtonGroup exclusive value={mode} onChange={(_, value) => value && setMode(value)} size="small">
             <ToggleButton value="SIMULATION">Simulation</ToggleButton>
-            <ToggleButton value="GOOGLE_TEST">Google Test</ToggleButton>
-            <ToggleButton value="PRODUCTION">Production</ToggleButton>
+            <ToggleButton value="GOOGLE_TEST" disabled={isPortfolioBuild}>Google Test</ToggleButton>
+            <ToggleButton value="PRODUCTION" disabled={isPortfolioBuild}>Production</ToggleButton>
           </ToggleButtonGroup>
           <Alert severity={mode === "PRODUCTION" ? "success" : mode === "GOOGLE_TEST" ? "success" : "info"}>
             {executionModeDescription(mode)}
@@ -644,8 +645,8 @@ function BuilderStep(props: BuilderStepProps) {
         <Grid item xs={12} md={6}>
           <ToggleButtonGroup exclusive size="small" value={form.execution_mode} onChange={(_, value) => value && set("execution_mode", value)}>
             <ToggleButton value="SIMULATION">Simulation</ToggleButton>
-            <ToggleButton value="GOOGLE_TEST">Google Test</ToggleButton>
-            <ToggleButton value="PRODUCTION">Production</ToggleButton>
+            <ToggleButton value="GOOGLE_TEST" disabled={isPortfolioBuild}>Google Test</ToggleButton>
+            <ToggleButton value="PRODUCTION" disabled={isPortfolioBuild}>Production</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
         <Grid item xs={12} md={6}>
@@ -1246,6 +1247,7 @@ function groupDomainResults(items: DomainValidationResult[]) {
 
 function domainStatusLabel(status: string) {
   return ({
+    FORMAT_ONLY: t("domain.formatOnly"),
     COMPLETED: t("ui.7b3bb04ef1"),
     PENDING: t("ui.fe7d04e399"),
     CHECKING: t("ui.9568c47fde"),
@@ -1261,6 +1263,7 @@ function domainStatusLabel(status: string) {
 
 function domainReason(item: DomainValidationResult) {
   const reason = ({
+    FORMAT_ONLY: t("domain.formatOnly"),
     DNS_ERROR: t("ui.9c8b3103ee"),
     TIMEOUT: t("ui.e2d71d2bdd"),
     TLS_ERROR: t("ui.d4a497522e"),
