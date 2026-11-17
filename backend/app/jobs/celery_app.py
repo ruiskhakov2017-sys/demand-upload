@@ -42,3 +42,9 @@ celery_app.conf.update(
         },
     },
 )
+
+# The public workspace schedules simulated campaign launches only.
+if settings.app_env == "portfolio":
+    celery_app.conf.beat_schedule = {
+        "dispatch-due-scheduled-accounts": celery_app.conf.beat_schedule["dispatch-due-scheduled-accounts"]
+    }

@@ -70,6 +70,11 @@ services:
       redis:
         condition: service_started
 
+  scheduler:
+    <<: *portfolio-backend
+    command: [celery, -A, app.jobs.celery_app.celery_app, beat, --loglevel=INFO, --schedule=/tmp/portfolio-beat]
+    depends_on: [redis, worker]
+
   frontend:
     build:
       context: .

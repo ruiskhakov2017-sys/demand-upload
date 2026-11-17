@@ -42,8 +42,11 @@ def collect_upload_references(db, upload: CampaignUpload) -> list[dict]:
 
 def mark_upload_validation_pending(db, upload: CampaignUpload) -> dict:
     draft = deepcopy(upload.draft or {})
-    previous = draft.get("domain_validation") or {}
-    report = DomainValidationService.pending(collect_upload_references(db, upload), previous)
+    references = collect_upload_references(db, upload)
+    if settings.app_env == "portfolio":
+        report = DomainValidationService().validate(references)
+    else:
+        report = DomainValidationService.pending(references, draft.get("domain_validation") or {})
     draft["domain_validation"] = report
     upload.draft = draft
     return report
@@ -89,6 +92,8 @@ def enqueue_upload_validation(
     job_id=None,
     force: bool = False,
 ) -> bool:
+    if settings.app_env == "portfolio" and job_id is None:
+        return True  # The offline format check completed in the draft transaction.
     if settings.app_env.lower() == "test":
         return False
     try:

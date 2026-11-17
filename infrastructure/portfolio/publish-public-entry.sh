@@ -61,7 +61,7 @@ candidate.write_text(portfolio + "\n" + showcase + "\n" + marker + tail)
 PY
 sudo -n docker exec -i "$gateway" caddy validate --config - --adapter caddyfile < "$candidate"
 "${compose[@]}" build api frontend showcase-frontend > "$root/public-build-$version.log" 2>&1
-"${compose[@]}" up -d --no-deps --no-build api worker frontend showcase-frontend reverse-proxy
+"${compose[@]}" up -d --no-deps --no-build api worker scheduler frontend showcase-frontend reverse-proxy
 for attempt in $(seq 1 20); do
     if curl -fsS --max-time 3 http://127.0.0.1:19082/api/ready >/dev/null; then break; fi
     sleep 2

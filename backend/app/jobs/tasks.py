@@ -107,6 +107,8 @@ def validate_upload_domains(
             )
             db.commit()
         try:
+            if settings.app_env == "portfolio":
+                db.refresh(upload, with_for_update=True)
             report = validate_upload(db, upload, force=force)
             if job:
                 job.status = JobStatus.SUCCEEDED.value
