@@ -129,7 +129,7 @@ export function AiAnalystPage() {
   });
   const campaigns = useQuery({
     queryKey: ["ai-scope-campaigns"],
-    queryFn: () => api.controlCenterCampaigns({ limit: 500, offset: 0 }),
+    queryFn: () => api.controlCenterCampaigns({ limit: 200, offset: 0 }),
     staleTime: 60_000
   });
 
